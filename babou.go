@@ -5,8 +5,9 @@ import (
 	flag "flag"
 	fmt "fmt"
 
-	libBabou "babou/lib"
-	web "babou/lib/web"
+	libBabou "babou/lib" // Core babou libraries
+	web "babou/lib/web"  //  Babou's web server
+
 	os "os"
 	signal "os/signal"
 	syscall "syscall"
@@ -28,9 +29,34 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go trapSignals(c)
 
-	server := &web.Server{}
+	webServerIO := make(chan int, 0)
+	trackerIO := make(chan int, 0)
 
-	server.Start(appSettings)
+	if *appSettings.FullStack == true || *appSettings.WebStack == true {
+		// Start web-server
+		server := &web.Server{}
+		// Receive SIGNALs from web server.
+
+		go server.Start(appSettings, webServerIO)
+	}
+
+	if *appSettings.FullStack == true || *appSettings.TrackerStack == true {
+		// Start tracker
+	}
+
+	// Block on server IOs
+	for {
+		select {
+		case webMessage := <-webServerIO:
+			if webMessage == libBabou.WEB_SERVER_START {
+				fmt.Println("Server has started sucessfully")
+			}
+		case trackerMessage := <-trackerIO:
+			if trackerMessage == libBabou.TRACKER_SERVER_START {
+				fmt.Println("Tracker has started successfully")
+			}
+		}
+	}
 }
 
 func trapSignals(c chan os.Signal) {
@@ -69,5 +95,11 @@ func parseFlags() *libBabou.AppSettings {
 		"Sets the tracker's listening port number.")
 
 	flag.Parse()
+
+	// If the user has configured their own stack options, do not use the full stack.
+	if *appSettings.WebStack == true || *appSettings.TrackerStack == true {
+		*appSettings.FullStack = false
+	}
+
 	return appSettings
 }
