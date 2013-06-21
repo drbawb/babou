@@ -20,10 +20,6 @@ func main() {
 	//Parse command line flags
 	appSettings := parseFlags()
 
-	if *appSettings.Debug {
-		fmt.Println("LOGGING DEBUG MESSAGES TO CONSOLE.")
-	}
-
 	//Trap signals from the parent OS
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -61,11 +57,11 @@ func main() {
 
 func trapSignals(c chan os.Signal) {
 	for sig := range c {
-		fmt.Printf("Caught: %s \n", sig.String())
 		if sig == syscall.SIGINT || sig == syscall.SIGQUIT || sig == syscall.SIGTERM {
 			// Shutdown gracefully.
+			fmt.Println("\nbabou is packing up his things ...")
 
-			// Probably block on webserver shutdown [instant]
+			//TODO: Probably block on webserver shutdown [instant]
 			// 	as well as a concurrent block on app shutdown.
 			// Exit when they're both finished.
 			os.Exit(0)
