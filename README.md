@@ -88,7 +88,6 @@ Step 6) . . .
 
 Now what?
 ===
-
 Time to share some linux distributions, yo.
 
 How do I know that Babou is safe?

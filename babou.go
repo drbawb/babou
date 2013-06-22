@@ -5,8 +5,8 @@ import (
 	flag "flag"
 	fmt "fmt"
 
+	web "babou/app"      //  Babou's web server
 	libBabou "babou/lib" // Core babou libraries
-	web "babou/app"  //  Babou's web server
 
 	os "os"
 	signal "os/signal"

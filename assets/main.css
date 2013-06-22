@@ -1,0 +1,22 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+html,body {
+	background-color: #000000;
+	height: 100%;
+}
+
+.stretch {
+	background-color: #000000;
+	min-height: 24px;
+	height: 5%;
+	width: 100%;
+}
+
+.content {
+	background-color: #aaaaaa;
+	height: 90%;
+	width: 100%;
+}

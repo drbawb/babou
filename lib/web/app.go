@@ -1,12 +1,17 @@
 // The Babou web application core
 package web
 
+import (
+	"log"
+	"net/http"
+	"strings"
+)
 
 // data
 
 type Result struct {
-	Body []byte 	//HTTP Response Body
-	Status int 	//HTTP Status Code
+	Body   []byte //HTTP Response Body
+	Status int    //HTTP Status Code
 }
 
 // A controller must take an action and map it to a Result
@@ -15,6 +20,18 @@ type Controller interface {
 	HandleRequest(string, map[string]string) *Result
 }
 
-type Action func(map[string]string) *Result
-// functions
+func DisableDirectoryListing(h http.Handler) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf(r.URL.Path)
+		if r.URL.Path == "" || strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
 
+		h.ServeHTTP(w, r)
+	})
+}
+
+type Action func(map[string]string) *Result
+
+// functions

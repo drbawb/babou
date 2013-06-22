@@ -3,22 +3,22 @@ package app
 import (
 	libBabou "babou/lib"
 
-	log "log"
 	fmt "fmt"
+	log "log"
 
 	http "net/http"
 )
 
 // Parameters for babou's web server
 type Server struct {
-	Port int
+	Port     int
 	serverIO chan int
 }
 
 // Initializes a server using babou/lib settings and a communication channel.
 func NewServer(appSettings *libBabou.AppSettings, serverIO chan int) *Server {
 	newServer := &Server{}
-	
+
 	newServer.Port = *appSettings.WebPort
 	newServer.serverIO = serverIO
 

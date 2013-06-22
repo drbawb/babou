@@ -1,0 +1,12 @@
+<!doctype html>
+
+<html>
+	<head>
+		<title> [Babou] </title>
+	</head>
+	<body>
+		<div class="content">
+			{{#Yield}}{{/Yield}}
+		</div>	
+	</body>
+</html>
