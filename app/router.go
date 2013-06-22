@@ -13,7 +13,7 @@ import (
 func LoadRoutes() *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/{name}", wrap(controllers.NewHomeController(), "index"))
+	r.HandleFunc("/", wrap(controllers.NewHomeController(), "index"))
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",
 		web.DisableDirectoryListing(http.FileServer(http.Dir("assets/")))))
 

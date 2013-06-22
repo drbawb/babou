@@ -11,12 +11,45 @@ html,body {
 .stretch {
 	background-color: #000000;
 	min-height: 24px;
-	height: 5%;
+	height: 10%;
 	width: 100%;
 }
 
-.content {
+.entry-content {
 	background-color: #aaaaaa;
-	height: 90%;
+	height: 80%;
 	width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+	
+	display: -webkit-box;
+	-webkit-box-pack: center;
+	-webkit-box-align: center;
+	
+	display:-moz-box;
+	-moz-box-pack: center;
+	-moz-box-align: center;
+
+	display: -ms-flexbox;
+	-ms-flex-pack: center;
+	-ms-flex-align: center;
+
+	display: box;
+	box-pack: center;
+	box-align: center;
+}
+
+.entry-brief {
+	text-align: center;
+	width: 400px;
+	font-family: sans-serif;
+	font-size: 11px;
+}
+
+.entry-nav {
+	padding: 5px;
+}
+
+.entry-nav a {
+	padding: 5px;
 }

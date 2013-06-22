@@ -2,7 +2,6 @@
 package web
 
 import (
-	"log"
 	"net/http"
 	"strings"
 )
@@ -22,7 +21,6 @@ type Controller interface {
 
 func DisableDirectoryListing(h http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf(r.URL.Path)
 		if r.URL.Path == "" || strings.HasSuffix(r.URL.Path, "/") {
 			http.NotFound(w, r)
 			return
