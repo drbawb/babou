@@ -30,10 +30,10 @@ func main() {
 
 	if *appSettings.FullStack == true || *appSettings.WebStack == true {
 		// Start web-server
-		server := &web.Server{}
+		server := web.NewServer(appSettings, webServerIO)
 		// Receive SIGNALs from web server.
 
-		go server.Start(appSettings, webServerIO)
+		go server.Start()
 	}
 
 	if *appSettings.FullStack == true || *appSettings.TrackerStack == true {
