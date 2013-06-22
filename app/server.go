@@ -1,9 +1,7 @@
-package web
+package app
 
 import (
 	libBabou "babou/lib"
-
-	app "babou/app"
 
 	log "log"
 	fmt "fmt"
@@ -44,5 +42,5 @@ func (s *Server) Start() {
 // Loads muxer from router.go from `app` package.
 
 func (s *Server) loadRoutes() {
-	http.Handle("/", app.LoadRoutes())
+	http.Handle("/", LoadRoutes())
 }

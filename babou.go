@@ -6,7 +6,7 @@ import (
 	fmt "fmt"
 
 	libBabou "babou/lib" // Core babou libraries
-	web "babou/lib/web"  //  Babou's web server
+	web "babou/app"  //  Babou's web server
 
 	os "os"
 	signal "os/signal"
