@@ -1,0 +1,10 @@
+
+
+<div class="entry-brief">
+	<div class="entry-nav">
+		{{> public_navbar}}
+	</div>
+{{#FormFor sessionCreate post}}
+        {{> app/views/login/login_form}}
+{{/FormFor}}
+</div>

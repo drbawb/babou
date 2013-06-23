@@ -1,0 +1,11 @@
+<div class="entry-brief">
+	<div class="entry-nav">
+		{{#LinkTo homeIndex}}Home{{/LinkTo}} 
+        {{#LinkTo loginIndex}}Login{{/LinkTo}}
+        {{#LinkTo loginCreate}}Register{{/LinkTo}}
+	</div>
+
+{{#FormFor loginCreate post}}
+        {{> app/views/login/register_form}}
+{{/FormFor}}
+</div>

@@ -38,9 +38,12 @@ func (hc *HomeController) Index(params map[string]string) *web.Result {
 	output := &web.Result{}
 
 	output.Status = 200
-	outData := &web.ViewData{Context: &struct{ Name string }{Name: params["name"]}}
+	outData := &web.ViewData{Context: &struct {
+		Name  string
+		Yield func(string, string) string
+	}{Name: "Test"}}
 
-	output.Body = []byte(web.RenderTo("home/index", outData))
+	output.Body = []byte(web.RenderIn("public", "home", "index", outData))
 
 	return output
 }

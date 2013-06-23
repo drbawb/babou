@@ -9,8 +9,16 @@ import (
 // data
 
 type Result struct {
-	Body   []byte //HTTP Response Body
-	Status int    //HTTP Status Code
+	Body     []byte //HTTP Response Body
+	Status   int    //HTTP Status Code
+	Redirect *RedirectPath
+}
+
+type RedirectPath struct {
+	NamedRoute string //or:
+
+	ControllerName string
+	ActionName     string
 }
 
 // A controller must take an action and map it to a Result

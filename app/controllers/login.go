@@ -2,6 +2,12 @@ package controllers
 
 import (
 	web "babou/lib/web"
+	fmt "fmt"
+
+	bcrypt "code.google.com/p/go.crypto/bcrypt"
+	rand "crypto/rand"
+
+	models "babou/app/models"
 )
 
 // Implements babou/app.Controller interface.
@@ -20,6 +26,8 @@ func NewLoginController() *LoginController {
 
 	//add your actions here.
 	lc.actionMap["index"] = lc.Index
+	lc.actionMap["create"] = lc.Create
+	lc.actionMap["new"] = lc.New
 
 	return lc
 }
@@ -38,9 +46,58 @@ func (lc *LoginController) Index(params map[string]string) *web.Result {
 	output := &web.Result{}
 
 	output.Status = 200
-	outData := &web.ViewData{Context: &struct{ Name string }{Name: params["name"]}}
+	outData := &web.ViewData{Context: &struct{}{}}
 
-	output.Body = []byte(web.Render("home", "index", outData))
+	output.Body = []byte(web.RenderIn("public", "login", "index", outData))
 
 	return output
+}
+
+func (lc *LoginController) New(params map[string]string) *web.Result {
+	output := &web.Result{}
+
+	output.Status = 200
+	outData := &web.ViewData{Context: &struct{}{}}
+
+	output.Body = []byte(web.RenderIn("public", "login", "new", outData))
+
+	return output
+}
+
+func (lc *LoginController) Create(params map[string]string) *web.Result {
+	//64-char salt
+	saltLength := 64
+	passwordSalt := make([]byte, saltLength)
+	password := make([]byte, 0)
+
+	n, err := rand.Read(passwordSalt)
+	if n != len(passwordSalt) || err != nil {
+		return &web.Result{Status: 500, Body: []byte(fmt.Sprintf("error generating random salt"))}
+	}
+
+	password = append(passwordSalt, []byte(params["password"])...)
+	hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.MinCost)
+	if err != nil {
+		return &web.Result{Status: 500, Body: []byte(fmt.Sprintf("error encrypting password"))}
+	}
+
+	err = bcrypt.CompareHashAndPassword(hashedPassword, password)
+	if err != nil {
+		return &web.Result{Status: 500, Body: []byte(fmt.Sprintf("error comparing password %s", err))}
+	}
+
+	username := params["username"]
+
+	err = models.NewUser(username, hashedPassword, passwordSalt)
+	if err != nil {
+		fmt.Printf("error creating user: %s", err.Error())
+	}
+
+	redirectPath := &web.RedirectPath{
+		NamedRoute: "loginIndex", //redirect to login page.
+	}
+
+	fmt.Printf("\n issuing redirect \n")
+	return &web.Result{Status: 302, Body: nil, Redirect: redirectPath}
+
 }

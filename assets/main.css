@@ -10,18 +10,14 @@ html,body {
 
 .stretch {
 	background-color: #000000;
+	color: #dddddd;
 	min-height: 24px;
 	height: 10%;
 	width: 100%;
-}
 
-.entry-content {
-	background-color: #aaaaaa;
-	height: 80%;
-	width: 100%;
-	margin-left: auto;
-	margin-right: auto;
-	
+	font-family: sans-serif;
+	font-size: 11px;
+
 	display: -webkit-box;
 	-webkit-box-pack: center;
 	-webkit-box-align: center;
@@ -37,11 +33,46 @@ html,body {
 	display: box;
 	box-pack: center;
 	box-align: center;
+
+}
+
+.entry-logo {
+	background-image: url('/assets/fsyn_logo.png');
+	width: 122px;
+	height: 40px;
+}
+
+.entry-content {
+	background-color: #aaaaaa;
+	height: 80%;
+	width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+	
+	display: -webkit-box;
+	-webkit-box-pack: center;
+	-webkit-box-align: center;
+	-webkit-box-orient:vertical;
+	
+	display:-moz-box;
+	-moz-box-pack: center;
+	-moz-box-align: center;
+	-moz-box-orient:vertical;
+
+	display: -ms-flexbox;
+	-ms-flex-pack: center;
+	-ms-flex-align: center;
+	-ms-flex-direction:column;
+
+	display: box;
+	box-pack: center;
+	box-align: center;
+	box-orient: vertical;
 }
 
 .entry-brief {
 	text-align: center;
-	width: 400px;
+	width: 235px;
 	font-family: sans-serif;
 	font-size: 11px;
 }
@@ -52,4 +83,29 @@ html,body {
 
 .entry-nav a {
 	padding: 5px;
+}
+
+
+.entry-brief form {
+	border: 1px #000 solid;
+	border-radius: 5px;
+	padding: 15px;
+	font-size: 12px;
+	font-weight: bold;
+}
+
+input[type="submit"] {
+	padding: 5px;
+	min-width: 58px;
+	
+	border-color: #EEE;
+	border-width: 0;
+	color: #FFF;
+
+	background-color: #000000;
+
+}
+
+input[type="submit"]:active {
+	background-color: #333333;
 }
