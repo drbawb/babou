@@ -33,14 +33,6 @@ any users currently logged into the site.
 This makes adding more nodes an effective strategy for scaling the web-
 portion of your Babou tracker.
 
-While you can add additional tracker-stacks, two trackers cannot share the same port.
-Logistically: if you were to add additional trackers, they must _always_ be running.
-Otherwise stale torrent-files will contain bad connection information, resulting in
-a poor user experience.
-
-Babou will prevent you from running additional tracker-stacks, but we do intend to
-add a flag which will allow multiple trackers to be run.
-
 Directory Layout
 ===
 
@@ -72,12 +64,6 @@ controller/method pairing.
 The controller's method will then call upon the model to perform any business-
 logic, and finally it will render a response using a view & template.
 
-
-Controllers
-===
-
-Models
-===
 
 
 Views
@@ -116,29 +102,109 @@ The first form requires your error pages to be at the root of the view hierarchy
 and named after their corresponding status codes.
 The latter form allows you to render ANY page while sending an HTTP status code.
 
+---
 
-Partials may be rendered with {{#Partial}}&lt;partial_name&gt;{{/Partial}}
-The partial name will be prepended with an underscore, it will be called from the current
-context's directory. In the case of the appilcation template: this is the `views/` directory.
-In the case of a controller/action template, this is the `views/controller/` directory.
+The Render() methods will prepend a series of "view helpers" to your code.
 
-If your partial name begins with a `/`, it will be considered an absolute path to the partial
-beginning in the `views/` directory.
+{{#UrlFor [routeName] [params]}}{{/UrlFor}}
+Will generate an HTML-safe URL to a route.
+[params] will be split on spaces and passed as arguments to the router.
+len(params) must match the expected number of arguments for the named route.
 
-Examples:
+{{#LinkFor [routeName] [params]}}[Display]{{/LinkFor}}
+Same as UrlFor except it puts the path inside an <a> tag with
+an HTML-escaped display name.
 
-{{#Partial}}nav_bar{{/Partial}}
-Called from: views/application.template
-Loads: views/_nav_bar.template
+{{#FormFor [id] [http-method]}}
+[inner template]
+{{/FormFor}}
 
-{{#Partial}}notifications{{/Partial}}
-Called from: views/users/inbox.template
-Loads: views/users/_notifications.template
+Creates an HTML form; the inner template inherits the calling context as
+well as more pointed "Form" helpers.
 
-{{#Partial}}/footer{{/Partial}}
-Called from: views/torrents/show.template
-Loads: views/_footer.template
+{{LabelFor [fieldName]}}[Label]{{/LabelFor}}
+Creates a label for a form field identified by `fieldName`
 
-(Note: The partial renderer will ignore whitespace.)
-(In all cases: the partial inherits the calling context of the outer view.)
+{{TextFieldFor [fieldName] [opt:type]}}{{/TextFieldFor}}
+Creates a textfield, optional parameter will be used as the "type" of
+text field. (Must be valid HTML, for e.g: hidden, password, etc.)
 
+
+Controllers & Router
+===
+
+Diagram:
+
+[Request] --> [Router]<---\
+		 |	  |
+		 | 	  |
+		 \--->[Wrapper]	<-------\
+			|		|
+			\----------->[Controller]<---->[View]
+					| A
+					| |
+			[Model]<--------/ |
+			  |		  |
+			  |		  |
+			  \----------------
+
+The request is multiplexed by the router to an appropriate controller.
+Controllers consist of an Action map which is a map of named routes
+to functions capable of servicing an HTTP request.
+
+These functions are given GET/POST parameters. In the case of a
+POST request, preferential treatment will be given to POST parameters
+if there is a name conflict between parameters.
+
+The controller may call on a model to do business logic. The controller
+should block on DB work unless it is a background task, or a task
+that is out-of-band with the request being serviced. (For e.g: an
+asyncrhonous update that can be pushed later onto a websocket.)
+
+Lastly the controller will call upon the view-layer to render a response.
+The view-layer assists binding data to {{mustache}} templates with some
+extra helper methods.
+
+After a response has been rendered, the controller must return the response
+as a byte-stream to the router.
+
+The router will then return the response to the client.
+
+---
+
+The router can offer additional filters contained in the babou/app package.
+These filters are often used for session management, authorization, etc.
+
+A single Controller instance is shared across requests by the router. It is
+highly recommended that your controller be stateless: using only the supplied
+parameters to construct a response.
+
+The notable exception is accessing the router's session API.
+
+Model Layer
+===
+
+The model layer consists of two packages:
+babou/app/models
+AND
+babou/lib/db
+
+babou/lib/db contains connection code which offers several different
+connection strategies.
+
+The primary strategy is closure-processing: ExecuteFn() and ExecuteAsync()
+open connections to the database. These connections are then passed to a 
+closure, which may use the database however it wants.
+
+ExecuteFn() will close the session after the closure has executed. Thus it
+expects that the closure will not try to close the session and/or pass the
+connection handle to a separate coroutine.
+
+ExecuteAsync() will not defer the closing of the database. The closure
+MUST free resources when it is finished executing. Use ExecuteAsync()
+with extreme caution.
+
+Session Management
+===
+
+TBA.
