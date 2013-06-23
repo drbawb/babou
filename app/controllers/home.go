@@ -1,3 +1,4 @@
+//A collection of controllers which can be called from the middleware.
 package controllers
 
 import (

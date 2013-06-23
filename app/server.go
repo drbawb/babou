@@ -1,3 +1,4 @@
+// The `babou` middleware implementation
 package app
 
 import (

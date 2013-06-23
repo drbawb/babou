@@ -1,4 +1,3 @@
-// Contains the view rendering helpers.
 package web
 
 import (
@@ -13,29 +12,41 @@ import (
 	errors "errors"
 )
 
+// A global router or middleware implementation that will service requests
+// from the HTTP server and direct them to an appropriate controller
 var Router *mux.Router = nil
 
-// Layout
+// A context that will be passed to the underlying html template.
+// Yield is a function that will be replaced by the renderer. It will call
+// your requested template and automatically pass it the supplied `Context`
+// argument.
 type ViewData struct {
 	Yield   func(params []string, data string) string
 	Context interface{}
 }
 
+// Helper functions which are available to views that are rendered using
+// the built-in methods.
 type viewHelpers struct {
 	LinkTo  func(params []string, data string) string
 	UrlFor  func(params []string, data string) string
 	FormFor func(params []string, data string) string
 }
 
+// Helper functions which are available to views that are rendered inside
+// the context of a {{#FormFor}} section.
 type postHelpers struct {
 	LabelFor     func(params []string, data string) string
 	TextFieldFor func(params []string, data string) string
 }
 
+// Returns a set of viewHelpers to be passed to the rendering context.
 func getHelpers() *viewHelpers {
 	return &viewHelpers{LinkTo: LinkTo, UrlFor: UrlFor, FormFor: BuildForm}
 }
 
+// Returns a set of form helpers to be passed to a rendering context which
+// is processing an HTML form.
 func getFormHelpers() *postHelpers {
 	return &postHelpers{LabelFor: LabelFor, TextFieldFor: TextFieldFor}
 }
@@ -58,6 +69,8 @@ func Render(controllerName, actionName string, viewData *ViewData) string {
 	return out
 }
 
+// Renders the requested template inside a layout. This can override the
+// default behavior to render inside the application layout.
 func RenderIn(templateName, controllerName, actionName string, viewData *ViewData) string {
 	layoutFile := fmt.Sprintf("app/views/%s.template", templateName)
 	filename := fmt.Sprintf("app/views/%s/%s.template", controllerName, actionName)
@@ -83,12 +96,13 @@ func RenderTo(templateName string, viewData *ViewData) string {
 	return out
 }
 
-// Below here are the implementations of various view helpers
+
+/* Implementations of various view helpers */
 
 // Returns an HTML link as a string suitable for insertion into an HTML template.
-// Params: {{#UrlFor [controllerName] [routeParameters]...}}
+//   Params: {{#UrlFor [controllerName] [routeParameters]...}}
 // 	params are passed to the router to create a properly formed URL.
-// Data: {{#UrlFor}} [data] {{/UrlFor}}
+//   Data: {{#UrlFor}} [data] {{/UrlFor}}
 // 	data will be escaped and used as the link's display text.
 func LinkTo(params []string, data string) string {
 	// Recover from bad route
@@ -105,8 +119,8 @@ func LinkTo(params []string, data string) string {
 }
 
 // Returns a URL as a string suitable for insertion into an HTML template.
-// Params: {{#UrlFor [controllerName] [routeParameters]...}}
-// params are passed to the router to create a properly formed URL.
+//   Params: {{#UrlFor [controllerName] [routeParameters]...}}
+//     params are passed to the router to create a properly formed URL.
 func UrlFor(params []string, data string) string {
 	url, _, err := buildUrl(params, data)
 
@@ -145,6 +159,7 @@ func buildUrl(params []string, data string) (*url.URL, string, error) {
 	}
 }
 
+// Builds a URL using a verb other than HTTP/GET
 func buildUrlWithVerb(controllerName string, httpMethod string) (*url.URL, error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -173,6 +188,11 @@ func buildUrlWithVerb(controllerName string, httpMethod string) (*url.URL, error
 }
 
 // Builds a form context and renders a sub-template inside of it.
+//  Example:
+//    {{#FormFor}}
+//      {{ > app/views/users/register.template }}
+//    {{/FormFor}}
+// Where the register.template can now use any of the Form helpers.
 func BuildForm(params []string, data string) string {
 	var controllerName string
 	var httpMethod string
@@ -211,6 +231,11 @@ func BuildForm(params []string, data string) string {
 	return fmt.Sprintf("%s\n%s\n%s", openTag, formBody, closeTag)
 }
 
+// Generates a label for a form field
+//  Example:
+//    {{#LabelFor [fieldId]}}[display]{{/LabelFor}}
+//  [fieldId] is the id="" attr of the form field.
+//  [display] is the display text of the label. 
 func LabelFor(params []string, data string) string {
 	var fieldId string
 	var body string
@@ -225,6 +250,11 @@ func LabelFor(params []string, data string) string {
 	}
 }
 
+// Generates a text field suitable for rendering in an HTML form.
+//  Example:
+//    {{#TextFieldFor [fieldId] [?fieldType]}}{{/TextFieldFor}}
+//  [fieldId] is the field's HTML id="" attribute.
+//  [?fieldType] is an optional parameter used as the HTML type="" attribute.
 func TextFieldFor(params []string, data string) string {
 	var fieldId string
 	var fieldType string
