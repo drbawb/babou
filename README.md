@@ -41,6 +41,13 @@ release tip unless otherwise noted.
 - That's it . . . optionally you can add a web-server in front of Go 
 to proxy requests to the backend. A sample nginx configuration is included.
 
+IMPORT NOTICE: To build `babou` you will need the mustache templating library.We use a modified version available at `github.com/drbawb/mustache`.
+Since the modifications are not merged into master yet, you will manually
+have to go to $GOPATH/src/github.com/drbawb/mustache and checkout the
+appropriate development branch.
+
+This _only_ applies if you're _building_ babou from source.
+
 (This configuration is highly recommended because then you can use a battle-hardened
 webserver on trusted ports (80,443), perform SSL, serve static assets, etc.) 
 
@@ -48,14 +55,14 @@ Features
 ==
 Anything Gazelle can do, we can do ... also.
 
-Wiki: but not your grandma's wiki, this thing supports markdown and is made of awesome.
-Forums: but not your grandma's BBS, this thing supports permissions out the wazoo.
-Polling: unless you're not into the whole democratically elected sysadmin movement.
-Torrent Searching: and it's _awesome._
+Wiki: but not your grandma's wiki, this thing supports markdown and is made of awesome.  
+Forums: but not your grandma's BBS, this thing supports permissions out the wazoo.  
+Polling: unless you're not into the whole democratically elected sysadmin movement.  
+Torrent Searching: and it's _awesome._  
 Permissions!!!: seriously there's like 50 ways to ban a user.
-Collages: because we &lt;3 music.
+Collages: because we &lt;3 music.  
 
-But not yet... kindasortafocusing on making the site, yknow, work.
+(All in due time.)
 
 Anything Ocelot can do, we can do quicker.
 
@@ -71,35 +78,18 @@ How do I run it?
 
 REALLY EASILY.
 
-Step 1) Compile or obtain the binary & associated webstuffs... throw it in a folder.
-Step 2) `babou --set-it-up`
+Step 1) Compile or obtain the binary & associated assets... throw it in a folder.
+Step 2) `./babou`
 
-(Babou doesn't like being told what to do, SO HE WILL CONFIRM THAT YOU REALLY
-WANT TO DO A CLEAN INSTALL. Then he will seed the database, randomize encryption 
-parameters, and finally spit out an admin username and password. DON'T LOSE IT.
-Babou will not let you do this more than once without an additional --yes-im-sure.)
-
-Step 3) `babou --full-stack --web-port=8080 --tracker-port=34200`
 
 Want more nodes?
-Step 4) `babou --web-stack --web-port=8081`
-Step 5) `babou --web-stack --web-port=8082`
-Step 6) . . .
+Step 3) `babou --web-stack --web-port=8081`
+Step 4) `babou --web-stack --web-port=8082`
+Step 5) . . .
+
+(`./babou -help` is also available.)
 
 Now what?
 ===
-Time to share some linux distributions, yo.
+Time to share some linux distributions!
 
-How do I know that Babou is safe?
-===
-
-First of all: it's not illegal to share linux distributions.
-
-Secondly: BABOU BELIEVES IN FREEDOM. He has also had all of his shots.
-He is BSD Licensed, top to bottom. Check the code for yourself.
-
-Still don't trust me? Rip out the bits you don't trust, fork it on GitHub,
-publicly shame me, submit a pull request, whatever floats your boat. Such is
-the miracle of open source development!
-
-Running `babou --license` will spit out the licenses of all frameworks involved.
