@@ -39,20 +39,18 @@ Directory Layout
 Babou uses RESTful routing and an MVC-like design.
 
 babou.go
---tracker
----TBD
---app
----router.go (Server router)
----server.go (Webserver)
----views (View implementations)
----models (Model implementations)
----controllers (Controller implementations)
---lib
----web (Web Framework core libraries)
---config
----config.json
----database.json
---tests
+--tracker  
+---TBD  
+--app  
+---router.go (Server router)  
+---server.go (Webserver)  
+---views (View implementations)  
+---models (Model implementations)  
+---controllers (Controller implementations)  
+--lib  
+---web (Web Framework core libraries)  
+---db (Database core libraries)  
+--tests  
 
 router.go contains a list of all routes in the application.
 A route is a pattern that is matched against a submitted URL and its corresponding
