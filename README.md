@@ -78,14 +78,14 @@ How do I run it?
 
 REALLY EASILY.
 
-Step 1) Compile or obtain the binary & associated assets... throw it in a folder.
-Step 2) `./babou`
+Step 1) Compile or obtain the binary & associated assets... throw it in a folder.  
+Step 2) `./babou`  
 
 
 Want more nodes?
-Step 3) `babou --web-stack --web-port=8081`
-Step 4) `babou --web-stack --web-port=8082`
-Step 5) . . .
+Step 3) `babou --web-stack --web-port=8081`  
+Step 4) `babou --web-stack --web-port=8082`  
+Step 5) . . .  
 
 (`./babou -help` is also available.)
 
