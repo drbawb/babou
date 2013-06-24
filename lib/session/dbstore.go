@@ -16,7 +16,6 @@ import (
 	sql "database/sql"
 
 	base32 "encoding/base32"
-	fmt "fmt"
 	strings "strings"
 )
 
@@ -44,13 +43,11 @@ func NewDatabaseStore(keyPairs ...[]byte) *DatabaseStore {
 
 // Fetches a session for a given name after it has been added to the registry.
 func (db *DatabaseStore) Get(r *http.Request, name string) (*sessions.Session, error) {
-	fmt.Printf("getting session from db . . .")
 	return sessions.GetRegistry(r).Get(db, name)
 }
 
 // New returns a new session for the given name w/o adding it to the registry.
 func (db *DatabaseStore) New(r *http.Request, name string) (*sessions.Session, error) {
-	fmt.Printf("entered DbStore#New")
 	session := sessions.NewSession(db, name)
 	session.Options = &(*db.Options)
 	session.IsNew = true
@@ -83,9 +80,6 @@ func (db *DatabaseStore) Save(r *http.Request, w http.ResponseWriter, session *s
 	}
 
 	// Keep the session ID key in a cookie so it can be looked up in DB later.
-
-	fmt.Printf("Saving session w/ ID: %s\n", session.ID)
-
 	encoded, err := securecookie.EncodeMulti(session.Name(), session.ID, db.Codecs...)
 	if err != nil {
 		return err
@@ -155,10 +149,5 @@ func (db *DatabaseStore) save(session *sessions.Session) error {
 		return nil
 	}
 
-	if err = dbLib.ExecuteFn(fn); err != nil {
-		fmt.Printf("dbLib executeFn: %s", err.Error())
-		return err
-	}
-
-	return nil
+	return dbLib.ExecuteFn(fn)
 }
