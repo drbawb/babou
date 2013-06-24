@@ -7,12 +7,20 @@ import (
 
 	mux "github.com/gorilla/mux"
 	http "net/http"
+
+	dbStore "babou/lib/session"
+	sessions "github.com/gorilla/sessions"
+
+	fmt "fmt"
 )
+
+var store sessions.Store
 
 // Babou will load these routes.
 func LoadRoutes() *mux.Router {
 	r := mux.NewRouter()
 	web.Router = r
+	store = dbStore.NewDatabaseStore([]byte("3d1fd34f389d799a2539ff554d922683"))
 
 	// Shows public homepage, redirects to private site if valid session can be found.
 	r.HandleFunc("/", wrap(controllers.NewHomeController(), "index")).Name("homeIndex")
@@ -29,6 +37,10 @@ func LoadRoutes() *mux.Router {
 
 	r.HandleFunc("/session/create",
 		wrap(controllers.NewSessionController(), "create")).Methods("POST").Name("sessionCreate")
+
+	// Testing method
+	r.HandleFunc("/session/create",
+		wrap(controllers.NewSessionController(), "create")).Methods("GET").Name("sessionCreate")
 
 	// Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",
@@ -52,6 +64,21 @@ func wrap(controller web.Controller, action string) http.HandlerFunc {
 			http.Error(response, string(result.Body), 500)
 		} else {
 			// Assume 200
+
+			if true {
+				//TODO: need some way to pass sessions in/out of controllers!
+				session1, err := store.Get(request, "user")
+				fmt.Printf("\n \nsession value was: %s \n \n", session1.Values["foo"])
+				session1.Values["foo"] = "hoopaloo"
+
+				if err != nil {
+					fmt.Printf("error is: %s \n", err.Error())
+				}
+
+				sessions.Save(request, response)
+
+			}
+
 			response.Write(result.Body)
 		}
 
