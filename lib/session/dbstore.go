@@ -10,7 +10,6 @@ import (
 	securecookie "github.com/gorilla/securecookie"
 	sessions "github.com/gorilla/sessions"
 
-	errors "errors"
 	http "net/http"
 
 	dbLib "babou/lib/db"
@@ -100,24 +99,23 @@ func (db *DatabaseStore) Save(r *http.Request, w http.ResponseWriter, session *s
 func (db *DatabaseStore) load(session *sessions.Session) error {
 	fn := func(dbConn *sql.DB) error {
 		// Write record to sessions table.
-		tx, err := dbConn.Begin()
-		if err != nil {
+		row := dbConn.QueryRow("SELECT http_session_id, key, data FROM \""+SESSIONS_TABLE+"\" WHERE key = $1", session.ID)
+
+		var id int
+		var key, data string
+		if err := row.Scan(&id, &key, &data); err != nil {
 			return err
 		}
 
-		_, err = tx.Exec("INSERT INTO \""+SESSIONS_TABLE+"\" (key, data) VALUES($1,$2)",
-			session.ID, encoded)
-		if err != nil {
-			return err
-		}
-
-		if err = tx.Commit(); err != nil {
+		if err := securecookie.DecodeMulti(session.Name(), string(data),
+			&session.Values, db.Codecs...); err != nil {
 			return err
 		}
 
 		return nil
 	}
 
+	return dbLib.ExecuteFn(fn)
 }
 
 // save writes encoded session.Values to a database record.
@@ -137,6 +135,13 @@ func (db *DatabaseStore) save(session *sessions.Session) error {
 			return err
 		}
 
+		// Delete old session if exists
+		_, err = tx.Exec("DELETE FROM \""+SESSIONS_TABLE+"\" WHERE key = $1", session.ID)
+		if err != nil {
+			return err
+		}
+
+		// Insert new session
 		_, err = tx.Exec("INSERT INTO \""+SESSIONS_TABLE+"\" (key, data) VALUES($1,$2)",
 			session.ID, encoded)
 		if err != nil {
