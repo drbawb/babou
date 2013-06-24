@@ -13,8 +13,8 @@ type HomeController struct {
 }
 
 // Registers actions for the HomeController and returns it.
-// Note: State in the returned controller object is global to
-// all requests the controller processes.
+// Note that the state in the returned `Controller` is global to
+// all requests that it processes.
 func NewHomeController() *HomeController {
 	hc := &HomeController{}
 	hc.actionMap = make(map[string]web.Action)
@@ -25,6 +25,7 @@ func NewHomeController() *HomeController {
 	return hc
 }
 
+// Will direct a request to the HomeController's actionMap
 func (hc *HomeController) HandleRequest(action string,
 	params map[string]string) *web.Result {
 
@@ -35,6 +36,8 @@ func (hc *HomeController) HandleRequest(action string,
 	}
 }
 
+// Will display a public welcome page if the user is not logged in
+// Otherwise it will redirect the user to the /news page.
 func (hc *HomeController) Index(params map[string]string) *web.Result {
 	output := &web.Result{}
 
