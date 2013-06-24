@@ -4,6 +4,21 @@ Development Notes
 The following are Babou design documents and development notes.
 They are periodically cleaned up and submitted to the Git repository.
 
+Requirements
+===
+While `babou` aims to be a single-binary solution, we recognize that database changes are a pain-point
+for many system administrators.
+
+As such we have bundled `goose` (https://bitbucket.org/liamstask/goose) with all binary releases of `babou`.
+If you are installing `babou` from scratch, it is recommended that you get this tool separately.
+
+`goose` is a database migration tool that will allow you to update your schema between arbitrary versions.
+
+`goose` is only used for updating/downgrading `babou`. -- Initial installation can still be performed
+by applying the production image manually _or_ running babou's setup scripts.
+
+All migrations and the corresponding database configuration are contained within `db`
+`db` is not used as part of the babou runtime (with the exception of the configuration file).
 
 Stack
 ===
@@ -133,18 +148,18 @@ Controllers & Router
 
 Diagram:
 
-[Request] --> [Router]<---\
-		 |	  |
-		 | 	  |
-		 \--->[Wrapper]	<-------\
-			|		|
-			\----------->[Controller]<---->[View]
-					| A
-					| |
-			[Model]<--------/ |
-			  |		  |
-			  |		  |
-			  \----------------
+	[Request] --> [Router]<---\  
+			 |	  |  
+			 | 	  |  
+			 \--->[Wrapper]	<-------\  
+				|		|  
+				\----------->[Controller]<---->[View]  
+						| A  
+						| |  
+				[Model]<--------/ |  
+				  |		  |
+				  |		  |
+				  \----------------
 
 The request is multiplexed by the router to an appropriate controller.
 Controllers consist of an Action map which is a map of named routes
