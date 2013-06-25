@@ -185,12 +185,19 @@ The router will then return the response to the client.
 
 ---
 
-The router can offer additional filters contained in the babou/app package.
+The router can offer additional filters contained in the babou/app/filters package.
 These filters are often used for session management, authorization, etc.
 
-A single Controller instance is shared across requests by the router. It is
-highly recommended that your controller be stateless: using only the supplied
-parameters to construct a response.
+Controllers are no longer assumed to be stateless.
+Your controller MUST be willing to accept a context in a manner that it will
+not be leaked across requests.
+
+Thus the provided filters and wrappers will only work on controllers which
+implement the babou/lib/web.DevController interface.
+(This will eventually supersede the original .Controller interface.)
+
+Of course: babou won't _stop you_ from routing requests to controllers which
+do not conform to this interface.
 
 The notable exception is accessing the router's session API.
 
