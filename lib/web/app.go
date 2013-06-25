@@ -37,7 +37,7 @@ type Controller interface {
 type Action func(map[string]string) *Result
 
 // Returns a 404 error if a user asks `babou` for the contents of
-// a directory.
+// a directory. Useful for serving static files.
 func DisableDirectoryListing(h http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "" || strings.HasSuffix(r.URL.Path, "/") {

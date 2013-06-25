@@ -11,9 +11,8 @@ type SessionController struct {
 	actionMap map[string]web.Action
 }
 
-// Registers actions for the HomeController and returns it.
-// Note: State in the returned controller object is global to
-// all requests the controller processes.
+// Registers actions for session controller and returns it.
+// Returns a routable instance of the Session Controller.
 func NewSessionController() *SessionController {
 	sc := &SessionController{}
 	sc.actionMap = make(map[string]web.Action)

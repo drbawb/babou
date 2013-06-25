@@ -18,8 +18,6 @@ type LoginController struct {
 }
 
 // Registers actions for the HomeController and returns it.
-// Note: State in the returned controller object is global to
-// all requests the controller processes.
 func NewLoginController() *LoginController {
 	lc := &LoginController{}
 	lc.actionMap = make(map[string]web.Action)
@@ -32,6 +30,7 @@ func NewLoginController() *LoginController {
 	return lc
 }
 
+// Will dispatch static routes
 func (lc *LoginController) HandleRequest(action string,
 	params map[string]string) *web.Result {
 

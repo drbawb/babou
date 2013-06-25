@@ -12,9 +12,8 @@ type HomeController struct {
 	actionMap map[string]web.Action
 }
 
-// Registers actions for the HomeController and returns it.
-// Note that the state in the returned `Controller` is global to
-// all requests that it processes.
+// Creates a controller instance w/ an action mapping
+// The instance issued is not safe for use across multiple requests.
 func NewHomeController() *HomeController {
 	hc := &HomeController{}
 	hc.actionMap = make(map[string]web.Action)
@@ -25,7 +24,8 @@ func NewHomeController() *HomeController {
 	return hc
 }
 
-// Will direct a request to the HomeController's actionMap
+// Will create a request-specific controller instance and
+// dispatch a request to the appropriate action mapping.
 func (hc *HomeController) HandleRequest(action string,
 	params map[string]string) *web.Result {
 
