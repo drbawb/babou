@@ -19,7 +19,7 @@ type DbAction func(*sql.DB) error
 // Note that this is not thread safe.
 // ExecuteFn will only hold the connection open so long as you block.
 func ExecuteFn(dba DbAction) error {
-	db, err := sql.Open("postgres", "user=drbawb dbname=babou sslmode=disable")
+	db, err := sql.Open("postgres", "user=drbawb host=192.168.1.11 password=babouDev dbname=babou sslmode=disable")
 	defer db.Close()
 
 	// TODO: How come auth-failure doesn't happen until I try to prepare a statement?

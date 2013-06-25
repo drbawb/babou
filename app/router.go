@@ -3,55 +3,83 @@ package app
 import (
 	controllers "babou/app/controllers"
 
+	filters "babou/app/filters"
 	web "babou/lib/web"
 
 	mux "github.com/gorilla/mux"
 	http "net/http"
 
-	dbStore "babou/lib/session"
-	sessions "github.com/gorilla/sessions"
-
 	fmt "fmt"
 )
 
-var store sessions.Store
-
-// Babou will load these routes.
+// Describe your routes and apply before/after filters to a context here.
 func LoadRoutes() *mux.Router {
 	r := mux.NewRouter()
 	web.Router = r
-	store = dbStore.NewDatabaseStore([]byte("3d1fd34f389d799a2539ff554d922683"))
+
+	// Shorthand for controllers
+	home := controllers.NewHomeController()
+	login := controllers.NewLoginController()
+	session := controllers.NewSessionController()
 
 	// Shows public homepage, redirects to private site if valid session can be found.
-	r.HandleFunc("/", wrap(controllers.NewHomeController(), "index")).Name("homeIndex")
+	r.HandleFunc("/", wrap(home, "index")).Name("homeIndex")
 
 	// Displays a login form.
-	r.HandleFunc("/login", wrap(controllers.NewLoginController(),
+	r.HandleFunc("/login", wrap(login,
 		"index")).Name("loginIndex")
 	// Displays a registration form
-	r.HandleFunc("/register", wrap(controllers.NewLoginController(),
+	r.HandleFunc("/register", wrap(login,
 		"new")).Methods("GET").Name("loginNew")
 	// Handles a new user's registration request.
-	r.HandleFunc("/register", wrap(controllers.NewLoginController(),
+	r.HandleFunc("/register", wrap(login,
 		"create")).Methods("POST").Name("loginCreate")
 
+	/* Initializes a session for the user and sets aside 4KiB backend storage
+	// for any stateful information.
 	r.HandleFunc("/session/create",
-		wrap(controllers.NewSessionController(), "create")).Methods("POST").Name("sessionCreate")
+		wrap(session, "create")).Methods("POST").Name("sessionCreate")
+	*/
 
 	// Testing method
-	r.HandleFunc("/session/create",
-		wrap(controllers.NewSessionController(), "create")).Methods("GET").Name("sessionCreate")
+	r.HandleFunc("/session/create/{name}",
+		filters.AuthWrap(session, "create")).Methods("GET").Name("sessionCreate")
 
-	// Displays all public assets.
+	// Catch-All: Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",
 		web.DisableDirectoryListing(http.FileServer(http.Dir("assets/")))))
 
 	return r
 }
 
+func devWrap(route web.Route, action string) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		context := &web.DevContext{Params: retrieveAllParams(request)}
+
+		controller, err := route.Process(action, context)
+		if err != nil {
+			fmt.Printf("error from devWrap, getting request-instance: %s \n", err.Error())
+		}
+
+		result := controller.HandleRequest(action)
+
+		if result.Status >= 300 && result.Status <= 399 {
+			handleRedirect(result.Redirect, response, request)
+		} else if result.Status == 404 {
+			http.NotFound(response, request)
+		} else if result.Status == 500 {
+			http.Error(response, string(result.Body), 500)
+		} else {
+			// Assume 200
+
+			response.Write(result.Body)
+		}
+	}
+}
+
 // Helper function wrap gpto a controller#action pair into a http.HandlerFunc
 func wrap(controller web.Controller, action string) http.HandlerFunc {
-	fn := func(response http.ResponseWriter, request *http.Request) {
+	return func(response http.ResponseWriter, request *http.Request) {
 		params := retrieveAllParams(request)
 
 		result := controller.HandleRequest(action, params)
@@ -64,27 +92,10 @@ func wrap(controller web.Controller, action string) http.HandlerFunc {
 			http.Error(response, string(result.Body), 500)
 		} else {
 			// Assume 200
-
-			if true {
-				//TODO: need some way to pass sessions in/out of controllers!
-				session1, err := store.Get(request, "user")
-				fmt.Printf("\n \nsession value was: %s \n \n", session1.Values["foo"])
-				session1.Values["foo"] = "hoopaloo"
-
-				if err != nil {
-					fmt.Printf("error is: %s \n", err.Error())
-				}
-
-				sessions.Save(request, response)
-
-			}
-
 			response.Write(result.Body)
 		}
 
 	}
-
-	return fn
 }
 
 func handleRedirect(redirect *web.RedirectPath, response http.ResponseWriter, request *http.Request) {

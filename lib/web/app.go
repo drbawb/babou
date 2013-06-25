@@ -6,6 +6,46 @@ import (
 	"strings"
 )
 
+// A `Controller` handles a request by taking an action-name
+type Controller interface {
+	HandleRequest(string, map[string]string) *Result
+}
+
+type DevController interface {
+	HandleRequest(string) *Result
+	SetContext(Context) error
+}
+
+// A route is part of a controller that is capable
+// of managing instances for a request life-cycle.
+type Route interface {
+	Process(string, Context) (DevController, error)
+	NewInstance() DevController
+	IsSafeInstance() bool // Can this handle requests?
+}
+
+// An action takes a map of request-parameters from the middleware
+// or router and turns it into a servicable HTTP result.
+type Action func(map[string]string) *Result
+
+type Context interface {
+	SetParams(map[string]string)
+	GetParams() map[string]string
+}
+
+// Test impl. of Context interface.
+type DevContext struct {
+	Params map[string]string
+}
+
+func (dc *DevContext) SetParams(params map[string]string) {
+	dc.Params = params
+}
+
+func (dc *DevContext) GetParams() map[string]string {
+	return dc.Params
+}
+
 // Represents an HTTP response from a `Controller`
 // The middleware or router is responsible for using
 // this result appopriately.
@@ -23,18 +63,6 @@ type RedirectPath struct {
 	ControllerName string
 	ActionName     string
 }
-
-// A `Controller` handles a request by taking an action-name and
-// a map of request parameters from the middleware or router.
-// These results are usually passed to an Actio or otherwise
-// turned into a servicable `Result` object.
-type Controller interface {
-	HandleRequest(string, map[string]string) *Result
-}
-
-// An action takes a map of request-parameters from the middleware
-// or router and turns it into a servicable HTTP result.
-type Action func(map[string]string) *Result
 
 // Returns a 404 error if a user asks `babou` for the contents of
 // a directory. Useful for serving static files.
