@@ -28,6 +28,7 @@ type Route interface {
 // or router and turns it into a servicable HTTP result.
 type Action func(map[string]string) *Result
 
+// Interface for the most basic context: one which encapsulates request parameters.
 type Context interface {
 	SetParams(map[string]string)
 	GetParams() map[string]string
