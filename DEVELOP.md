@@ -54,18 +54,18 @@ Directory Layout
 Babou uses RESTful routing and an MVC-like design.
 
 babou.go
---tracker  
----TBD  
---app  
+-D-tracker
+-D-app 
 ---router.go (Server router)  
 ---server.go (Webserver)  
----views (View implementations)  
----models (Model implementations)  
----controllers (Controller implementations)  
---lib  
----web (Web Framework core libraries)  
----db (Database core libraries)  
---tests  
+--D-views (View implementations)  
+--D-models (Model implementations)  
+--D-controllers (Controller implementations)  
+--D-filters (babou/lib/web.Context implementations)
+-D-lib  (Core libraries that are useful across stack)
+--D-web (Libraries that are commonly included by web-server related code.)  
+--D-db  (Libraries that are commonly included by model related code.)  
+-D-tests  
 
 router.go contains a list of all routes in the application.
 A route is a pattern that is matched against a submitted URL and its corresponding
@@ -76,7 +76,6 @@ controller/method pairing.
 
 The controller's method will then call upon the model to perform any business-
 logic, and finally it will render a response using a view & template.
-
 
 
 Views
@@ -143,65 +142,95 @@ Creates a textfield, optional parameter will be used as the "type" of
 text field. (Must be valid HTML, for e.g: hidden, password, etc.)
 
 
-Controllers & Router
+Router & Controllers
 ===
 
 Diagram:
 
-	[Request] --> [Router]<---\  
-			 |	  |  
-			 | 	  |  
-			 \--->[Wrapper]	<-------\  
-				|		|  
-				\----------->[Controller]<---->[View]  
-						| A  
-						| |  
-				[Model]<--------/ |  
-				  |		  |
-				  |		  |
-				  \----------------
+	[Request] --> [Router]<-----\  
+			 		|	  		|  
+			 		|	   	    |  
+			 		\------->[Wrapper]<---------\  
+								|				|  
+								\----------->[Controller]<---->[View]  
+												| 	A  
+												| 	|  	
+								[Model]<--------/   |
+				  				  |		  			|
+				  				  |		  			|
+				  				  \-----------------/
 
-The request is multiplexed by the router to an appropriate controller.
-Controllers consist of an Action map which is a map of named routes
-to functions capable of servicing an HTTP request.
+An http Request/Response is given to the router which uses a muxer to
+match the request URI to an appropriate route.
 
-These functions are given GET/POST parameters. In the case of a
-POST request, preferential treatment will be given to POST parameters
-if there is a name conflict between parameters.
+A "route" is described by the `babou/lib/web.Route` interface, which implies:
+- A route can initialize a controller that is ready to service an HTTP request.
+- A route can determine if it is a shared instance or an instance private to the request lifcycle.
+- A route can create an instance that accepts a basic context (GET/POST request variables)
 
-The controller may call on a model to do business logic. The controller
-should block on DB work unless it is a background task, or a task
-that is out-of-band with the request being serviced. (For e.g: an
-asyncrhonous update that can be pushed later onto a websocket.)
+A "route" is just a controller instance that knows it cannot service a request. (This is because
+routes are expected to be shared across request/response lifecycles. Thus storing context in such an
+instance would cause data-races as well as possible leaks of sensitive information.)
 
-Lastly the controller will call upon the view-layer to render a response.
-The view-layer assists binding data to {{mustache}} templates with some
-extra helper methods.
+A "controller", described by `babou/lib/web.DevController` is just a route that has emitted 
+a clean instance capable of accepting some basic context as well as an "action" and emitting an HTTP response.
 
-After a response has been rendered, the controller must return the response
-as a byte-stream to the router.
+(Since these are two different interfaces: they could be implement independently of one another -- but
+standard practice is to make an objet that is both a route and a controller.)
 
-The router will then return the response to the client.
+An "action" is just a string [often part of the URL] which tells the controller what type of request
+it needs to respond to. (For example: passing the `index` action to a `login` controller may show a 
+login form. While passing the `new` action to the same controller with some POST variables would
+create a new session for that user and redirect them to a homepage.)
+
+For a controller#action pairing to be usable by the router: it must first be wrapped by a "filter"
+that will transform that pairing into an net/http.HttpHandler function.
+This filter will provide the context that will be passed in to the controller.
+
+A default filter is provided by the name of `#wrap()` in the `babou/app` package.
+This filter is designed to work on any controller that conforms to the aforementioned Route & Controller
+interfaces.
+
+It will simply pass in all GET/POST variables to the controller through the vanilla interface and
+then call its standard Process() method.
 
 ---
 
-The router can offer additional filters contained in the babou/app/filters package.
-These filters are often used for session management, authorization, etc.
+Controllers by default are exposed to an `application controller`, which is simply a package-level collection
+of helper functions designed to make implementing a controller easier.
 
-Controllers are no longer assumed to be stateless.
-Your controller MUST be willing to accept a context in a manner that it will
-not be leaked across requests.
+One such method is the `babou/app/controllers#process()` method which will, again, work on any vanilla controller.
 
-Thus the provided filters and wrappers will only work on controllers which
-implement the babou/lib/web.DevController interface.
-(This will eventually supersede the original .Controller interface.)
+More complicated controllers can simply override their own Process() method to implement their own handling logic.
+For example they may validate that additional context (such as authentication / session information) is available
+before proceeding. This way they could globally check permissions and issue a 403 or a redirect header, etc.
 
-Of course: babou won't _stop you_ from routing requests to controllers which
-do not conform to this interface.
 
-The notable exception is accessing the router's session API.
+Filters,Contexts, and Sessions [an example]
+===
 
-Model Layer
+Session state is provided by the babou/app/filters package.
+`auth.go` describes the SessionContext interface: being session-aware implies:
+- Having access to an http.ResponseWriter and an http.Request object.
+- Having access to a session.Store as defined by the github.com/gorilla/sessions package.
+- Is able to retrieve a specific session from that store's session registry by name.
+
+An example session-aware filter is the AuthContext.
+The AuthContext implements the SessionContext interface which means it can look up
+sessions by name for a given request.
+
+The AuthContext also provides a "wrapper" or "filter" method: which allows you to wrap
+a Route (controller) around a session object.
+
+The AuthContext asserts that the Route, in addition to fulfilling the vanilla Route/Controller interfaces,
+also fulfills the "AuthorizableController" interface.
+
+An AuthorizableController must simply accept an AuthContext through it's SetAuthContext() method.
+
+By implementing this method you now have full access to the AuthContext, which in turn is capable
+of reading & writing information from a session.
+
+Models & Database
 ===
 
 The model layer consists of two packages:
@@ -224,7 +253,10 @@ ExecuteAsync() will not defer the closing of the database. The closure
 MUST free resources when it is finished executing. Use ExecuteAsync()
 with extreme caution.
 
-Session Management
-===
 
-TBA.
+
+
+
+
+
+
