@@ -2,7 +2,6 @@ package controllers
 
 import (
 	filters "babou/app/filters"
-	lib "babou/lib"
 	web "babou/lib/web"
 	errors "errors"
 	fmt "fmt"
@@ -12,25 +11,34 @@ type SessionController struct {
 	actionMap    map[string]web.Action
 	safeInstance bool //`true` if this instance can service HTTP requests, false otherwise.
 	context      web.Context
+
 	authContext  *filters.AuthContext
+	flashContext *filters.FlashContext
 }
 
-// Registers actions for session controller and returns it.
+func (sc *SessionController) Create(params map[string]string) *web.Result {
+	resultString := fmt.Sprintf("default response for: %s", params["name"])
+
+	if params["name"] == "get" {
+		flashes := sc.flashContext.GetFlashes()
+		if len(flashes) > 0 {
+			resultString = fmt.Sprintf("first flash is: %v", flashes[0])
+		}
+	} else if params["name"] == "save" {
+		sc.flashContext.AddFlash("hello from drbawbland")
+	}
+
+	return &web.Result{Status: 200, Body: []byte(fmt.Sprintf(resultString))}
+}
+
 // Returns a routable instance of the Session Controller.
+// This instance is not equipped to handle requests.
 func NewSessionController() *SessionController {
 	sc := &SessionController{}
-	sc.actionMap = make(map[string]web.Action)
-
-	//add your actions here.
-	sc.actionMap["create"] = sc.Create
 
 	//this instance is for routing only; it will not handle requests.
 	sc.safeInstance = false
 	return sc
-}
-
-func (sc *SessionController) Create(params map[string]string) *web.Result {
-	return &web.Result{Status: 200, Body: []byte(fmt.Sprintf("hello %s :: from session controller test", params["name"]))}
 }
 
 // Implementations for babou/lib/web.Route and babou/lib/web.DevController
@@ -50,7 +58,12 @@ func (sc *SessionController) IsSafeInstance() bool {
 
 // Returns an instance of SessionController that is equipped to deal with a single request/response
 func (sc *SessionController) NewInstance() web.DevController {
-	return &SessionController{safeInstance: true, actionMap: sc.actionMap}
+	newSc := &SessionController{safeInstance: true, actionMap: make(map[string]web.Action)}
+
+	// Add your actions here.
+	newSc.actionMap["create"] = newSc.Create
+
+	return newSc
 }
 
 // Will use a request-facing instance of session controller to handle a request.
@@ -70,7 +83,6 @@ func (sc *SessionController) HandleRequest(action string) *web.Result {
 
 // Sets the context of a request-facing controller. This includes GET/POST vars.
 // More specific contexts with addt'l helpers may be provided by filters.
-// Returns an error if this is not a request-facing controller.
 func (sc *SessionController) SetContext(context web.Context) error {
 	if sc.safeInstance {
 		sc.context = context
@@ -82,12 +94,18 @@ func (sc *SessionController) SetContext(context web.Context) error {
 
 // Accepts an authorization context if available for the request.
 func (sc *SessionController) SetAuthContext(context *filters.AuthContext) error {
-	lib.Println("authContext called from SessionController")
-
 	if sc.safeInstance {
 		sc.authContext = context
-		lib.Println(sc.authContext.IsValid())
 
+		return nil
+	}
+
+	return errors.New("This instance of SessionController is not equipped to handle request contexts.")
+}
+
+func (sc *SessionController) SetFlashContext(context *filters.FlashContext) error {
+	if sc.safeInstance {
+		sc.flashContext = context
 		return nil
 	}
 

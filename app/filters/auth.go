@@ -75,15 +75,26 @@ func (ac *AuthContext) GetSession(name string) (*sessions.Session, error) {
 	return session, nil
 }
 
-// Test impl. of context chaining
+// Returns an uninitialized AuthContext suitable for use in a context-chain
 func AuthChain() *AuthContext {
 	context := &AuthContext{isInit: false}
 
 	return context
 }
 
+// Tests if the route implements AuthorizableController interface
+func (ac *AuthContext) TestContext(route web.Route) error {
+	_, ok := route.(AuthorizableController)
+	if ok {
+		return nil
+	} else {
+		return errors.New(fmt.Sprintf("The route :: %T :: does not support the AuthContext.", route))
+	}
+}
+
+// Implements ChainableContext
 func (ac *AuthContext) ApplyContext(controller web.DevController, response http.ResponseWriter, request *http.Request) {
-	ac.params = retrieveAllParams(request)
+	//ac.params = retrieveAllParams(request)
 	ac.SetRequestPair(response, request)
 	ac.SetStore(nil)
 	ac.isInit = true
@@ -162,21 +173,3 @@ func retrieveAllParams(request *http.Request) map[string]string {
 
 	return vars
 }
-
-/*
-fmt.Printf("\n \nsession value was: %s \n \n", session1.Values["foo"])
-
-//4KB write
-fourKib := make([]byte, 2048)
-for i := 0; i < 2048; i++ {
-	fourKib[i] = byte(10)
-}
-
-session1.Values["foo"] = fourKib
-
-if err != nil {
-	fmt.Printf("error is: %s \n", err.Error())
-}
-
-sessions.Save(request, response)
-*/
