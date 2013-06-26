@@ -10,7 +10,6 @@ import (
 	http "net/http"
 )
 
-// Describe your routes and apply before/after filters to a context here.
 func LoadRoutes() *mux.Router {
 	r := mux.NewRouter()
 	web.Router = r
@@ -41,7 +40,7 @@ func LoadRoutes() *mux.Router {
 
 	// BuildChain() will auto-wrap a DevContext; further filters will apply their own context(s).
 	r.HandleFunc("/session/create/{name}",
-		filters.BuildChain().Chain(filters.AuthChain()).Execute(session, "create")).Methods("GET").Name("sessionCreate")
+		filters.BuildChain().Chain(filters.AuthChain()).Chain(filters.FlashChain()).Execute(session, "create")).Methods("GET").Name("sessionCreate")
 
 	// Catch-All: Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",

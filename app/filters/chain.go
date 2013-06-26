@@ -22,9 +22,12 @@ type contextChainElem struct {
 	prev *contextChainElem
 }
 
-// Represents contexts which can be chained together.
+// Contexts which can be chained together
+// ApplyContext will actually attach the context to a specific controller
+// TestContext can be used to determine if a route supports a given context.
 type ChainableContext interface {
 	web.Context
+	TestContext(web.Route) error                                        // Allows a context to test if a route is properly configured before any requests are serviced.
 	ApplyContext(web.DevController, http.ResponseWriter, *http.Request) // Delegate down the chain until somebody answers the request.
 }
 
@@ -55,8 +58,25 @@ func (cc *contextChain) Chain(context ChainableContext) *contextChain {
 	return cc
 }
 
-// Executes the request through the context chain
+// Executes the request through the context chain on a route#action pairing.
+// `panics` if #TestContext() of any context in the chain fails for the given route.
 func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc {
+	panicMessages := make([]string, 0)
+
+	if route == nil {
+		panicMessages = append(panicMessages, "A context chain was executed on a nullroute. Babou is not happy.\n")
+	}
+
+	for e := cc.chainHead; e != nil; e = e.next {
+		if err := e.me.TestContext(route); err != nil {
+			panicMessages = append(panicMessages, err.Error())
+		}
+	}
+
+	if len(panicMessages) > 0 {
+		panic(panicMessages)
+	}
+
 	return func(response http.ResponseWriter, request *http.Request) {
 		//Generate a controller for the route
 		context := &web.DevContext{Params: web.RetrieveAllParams(request)}

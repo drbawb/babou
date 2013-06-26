@@ -41,7 +41,13 @@ func (s *Server) Start() {
 }
 
 // Loads muxer from router.go from `app` package.
-
 func (s *Server) loadRoutes() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Fatalf("Error loading routes: \n %s", r)
+
+		}
+	}()
+
 	http.Handle("/", LoadRoutes())
 }
