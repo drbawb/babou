@@ -230,6 +230,43 @@ An AuthorizableController must simply accept an AuthContext through it's SetAuth
 By implementing this method you now have full access to the AuthContext, which in turn is capable
 of reading & writing information from a session.
 
+Chaining Contexts
+===
+
+Contexts are a useful and powerful concept: but true power comes with composability.
+Contexts usually provide their own "Wrapper" method which returns an http.HandlerFunc()
+
+If a context supports context-chaining [by implementing `ChainableContext` interface] then it can instead be wrapped
+up in an executable ContextChain.
+
+ContextChain [struct]
+
+- Controller :: web.DevController created from route.
+- (Request,Response) :: http Request & Response
+- ChainList :: doubly linked list of ChainableContext items.
+- Execute() :: iterates over ChainList to modify the controller's context(s); finally instructing the controller to issue a response.
+
+---
+
+A ContextChain is a doubly-linked list of ChainableContext items:
+For e.g: [head] <-> [AuthContext] <-> [WalletContext] <-> [tail]
+
+A ContextChain automatically wraps a route/action with the default context (POST/GET vars).
+Adding further links via Chain() will have those contexts _applied_ to the controller instance
+that is responding to the request.
+
+Calling Execute() on the chain will apply these contexts until the end of the list is reached.
+
+ContextChains are setup at the route level. Thus the controller cannot 100% rely on a context being
+available for a given request. Your controller should plan for context(s) to be unavailable and/or 
+fail to apply.
+
+For example if your authentication context is not available: you could abort the request, 
+or issue a 403 or 500 response, etc.
+
+--
+
+
 Models & Database
 ===
 
@@ -252,11 +289,3 @@ connection handle to a separate coroutine.
 ExecuteAsync() will not defer the closing of the database. The closure
 MUST free resources when it is finished executing. Use ExecuteAsync()
 with extreme caution.
-
-
-
-
-
-
-
-

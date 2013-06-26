@@ -2,6 +2,7 @@
 package web
 
 import (
+	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
 )
@@ -76,4 +77,22 @@ func DisableDirectoryListing(h http.Handler) http.HandlerFunc {
 
 		h.ServeHTTP(w, r)
 	})
+}
+
+// Retrieves GET and POST vars from an http Request
+func RetrieveAllParams(request *http.Request) map[string]string {
+	vars := mux.Vars(request)
+	if err := request.ParseForm(); err != nil {
+		return vars // could not parse form
+	}
+
+	var postVars map[string][]string
+	postVars = map[string][]string(request.Form)
+	for k, v := range postVars {
+		// Ignore duplicate arguments taking the first.
+		// POST will supersede any GET data in the event of collisions.
+		vars[k] = v[0]
+	}
+
+	return vars
 }

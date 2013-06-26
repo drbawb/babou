@@ -8,8 +8,6 @@ import (
 
 	mux "github.com/gorilla/mux"
 	http "net/http"
-
-	fmt "fmt"
 )
 
 // Describe your routes and apply before/after filters to a context here.
@@ -41,9 +39,9 @@ func LoadRoutes() *mux.Router {
 		wrap(session, "create")).Methods("POST").Name("sessionCreate")
 	*/
 
-	// Testing method
+	// BuildChain() will auto-wrap a DevContext; further filters will apply their own context(s).
 	r.HandleFunc("/session/create/{name}",
-		filters.AuthWrap(session, "create")).Methods("GET").Name("sessionCreate")
+		filters.BuildChain().Chain(filters.AuthChain()).Execute(session, "create")).Methods("GET").Name("sessionCreate")
 
 	// Catch-All: Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",
@@ -52,35 +50,10 @@ func LoadRoutes() *mux.Router {
 	return r
 }
 
-func devWrap(route web.Route, action string) http.HandlerFunc {
-	return func(response http.ResponseWriter, request *http.Request) {
-		context := &web.DevContext{Params: retrieveAllParams(request)}
-
-		controller, err := route.Process(action, context)
-		if err != nil {
-			fmt.Printf("error from devWrap, getting request-instance: %s \n", err.Error())
-		}
-
-		result := controller.HandleRequest(action)
-
-		if result.Status >= 300 && result.Status <= 399 {
-			handleRedirect(result.Redirect, response, request)
-		} else if result.Status == 404 {
-			http.NotFound(response, request)
-		} else if result.Status == 500 {
-			http.Error(response, string(result.Body), 500)
-		} else {
-			// Assume 200
-
-			response.Write(result.Body)
-		}
-	}
-}
-
 // Helper function wrap gpto a controller#action pair into a http.HandlerFunc
 func wrap(controller web.Controller, action string) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		params := retrieveAllParams(request)
+		params := web.RetrieveAllParams(request)
 
 		result := controller.HandleRequest(action, params)
 
@@ -98,6 +71,7 @@ func wrap(controller web.Controller, action string) http.HandlerFunc {
 	}
 }
 
+//TODO: should move some of this to a library package.
 func handleRedirect(redirect *web.RedirectPath, response http.ResponseWriter, request *http.Request) {
 	if redirect.NamedRoute != "" {
 		url, err := web.Router.Get(redirect.NamedRoute).URL()
@@ -108,22 +82,4 @@ func handleRedirect(redirect *web.RedirectPath, response http.ResponseWriter, re
 
 		http.Redirect(response, request, url.Path, 302)
 	}
-}
-
-// Retrieves GET and POST vars
-func retrieveAllParams(request *http.Request) map[string]string {
-	vars := mux.Vars(request)
-	if err := request.ParseForm(); err != nil {
-		return vars // could not parse form
-	}
-
-	var postVars map[string][]string
-	postVars = map[string][]string(request.Form)
-	for k, v := range postVars {
-		// Ignore duplicate arguments taking the first.
-		// POST will supersede any GET data in the event of collisions.
-		vars[k] = v[0]
-	}
-
-	return vars
 }

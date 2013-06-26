@@ -12,7 +12,7 @@ type SessionController struct {
 	actionMap    map[string]web.Action
 	safeInstance bool //`true` if this instance can service HTTP requests, false otherwise.
 	context      web.Context
-	authContext  filters.SessionContext
+	authContext  *filters.AuthContext
 }
 
 // Registers actions for session controller and returns it.
@@ -80,11 +80,13 @@ func (sc *SessionController) SetContext(context web.Context) error {
 	return errors.New("This instance of SessionController is not equipped to handle request contexts.")
 }
 
-func (sc *SessionController) SetAuthContext(context filters.SessionContext) error {
+// Accepts an authorization context if available for the request.
+func (sc *SessionController) SetAuthContext(context *filters.AuthContext) error {
 	lib.Println("authContext called from SessionController")
 
 	if sc.safeInstance {
 		sc.authContext = context
+		lib.Println(sc.authContext.IsValid())
 
 		return nil
 	}

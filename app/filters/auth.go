@@ -28,7 +28,7 @@ type AuthorizableRoute interface {
 
 type AuthorizableController interface {
 	web.DevController
-	SetAuthContext(SessionContext) error
+	SetAuthContext(*AuthContext) error
 }
 
 // An impl. of SessionContext that uses it to provide helper methods for auth'ing a user.
@@ -75,7 +75,30 @@ func (ac *AuthContext) GetSession(name string) (*sessions.Session, error) {
 	return session, nil
 }
 
-// Wraps a route into a session-aware context
+// Test impl. of context chaining
+func AuthChain() *AuthContext {
+	context := &AuthContext{isInit: false}
+
+	return context
+}
+
+func (ac *AuthContext) ApplyContext(controller web.DevController, response http.ResponseWriter, request *http.Request) {
+	ac.params = retrieveAllParams(request)
+	ac.SetRequestPair(response, request)
+	ac.SetStore(nil)
+	ac.isInit = true
+
+	v, ok := controller.(AuthorizableController)
+	if ok {
+		if err := v.SetAuthContext(ac); err != nil {
+			fmt.Printf("Error setting authorization context: %s \n", err.Error())
+		}
+	} else {
+		fmt.Printf("Tried to wrap a controller that is not AuthContext aware \n")
+	}
+}
+
+// Wraps a route into a session-aware context [cannot be chained]
 func AuthWrap(route web.Route, action string) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		context := &AuthContext{isInit: false, params: retrieveAllParams(request)}
