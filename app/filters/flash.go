@@ -24,7 +24,7 @@ type FlashContext struct {
 }
 
 type FlashableController interface {
-	web.DevController
+	web.Controller
 	SetFlashContext(*FlashContext) error
 }
 
@@ -106,7 +106,7 @@ func (fc *FlashContext) TestContext(route web.Route) error {
 }
 
 // Applies this context to a controller instance.
-func (fc *FlashContext) ApplyContext(controller web.DevController, response http.ResponseWriter, request *http.Request) {
+func (fc *FlashContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request) {
 	fc.SetRequestPair(response, request)
 	fc.SetStore(nil)
 	fc.isInit = true

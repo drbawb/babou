@@ -20,17 +20,18 @@ func LoadRoutes() *mux.Router {
 	session := controllers.NewSessionController()
 
 	// Shows public homepage, redirects to private site if valid session can be found.
-	r.HandleFunc("/", wrap(home, "index")).Name("homeIndex")
+	r.HandleFunc("/",
+		filters.BuildChain().Execute(home, "index")).Name("homeIndex")
 
 	// Displays a login form.
-	r.HandleFunc("/login", wrap(login,
-		"index")).Name("loginIndex")
+	r.HandleFunc("/login",
+		filters.BuildChain().Execute(login, "index")).Name("loginIndex")
 	// Displays a registration form
-	r.HandleFunc("/register", wrap(login,
-		"new")).Methods("GET").Name("loginNew")
+	r.HandleFunc("/register",
+		filters.BuildChain().Execute(login, "new")).Methods("GET").Name("loginNew")
 	// Handles a new user's registration request.
-	r.HandleFunc("/register", wrap(login,
-		"create")).Methods("POST").Name("loginCreate")
+	r.HandleFunc("/register",
+		filters.BuildChain().Execute(login, "create")).Methods("POST").Name("loginCreate")
 
 	/* Initializes a session for the user and sets aside 4KiB backend storage
 	// for any stateful information.
@@ -38,36 +39,20 @@ func LoadRoutes() *mux.Router {
 		wrap(session, "create")).Methods("POST").Name("sessionCreate")
 	*/
 
-	// BuildChain() will auto-wrap a DevContext; further filters will apply their own context(s).
-	r.HandleFunc("/session/create/{name}",
-		filters.BuildChain().Chain(filters.AuthChain()).Chain(filters.FlashChain()).Execute(session, "create")).Methods("GET").Name("sessionCreate")
+	//Handles creating a user-session from a form.
+	r.HandleFunc("/session/create",
+		filters.BuildChain().
+			Chain(filters.AuthChain()).
+			Chain(filters.FlashChain()).
+			Execute(session, "create")).
+		Methods("POST").
+		Name("sessionCreate")
 
 	// Catch-All: Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",
 		web.DisableDirectoryListing(http.FileServer(http.Dir("assets/")))))
 
 	return r
-}
-
-// Helper function wrap gpto a controller#action pair into a http.HandlerFunc
-func wrap(controller web.Controller, action string) http.HandlerFunc {
-	return func(response http.ResponseWriter, request *http.Request) {
-		params := web.RetrieveAllParams(request)
-
-		result := controller.HandleRequest(action, params)
-
-		if result.Status >= 300 && result.Status <= 399 {
-			handleRedirect(result.Redirect, response, request)
-		} else if result.Status == 404 {
-			http.NotFound(response, request)
-		} else if result.Status == 500 {
-			http.Error(response, string(result.Body), 500)
-		} else {
-			// Assume 200
-			response.Write(result.Body)
-		}
-
-	}
 }
 
 //TODO: should move some of this to a library package.

@@ -27,8 +27,8 @@ type contextChainElem struct {
 // TestContext can be used to determine if a route supports a given context.
 type ChainableContext interface {
 	web.Context
-	TestContext(web.Route) error                                        // Allows a context to test if a route is properly configured before any requests are serviced.
-	ApplyContext(web.DevController, http.ResponseWriter, *http.Request) // Delegate down the chain until somebody answers the request.
+	TestContext(web.Route) error                                     // Allows a context to test if a route is properly configured before any requests are serviced.
+	ApplyContext(web.Controller, http.ResponseWriter, *http.Request) // Delegate down the chain until somebody answers the request.
 }
 
 // Prepares a route with no contexts.
