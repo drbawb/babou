@@ -48,7 +48,7 @@ func NewSessionController() *SessionController {
 // Do not share the returned controller among requests.
 // Returns an error if a controller suitable for dispatch is not properly initialized.
 func (sc *SessionController) Process(action string, context web.Context) (web.DevController, error) {
-	return process(sc, sc.actionMap, action, context)
+	return process(sc, action, context)
 }
 
 // Returns true if this is a controller suitable for servicing requests.
