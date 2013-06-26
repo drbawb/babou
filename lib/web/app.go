@@ -7,12 +7,10 @@ import (
 	"strings"
 )
 
-// A `Controller` handles a request by taking an action-name
+// A controller handles a request for a given action.
+// Such controller must be willing to accept GET/POST parameters from an HTTP request.
+// These parameters are passed in the form of a Context object.
 type Controller interface {
-	HandleRequest(string, map[string]string) *Result
-}
-
-type DevController interface {
 	HandleRequest(string) *Result
 	SetContext(Context) error
 }
@@ -20,8 +18,8 @@ type DevController interface {
 // A route is part of a controller that is capable
 // of managing instances for a request life-cycle.
 type Route interface {
-	Process(string, Context) (DevController, error)
-	NewInstance() DevController
+	Process(string, Context) (Controller, error)
+	NewInstance() Controller
 	IsSafeInstance() bool // Can this handle requests?
 }
 

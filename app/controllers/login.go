@@ -116,12 +116,12 @@ func (lc *LoginController) HandleRequest(action string) *web.Result {
 }
 
 // Prepares a public-facing instance of this route that should be used for a single request.
-func (lc *LoginController) Process(action string, context web.Context) (web.DevController, error) {
+func (lc *LoginController) Process(action string, context web.Context) (web.Controller, error) {
 	//default route processor.
 	return process(lc, action, context)
 }
 
-func (lc *LoginController) NewInstance() web.DevController {
+func (lc *LoginController) NewInstance() web.Controller {
 	newLc := &LoginController{safeInstance: true, actionMap: make(map[string]web.Action)}
 
 	//add your actions here.

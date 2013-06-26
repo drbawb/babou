@@ -27,7 +27,7 @@ type AuthorizableRoute interface {
 }
 
 type AuthorizableController interface {
-	web.DevController
+	web.Controller
 	SetAuthContext(*AuthContext) error
 }
 
@@ -93,7 +93,7 @@ func (ac *AuthContext) TestContext(route web.Route) error {
 }
 
 // Implements ChainableContext
-func (ac *AuthContext) ApplyContext(controller web.DevController, response http.ResponseWriter, request *http.Request) {
+func (ac *AuthContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request) {
 	//ac.params = retrieveAllParams(request)
 	ac.SetRequestPair(response, request)
 	ac.SetStore(nil)

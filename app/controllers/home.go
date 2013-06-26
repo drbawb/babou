@@ -66,11 +66,11 @@ func (hc *HomeController) SetContext(context web.Context) error {
 	return nil
 }
 
-func (hc *HomeController) Process(action string, context web.Context) (web.DevController, error) {
+func (hc *HomeController) Process(action string, context web.Context) (web.Controller, error) {
 	return process(hc, action, context)
 }
 
-func (hc *HomeController) NewInstance() web.DevController {
+func (hc *HomeController) NewInstance() web.Controller {
 	newHc := &HomeController{safeInstance: true, actionMap: make(map[string]web.Action)}
 
 	//add your actions here.

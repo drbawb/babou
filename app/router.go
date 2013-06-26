@@ -55,27 +55,6 @@ func LoadRoutes() *mux.Router {
 	return r
 }
 
-// Helper function wrap gpto a controller#action pair into a http.HandlerFunc
-func wrap(controller web.Controller, action string) http.HandlerFunc {
-	return func(response http.ResponseWriter, request *http.Request) {
-		params := web.RetrieveAllParams(request)
-
-		result := controller.HandleRequest(action, params)
-
-		if result.Status >= 300 && result.Status <= 399 {
-			handleRedirect(result.Redirect, response, request)
-		} else if result.Status == 404 {
-			http.NotFound(response, request)
-		} else if result.Status == 500 {
-			http.Error(response, string(result.Body), 500)
-		} else {
-			// Assume 200
-			response.Write(result.Body)
-		}
-
-	}
-}
-
 //TODO: should move some of this to a library package.
 func handleRedirect(redirect *web.RedirectPath, response http.ResponseWriter, request *http.Request) {
 	if redirect.NamedRoute != "" {

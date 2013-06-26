@@ -47,7 +47,7 @@ func NewSessionController() *SessionController {
 // Returns a controller capable of handling requests.
 // Do not share the returned controller among requests.
 // Returns an error if a controller suitable for dispatch is not properly initialized.
-func (sc *SessionController) Process(action string, context web.Context) (web.DevController, error) {
+func (sc *SessionController) Process(action string, context web.Context) (web.Controller, error) {
 	return process(sc, action, context)
 }
 
@@ -57,7 +57,7 @@ func (sc *SessionController) IsSafeInstance() bool {
 }
 
 // Returns an instance of SessionController that is equipped to deal with a single request/response
-func (sc *SessionController) NewInstance() web.DevController {
+func (sc *SessionController) NewInstance() web.Controller {
 	newSc := &SessionController{safeInstance: true, actionMap: make(map[string]web.Action)}
 
 	// Add your actions here.
