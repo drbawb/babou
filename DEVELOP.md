@@ -20,6 +20,37 @@ by applying the production image manually _or_ running babou's setup scripts.
 All migrations and the corresponding database configuration are contained within `db`
 `db` is not used as part of the babou runtime (with the exception of the configuration file).
 
+Type Checking
+===
+
+Go is a statically typed language: however it offers an incredibly powerful runtime.
+In an effort to create a better programming environment for creating the `babou` web application
+we have leveraged the Go runtime when it seems prudent to do so.
+
+Whenever we go around the static type checker: we add functions which enable the 
+`babou` runtime to ensure that all of its required types are satisfied.
+
+These functions are _expected_ to panic across package boundaries: as their failed 
+dependencies are considered extraordinary circumstances.
+
+To that end: if `babou` crashes because of incompatible types: it is considered a fault
+of `babou`, and will be treated as a high-priority bug.
+
+Some areas to exercise _extreme caution_ when programming include:
+- Context Chains
+- Views
+
+Context Chains require thoughtfulness when implementing their `TestContext` methods to ensure
+that the runtime will not add a potentially invalid route.
+
+Views rely on a templating library that uses lots of reflection to achieve its flexibility.
+As such we have wrapped the underlying templating library with some considerably
+safer helper methods that aim to add some additional static (& runtime) type checks to the 
+rendering calls.
+
+In summary: `babou` is designed to fail fast and fail hard when a programmer makes an error that
+can only be detected at runtime.
+
 Stack
 ===
 
