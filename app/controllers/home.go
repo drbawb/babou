@@ -2,7 +2,9 @@
 package controllers
 
 import (
+	filters "babou/app/filters"
 	web "babou/lib/web"
+
 	errors "errors"
 )
 
@@ -11,7 +13,8 @@ import (
 
 type HomeController struct {
 	safeInstance bool
-	context      web.Context
+
+	context *filters.DevContext
 
 	actionMap map[string]web.Action
 }
@@ -53,7 +56,7 @@ func (hc *HomeController) HandleRequest(action string) *web.Result {
 	}
 }
 
-func (hc *HomeController) SetContext(context web.Context) error {
+func (hc *HomeController) SetContext(context *filters.DevContext) error {
 	if !hc.safeInstance {
 		return errors.New("This HomeController cannot safely handle contexts from a request.")
 	}
@@ -66,8 +69,8 @@ func (hc *HomeController) SetContext(context web.Context) error {
 	return nil
 }
 
-func (hc *HomeController) Process(action string, context web.Context) (web.Controller, error) {
-	return process(hc, action, context)
+func (hc *HomeController) Process(action string) (web.Controller, error) {
+	return process(hc, action)
 }
 
 func (hc *HomeController) NewInstance() web.Controller {

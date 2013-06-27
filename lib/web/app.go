@@ -12,13 +12,12 @@ import (
 // These parameters are passed in the form of a Context object.
 type Controller interface {
 	HandleRequest(string) *Result
-	SetContext(Context) error
 }
 
 // A route is part of a controller that is capable
 // of managing instances for a request life-cycle.
 type Route interface {
-	Process(string, Context) (Controller, error)
+	Process(string) (Controller, error)
 	NewInstance() Controller
 	IsSafeInstance() bool // Can this handle requests?
 }
@@ -26,25 +25,6 @@ type Route interface {
 // An action takes a map of request-parameters from the middleware
 // or router and turns it into a servicable HTTP result.
 type Action func(map[string]string) *Result
-
-// Interface for the most basic context: one which encapsulates request parameters.
-type Context interface {
-	SetParams(map[string]string)
-	GetParams() map[string]string
-}
-
-// Test impl. of Context interface.
-type DevContext struct {
-	Params map[string]string
-}
-
-func (dc *DevContext) SetParams(params map[string]string) {
-	dc.Params = params
-}
-
-func (dc *DevContext) GetParams() map[string]string {
-	return dc.Params
-}
 
 // Represents an HTTP response from a `Controller`
 // The middleware or router is responsible for using

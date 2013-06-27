@@ -12,11 +12,14 @@ import (
 
 	http "net/http"
 
+	lib "babou/lib"
 	dbLib "babou/lib/db"
 	sql "database/sql"
 
 	base32 "encoding/base32"
 	strings "strings"
+
+	errors "errors"
 )
 
 const (
@@ -93,6 +96,7 @@ func (db *DatabaseStore) Save(r *http.Request, w http.ResponseWriter, session *s
 func (db *DatabaseStore) load(session *sessions.Session) error {
 	fn := func(dbConn *sql.DB) error {
 		// Write record to sessions table.
+		lib.Printf("Loading session id [%s] from database.\n", session.ID)
 		row := dbConn.QueryRow("SELECT http_session_id, key, data FROM \""+SESSIONS_TABLE+"\" WHERE key = $1", session.ID)
 
 		var id int
@@ -115,6 +119,7 @@ func (db *DatabaseStore) load(session *sessions.Session) error {
 // save writes encoded session.Values to a database record.
 // writes to http_sessions table by default.
 func (db *DatabaseStore) save(session *sessions.Session) error {
+	lib.Printf("Saving session id [%s] to database.\n", session.ID)
 	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values,
 		db.Codecs...)
 
@@ -124,21 +129,38 @@ func (db *DatabaseStore) save(session *sessions.Session) error {
 
 	fn := func(dbConn *sql.DB) error {
 		// Write record to sessions table.
+		var sessionCount int = -1
+
+		// Session exists?
+		row := dbConn.QueryRow("SELECT COUNT(key) AS count FROM \""+SESSIONS_TABLE+"\" WHERE key = $1", session.ID)
+
+		err := row.Scan(&sessionCount)
+		if err != nil {
+			return err
+		}
+
 		tx, err := dbConn.Begin()
 		if err != nil {
 			return err
 		}
 
-		// Delete old session if exists
-		_, err = tx.Exec("DELETE FROM \""+SESSIONS_TABLE+"\" WHERE key = $1", session.ID)
-		if err != nil {
-			return err
-		}
-
-		// Insert new session
-		_, err = tx.Exec("INSERT INTO \""+SESSIONS_TABLE+"\" (key, data) VALUES($1,$2)",
-			session.ID, encoded)
-		if err != nil {
+		if sessionCount > 0 {
+			// update
+			_, err = tx.Exec("UPDATE \""+SESSIONS_TABLE+"\" SET data = $1 WHERE key = $2",
+				encoded, session.ID)
+			if err != nil {
+				return err
+			}
+		} else if sessionCount == 0 {
+			// insert
+			_, err = tx.Exec("INSERT INTO \""+SESSIONS_TABLE+"\" (key, data) VALUES($1,$2)",
+				session.ID, encoded)
+			if err != nil {
+				return err
+			}
+		} else {
+			// error
+			err = errors.New("There was an error while trying to lookup a previous session.")
 			return err
 		}
 

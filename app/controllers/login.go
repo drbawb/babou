@@ -2,11 +2,13 @@ package controllers
 
 import (
 	web "babou/lib/web"
+
 	fmt "fmt"
 
 	bcrypt "code.google.com/p/go.crypto/bcrypt"
 	rand "crypto/rand"
 
+	filters "babou/app/filters"
 	models "babou/app/models"
 
 	errors "errors"
@@ -17,7 +19,7 @@ import (
 
 type LoginController struct {
 	safeInstance bool //`true` if this instance can service HTTP requests, false otherwise.
-	context      web.Context
+	context      *filters.DevContext
 
 	actionMap map[string]web.Action
 }
@@ -93,7 +95,7 @@ func NewLoginController() *LoginController {
 // Implementations of DevController and Route
 
 // Sets the login controller's context which includes POST/GET vars.
-func (lc *LoginController) SetContext(context web.Context) error {
+func (lc *LoginController) SetContext(context *filters.DevContext) error {
 	if lc.safeInstance {
 		lc.context = context
 		return nil
@@ -116,9 +118,9 @@ func (lc *LoginController) HandleRequest(action string) *web.Result {
 }
 
 // Prepares a public-facing instance of this route that should be used for a single request.
-func (lc *LoginController) Process(action string, context web.Context) (web.Controller, error) {
+func (lc *LoginController) Process(action string) (web.Controller, error) {
 	//default route processor.
-	return process(lc, action, context)
+	return process(lc, action)
 }
 
 func (lc *LoginController) NewInstance() web.Controller {
