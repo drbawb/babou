@@ -12,13 +12,12 @@ import (
 // These parameters are passed in the form of a Context object.
 type Controller interface {
 	HandleRequest(string) *Result
-	SetContext(Context) error
 }
 
 // A route is part of a controller that is capable
 // of managing instances for a request life-cycle.
 type Route interface {
-	Process(string, Context) (Controller, error)
+	Process(string) (Controller, error)
 	NewInstance() Controller
 	IsSafeInstance() bool // Can this handle requests?
 }

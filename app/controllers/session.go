@@ -10,7 +10,7 @@ import (
 type SessionController struct {
 	actionMap    map[string]web.Action
 	safeInstance bool //`true` if this instance can service HTTP requests, false otherwise.
-	context      web.Context
+	context      *filters.DevContext
 
 	authContext  *filters.AuthContext
 	flashContext *filters.FlashContext
@@ -47,8 +47,8 @@ func NewSessionController() *SessionController {
 // Returns a controller capable of handling requests.
 // Do not share the returned controller among requests.
 // Returns an error if a controller suitable for dispatch is not properly initialized.
-func (sc *SessionController) Process(action string, context web.Context) (web.Controller, error) {
-	return process(sc, action, context)
+func (sc *SessionController) Process(action string) (web.Controller, error) {
+	return process(sc, action)
 }
 
 // Returns true if this is a controller suitable for servicing requests.
@@ -81,9 +81,9 @@ func (sc *SessionController) HandleRequest(action string) *web.Result {
 	}
 }
 
-// Sets the context of a request-facing controller. This includes GET/POST vars.
+// Sets the parameter-context of a request-facing controller. This includes GET/POST vars.
 // More specific contexts with addt'l helpers may be provided by filters.
-func (sc *SessionController) SetContext(context web.Context) error {
+func (sc *SessionController) SetParams(context *filters.DevContext) error {
 	if sc.safeInstance {
 		sc.context = context
 
