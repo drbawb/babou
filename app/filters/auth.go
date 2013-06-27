@@ -34,7 +34,7 @@ func AuthChain() *AuthContext {
 }
 
 // Tests if the route implements AuthorizableController interface as well as the SessionChain interface.
-func (ac *AuthContext) TestContext(route web.Route, chain []ChainableContext) error {
+func (ac *AuthContext) TestContext(route web.Route, chain []web.ChainableContext) error {
 	//requires AuthorizableController and SessionChain
 	hasSession := false
 
@@ -57,14 +57,14 @@ func (ac *AuthContext) TestContext(route web.Route, chain []ChainableContext) er
 	}
 }
 
-func (ac *AuthContext) NewInstance() ChainableContext {
+func (ac *AuthContext) NewInstance() web.ChainableContext {
 	newAc := &AuthContext{isInit: false}
 
 	return newAc
 }
 
 // Implements ChainableContext
-func (ac *AuthContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []ChainableContext) {
+func (ac *AuthContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 	ac.isInit = true
 
 	v, ok := controller.(AuthorizableController)

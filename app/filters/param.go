@@ -31,7 +31,7 @@ func ParameterChain() *DevContext {
 	return context
 }
 
-func (dc *DevContext) TestContext(route web.Route, chain []ChainableContext) error {
+func (dc *DevContext) TestContext(route web.Route, chain []web.ChainableContext) error {
 	_, ok := route.(ParameterizedController)
 	if !ok {
 		return errors.New(fmt.Sprintf("Route :: %T :: does not support the paramter context", route))
@@ -40,13 +40,13 @@ func (dc *DevContext) TestContext(route web.Route, chain []ChainableContext) err
 	return nil
 }
 
-func (dc *DevContext) NewInstance() ChainableContext {
+func (dc *DevContext) NewInstance() web.ChainableContext {
 	newDc := &DevContext{isInit: false}
 
 	return newDc
 }
 
-func (dc *DevContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []ChainableContext) {
+func (dc *DevContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 
 	dc.SetParams(web.RetrieveAllParams(request))
 	dc.isInit = true

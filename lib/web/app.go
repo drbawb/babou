@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+// Contexts which can be chained together
+// ApplyContext will actually attach the context to a specific controller
+// TestContext can be used to determine if a route supports a given context.
+type ChainableContext interface {
+	NewInstance() ChainableContext                                                   // returns a clean instance that is safe for a single request/response
+	TestContext(Route, []ChainableContext) error                                     // Allows a context to test if a route is properly configured before any requests are serviced.
+	ApplyContext(Controller, http.ResponseWriter, *http.Request, []ChainableContext) // Delegate down the chain until somebody answers the request.
+}
+
 // A controller handles a request for a given action.
 // Such controller must be willing to accept GET/POST parameters from an HTTP request.
 // These parameters are passed in the form of a Context object.

@@ -29,7 +29,7 @@ type FlashableController interface {
 	SetFlashContext(*FlashContext) error
 }
 
-func FlashChain() ChainableContext {
+func FlashChain() web.ChainableContext {
 	return &FlashContext{isInit: false}
 }
 
@@ -55,7 +55,7 @@ func (fc *FlashContext) AddFlash(message string) {
 }
 
 // FlashContext requires a chain with a SessionContext and a FlashableController route.
-func (fc *FlashContext) TestContext(route web.Route, chain []ChainableContext) error {
+func (fc *FlashContext) TestContext(route web.Route, chain []web.ChainableContext) error {
 	hasSession := false
 
 	_, ok := route.(FlashableController)
@@ -78,14 +78,14 @@ func (fc *FlashContext) TestContext(route web.Route, chain []ChainableContext) e
 	}
 }
 
-func (fc *FlashContext) NewInstance() ChainableContext {
+func (fc *FlashContext) NewInstance() web.ChainableContext {
 	newFc := &FlashContext{isInit: true}
 
 	return newFc
 }
 
 // Applies this context to a controller instance.
-func (fc *FlashContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []ChainableContext) {
+func (fc *FlashContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 	fc.controller = controller
 	fc.isInit = true
 

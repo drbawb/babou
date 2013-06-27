@@ -52,7 +52,7 @@ func (sc *SessionContext) GetParams() map[string]string {
 	return sc.params
 }
 
-func (sc *SessionContext) TestContext(route web.Route, chain []ChainableContext) error {
+func (sc *SessionContext) TestContext(route web.Route, chain []web.ChainableContext) error {
 	// Controller must be session-aware.
 	_, ok := route.(SessionAware)
 	if !ok {
@@ -62,13 +62,13 @@ func (sc *SessionContext) TestContext(route web.Route, chain []ChainableContext)
 	return nil
 }
 
-func (sc *SessionContext) NewInstance() ChainableContext {
+func (sc *SessionContext) NewInstance() web.ChainableContext {
 	newSc := &SessionContext{isInit: false}
 
 	return newSc
 }
 
-func (sc *SessionContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []ChainableContext) {
+func (sc *SessionContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 	sc.SetRequestPair(response, request)
 	sc.SetStore(nil)
 	sc.isInit = true
