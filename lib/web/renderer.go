@@ -96,7 +96,6 @@ func RenderTo(templateName string, viewData *ViewData) string {
 	return out
 }
 
-
 /* Implementations of various view helpers */
 
 // Returns an HTML link as a string suitable for insertion into an HTML template.
@@ -175,12 +174,6 @@ func buildUrlWithVerb(controllerName string, httpMethod string) (*url.URL, error
 			controllerName))
 	}
 
-	baseRoute = baseRoute.Methods(httpMethod)
-	if baseRoute == nil {
-		return nil, errors.New(fmt.Sprintf("Controller would not respond to: %s",
-			httpMethod))
-	}
-
 	//TODO: pass addt'l parameters?
 	url, err := baseRoute.URL()
 
@@ -235,7 +228,7 @@ func BuildForm(params []string, data string) string {
 //  Example:
 //    {{#LabelFor [fieldId]}}[display]{{/LabelFor}}
 //  [fieldId] is the id="" attr of the form field.
-//  [display] is the display text of the label. 
+//  [display] is the display text of the label.
 func LabelFor(params []string, data string) string {
 	var fieldId string
 	var body string
