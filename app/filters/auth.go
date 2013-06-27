@@ -57,8 +57,14 @@ func (ac *AuthContext) TestContext(route web.Route, chain []ChainableContext) er
 	}
 }
 
+func (ac *AuthContext) NewInstance() ChainableContext {
+	newAc := &AuthContext{isInit: false}
+
+	return newAc
+}
+
 // Implements ChainableContext
-func (ac *AuthContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request) {
+func (ac *AuthContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []ChainableContext) {
 	ac.isInit = true
 
 	v, ok := controller.(AuthorizableController)

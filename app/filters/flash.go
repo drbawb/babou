@@ -7,7 +7,6 @@ import (
 
 	web "babou/lib/web"
 
-	dbStore "babou/lib/session"
 	sessions "github.com/gorilla/sessions"
 )
 
@@ -17,10 +16,12 @@ type FlashContext struct {
 
 	params map[string]string
 
-	request  *http.Request
-	response http.ResponseWriter
+	controller web.Controller
+	request    *http.Request
+	response   http.ResponseWriter
 
-	store sessions.Store
+	sessionContext SessionChainLink
+	session        *sessions.Session
 }
 
 type FlashableController interface {
@@ -33,66 +34,24 @@ func FlashChain() ChainableContext {
 }
 
 func (fc *FlashContext) GetFlashes() []interface{} {
-	session, _ := fc.GetSession("user")
+	fc.lazyLoadSession()
 
-	allFlashes := session.Flashes()
+	allFlashes := fc.session.Flashes()
 	if allFlashes != nil && len(allFlashes) > 0 {
-		sessions.Save(fc.request, fc.response) // clear flashes
+		fc.sessionContext.SaveAll()
 		return allFlashes
 	} else {
 		return make([]interface{}, 0)
 	}
+
+	return nil
 }
 
 func (fc *FlashContext) AddFlash(message string) {
-	session, _ := fc.GetSession("user")
+	fc.lazyLoadSession()
 
-	if fc.isInit {
-		session.AddFlash(message)
-		sessions.Save(fc.request, fc.response)
-	}
-}
-
-// Implement SessionContext
-func (fc *FlashContext) SetRequestPair(response http.ResponseWriter, request *http.Request) {
-	fc.request = request
-	fc.response = response
-}
-
-func (fc *FlashContext) SetStore(store sessions.Store) {
-	if fc.store != nil {
-		//reuse last store who cares right now.
-	} else if store == nil {
-		fc.store = dbStore.NewDatabaseStore([]byte("3d1fd34f389d799a2539ff554d922683"))
-	} else {
-		fc.store = store
-	}
-}
-
-func (fc *FlashContext) GetSession(name string) (*sessions.Session, error) {
-	if fc.request == nil || fc.response == nil {
-		return nil, errors.New("Runtime tried to access a session before this FlashContext was fully initialized.")
-	}
-
-	if fc.store == nil {
-		return nil, errors.New("Runtime did not have a session store available")
-	}
-
-	session, err := fc.store.Get(fc.request, name)
-
-	return session, err
-}
-
-//Implement Context & ChainableContext
-
-// Sets the GET/POST parameters for this context.
-func (fc *FlashContext) SetParams(params map[string]string) {
-	fc.params = params
-}
-
-// Retrieves GET/POST parameters passed to this context.
-func (fc *FlashContext) GetParams() map[string]string {
-	return fc.params
+	fc.session.AddFlash(message)
+	fc.sessionContext.SaveAll()
 }
 
 // FlashContext requires a chain with a SessionContext and a FlashableController route.
@@ -105,7 +64,7 @@ func (fc *FlashContext) TestContext(route web.Route, chain []ChainableContext) e
 	}
 
 	for i := 0; i < len(chain); i++ {
-		_, ok := chain[i].(SessionChainLink)
+		_, ok := chain[i].(SessionChainLink) //cannot use b/c this instance is not bound to a request yet.
 		if ok {
 			hasSession = true
 			break
@@ -119,18 +78,42 @@ func (fc *FlashContext) TestContext(route web.Route, chain []ChainableContext) e
 	}
 }
 
+func (fc *FlashContext) NewInstance() ChainableContext {
+	newFc := &FlashContext{isInit: true}
+
+	return newFc
+}
+
 // Applies this context to a controller instance.
-func (fc *FlashContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request) {
-	fc.SetRequestPair(response, request)
-	fc.SetStore(nil)
+func (fc *FlashContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []ChainableContext) {
+	fc.controller = controller
 	fc.isInit = true
 
-	v, ok := controller.(FlashableController)
+	v, ok := fc.controller.(FlashableController)
 	if ok {
 		if err := v.SetFlashContext(fc); err != nil {
 			fmt.Printf("Error setting flash context: %s \n", err.Error())
 		}
 	} else {
 		fmt.Printf("Tried to wrap a controller that is not FlashContext aware \n")
+	}
+
+	for i := 0; i < len(chain); i++ {
+		v, ok := chain[i].(SessionChainLink)
+		if ok {
+			fc.sessionContext = v
+			break
+		}
+	}
+
+	if fc.sessionContext == nil {
+		fmt.Printf("FlashContext could not find a SessionContext in current context-chain.")
+	}
+}
+
+func (fc *FlashContext) lazyLoadSession() {
+	// TestContext ensures that if this context is applied our controller is also setup w/ a session
+	if fc.session == nil {
+		fc.session, _ = fc.sessionContext.GetSession()
 	}
 }

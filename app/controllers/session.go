@@ -1,19 +1,21 @@
 package controllers
 
 import (
+	"errors"
+	"fmt"
+
 	filters "babou/app/filters"
 	web "babou/lib/web"
-	errors "errors"
-	fmt "fmt"
 )
 
 type SessionController struct {
 	actionMap    map[string]web.Action
 	safeInstance bool //`true` if this instance can service HTTP requests, false otherwise.
-	context      *filters.DevContext
 
-	authContext  *filters.AuthContext
-	flashContext *filters.FlashContext
+	context        *filters.DevContext
+	authContext    *filters.AuthContext
+	flashContext   *filters.FlashContext
+	sessionContext *filters.SessionContext
 }
 
 func (sc *SessionController) Create(params map[string]string) *web.Result {
@@ -110,4 +112,14 @@ func (sc *SessionController) SetFlashContext(context *filters.FlashContext) erro
 	}
 
 	return errors.New("This instance of SessionController is not equipped to handle request contexts.")
+}
+
+func (sc *SessionController) SetSessionContext(context *filters.SessionContext) {
+	sc.sessionContext = context
+}
+
+func (sc *SessionController) SetContext(context *filters.DevContext) error {
+	sc.context = context
+
+	return nil
 }

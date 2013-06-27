@@ -18,8 +18,9 @@ type contextChain struct {
 // ApplyContext will actually attach the context to a specific controller
 // TestContext can be used to determine if a route supports a given context.
 type ChainableContext interface {
-	TestContext(web.Route, []ChainableContext) error                 // Allows a context to test if a route is properly configured before any requests are serviced.
-	ApplyContext(web.Controller, http.ResponseWriter, *http.Request) // Delegate down the chain until somebody answers the request.
+	NewInstance() ChainableContext                                                       // returns a clean instance that is safe for a single request/response
+	TestContext(web.Route, []ChainableContext) error                                     // Allows a context to test if a route is properly configured before any requests are serviced.
+	ApplyContext(web.Controller, http.ResponseWriter, *http.Request, []ChainableContext) // Delegate down the chain until somebody answers the request.
 }
 
 // Prepares a route with no contexts.
@@ -70,8 +71,12 @@ func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc
 			response.Write([]byte("server error."))
 		}
 
+		currentChain := make([]ChainableContext, len(cc.list))
+
 		for i := 0; i < len(cc.list); i++ {
-			cc.list[i].ApplyContext(controller, response, request)
+			currentChain[i] = cc.list[i].NewInstance()
+
+			currentChain[i].ApplyContext(controller, response, request, currentChain)
 		}
 
 		result := controller.HandleRequest(action)

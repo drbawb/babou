@@ -1,6 +1,7 @@
 package filters
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -30,21 +31,29 @@ func ParameterChain() *DevContext {
 	return context
 }
 
-func (dc *DevContext) TestContext(web.Route, []ChainableContext) error {
-	//use the chained instance to test if the controller supports it
-	//DevContext has no external dependencies
+func (dc *DevContext) TestContext(route web.Route, chain []ChainableContext) error {
+	_, ok := route.(ParameterizedController)
+	if !ok {
+		return errors.New(fmt.Sprintf("Route :: %T :: does not support the paramter context", route))
+	}
 
 	return nil
 }
 
-func (dc *DevContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request) {
-	newDc := &DevContext{}
-	newDc.SetParams(web.RetrieveAllParams(request))
-	newDc.isInit = true
+func (dc *DevContext) NewInstance() ChainableContext {
+	newDc := &DevContext{isInit: false}
+
+	return newDc
+}
+
+func (dc *DevContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []ChainableContext) {
+
+	dc.SetParams(web.RetrieveAllParams(request))
+	dc.isInit = true
 
 	v, ok := controller.(ParameterizedController)
 	if ok {
-		if err := v.SetContext(newDc); err != nil {
+		if err := v.SetContext(dc); err != nil {
 			fmt.Printf("Error setting paramter context: %s \n", err.Error())
 		}
 	} else {

@@ -2,6 +2,7 @@ package filters
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	web "babou/lib/web"
@@ -19,6 +20,11 @@ type SessionChainLink interface {
 	SetRequestPair(http.ResponseWriter, *http.Request)
 	SetStore(sessions.Store)
 	GetSession() (*sessions.Session, error)
+	SaveAll()
+}
+
+type SessionAware interface {
+	SetSessionContext(*SessionContext)
 }
 
 // A context which provides server-backed session storage to a controller.
@@ -47,19 +53,32 @@ func (sc *SessionContext) GetParams() map[string]string {
 }
 
 func (sc *SessionContext) TestContext(route web.Route, chain []ChainableContext) error {
-	return nil //No deps.
-}
-func (sc *SessionContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request) {
-	/*context := &SessionContext{isInit: true}
+	// Controller must be session-aware.
+	_, ok := route.(SessionAware)
+	if !ok {
+		return errors.New(fmt.Sprintf("The route :: %T :: is not SessionAware", route))
+	}
 
-	v, ok := controller.(AuthorizableController)
+	return nil
+}
+
+func (sc *SessionContext) NewInstance() ChainableContext {
+	newSc := &SessionContext{isInit: false}
+
+	return newSc
+}
+
+func (sc *SessionContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []ChainableContext) {
+	sc.SetRequestPair(response, request)
+	sc.SetStore(nil)
+	sc.isInit = true
+
+	v, ok := controller.(SessionAware)
 	if ok {
-		if err := v.SetAuthContext(ac); err != nil {
-			fmt.Printf("Error setting authorization context: %s \n", err.Error())
-		}
+		v.SetSessionContext(sc)
 	} else {
 		fmt.Printf("Tried to wrap a controller that is not AuthContext aware \n")
-	}*/
+	}
 }
 
 // Gives the authorization a request w/ complete headers; used in retrieving/storing the user's session key.
@@ -85,4 +104,11 @@ func (sc *SessionContext) GetSession() (*sessions.Session, error) {
 	session, _ := sc.store.Get(sc.request, "user")
 
 	return session, nil
+}
+
+func (sc *SessionContext) SaveAll() {
+	if sc.isInit {
+		sessions.Save(sc.request, sc.response)
+		return
+	}
 }
