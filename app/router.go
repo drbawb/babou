@@ -40,12 +40,21 @@ func LoadRoutes() *mux.Router {
 	*/
 
 	//Handles creating a user-session from a form.
+	r.HandleFunc("/session/test",
+		filters.BuildChain().
+			Chain(filters.SessionChain()).
+			Chain(filters.AuthChain()).
+			Chain(filters.FlashChain()).
+			Execute(session, "create")).Methods("POST").
+		Name("sessionCreate")
+
 	r.HandleFunc("/session/test/{name}",
 		filters.BuildChain().
+			Chain(filters.SessionChain()).
 			Chain(filters.AuthChain()).
 			Chain(filters.FlashChain()).
 			Execute(session, "create")).
-		Name("sessionCreate")
+		Name("sessionTest")
 
 	// Catch-All: Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",
