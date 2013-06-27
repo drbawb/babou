@@ -11,55 +11,38 @@ type contextChain struct {
 	request  http.Request
 	response *http.ResponseWriter
 
-	chainHead *contextChainElem
-	chainTail *contextChainElem
-}
-
-// Doubly linked list of ChainableContext's
-type contextChainElem struct {
-	next *contextChainElem
-	me   ChainableContext
-	prev *contextChainElem
+	list []ChainableContext
 }
 
 // Contexts which can be chained together
 // ApplyContext will actually attach the context to a specific controller
 // TestContext can be used to determine if a route supports a given context.
 type ChainableContext interface {
-	web.Context
-	TestContext(web.Route) error                                     // Allows a context to test if a route is properly configured before any requests are serviced.
+	TestContext(web.Route, []ChainableContext) error                 // Allows a context to test if a route is properly configured before any requests are serviced.
 	ApplyContext(web.Controller, http.ResponseWriter, *http.Request) // Delegate down the chain until somebody answers the request.
 }
 
 // Prepares a route with no contexts.
 // Will simply call a bare metal controller by default.
 func BuildChain() *contextChain {
-	chain := &contextChain{}
+	chain := &contextChain{list: make([]ChainableContext, 0)}
+
+	chain.Chain(&DevContext{})
 
 	return chain
 }
 
 // Appends a context to end of the chain.
 func (cc *contextChain) Chain(context ChainableContext) *contextChain {
-	chainLink := &contextChainElem{me: context}
-
-	if cc.chainHead == nil {
-		// Insert at head of list.
-		cc.chainHead = chainLink
-		cc.chainTail = chainLink
-	} else {
-		cc.chainTail.next = chainLink
-		chainLink.prev = cc.chainTail
-
-		// Update w/ new tail pointer
-		cc.chainTail = chainLink
-	}
+	cc.list = append(cc.list, context)
 
 	return cc
 }
 
 // Executes the request through the context chain on a route#action pairing.
 // `panics` if #TestContext() of any context in the chain fails for the given route.
+//	  Note that this method wraps the chain with a DevContext; so calling this method
+//    will ensure that the `ParamterizedChain` interface is fulfilled for all other chainlinks.
 func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc {
 	panicMessages := make([]string, 0)
 
@@ -67,27 +50,28 @@ func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc
 		panicMessages = append(panicMessages, "A context chain was executed on a nullroute. Babou is not happy.\n")
 	}
 
-	for e := cc.chainHead; e != nil; e = e.next {
-		if err := e.me.TestContext(route); err != nil {
+	for i := 0; i < len(cc.list); i++ {
+		if err := cc.list[i].TestContext(route, cc.list); err != nil {
 			panicMessages = append(panicMessages, err.Error())
 		}
 	}
 
 	if len(panicMessages) > 0 {
+		// Panic if this chain does not pass runtime-type checks.
 		panic(panicMessages)
 	}
 
+	// Will create an HttpHandler that encapsulates the chain's current state.
 	return func(response http.ResponseWriter, request *http.Request) {
 		//Generate a controller for the route
-		context := &web.DevContext{Params: web.RetrieveAllParams(request)}
-		controller, err := route.Process(action, context)
+		controller, err := route.Process(action)
 		if err != nil {
 			lib.Println("Could not open controller with first context")
 			response.Write([]byte("server error."))
 		}
 
-		for e := cc.chainHead; e != nil; e = e.next {
-			e.me.ApplyContext(controller, response, request)
+		for i := 0; i < len(cc.list); i++ {
+			cc.list[i].ApplyContext(controller, response, request)
 		}
 
 		result := controller.HandleRequest(action)

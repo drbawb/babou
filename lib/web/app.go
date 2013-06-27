@@ -27,25 +27,6 @@ type Route interface {
 // or router and turns it into a servicable HTTP result.
 type Action func(map[string]string) *Result
 
-// Interface for the most basic context: one which encapsulates request parameters.
-type Context interface {
-	SetParams(map[string]string)
-	GetParams() map[string]string
-}
-
-// Test impl. of Context interface.
-type DevContext struct {
-	Params map[string]string
-}
-
-func (dc *DevContext) SetParams(params map[string]string) {
-	dc.Params = params
-}
-
-func (dc *DevContext) GetParams() map[string]string {
-	return dc.Params
-}
-
 // Represents an HTTP response from a `Controller`
 // The middleware or router is responsible for using
 // this result appopriately.

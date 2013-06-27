@@ -95,13 +95,27 @@ func (fc *FlashContext) GetParams() map[string]string {
 	return fc.params
 }
 
-// Tests if the route implements FlashableController interface
-func (fc *FlashContext) TestContext(route web.Route) error {
+// FlashContext requires a chain with a SessionContext and a FlashableController route.
+func (fc *FlashContext) TestContext(route web.Route, chain []ChainableContext) error {
+	hasSession := false
+
 	_, ok := route.(FlashableController)
-	if ok {
+	if !ok {
+		return errors.New(fmt.Sprintf("The route :: %T :: does not support the FlashContext.", route))
+	}
+
+	for i := 0; i < len(chain); i++ {
+		_, ok := chain[i].(SessionChainLink)
+		if ok {
+			hasSession = true
+			break
+		}
+	}
+
+	if ok && hasSession {
 		return nil
 	} else {
-		return errors.New(fmt.Sprintf("The route :: %T :: does not support the FlashContext.", route))
+		return errors.New(fmt.Sprintf("The route :: %T :: does not have a SessionContext that the FlashContext can use.", route))
 	}
 }
 
