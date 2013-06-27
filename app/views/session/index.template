@@ -1,0 +1,8 @@
+<div class="entry-brief">
+	<div class="entry-nav">
+		{{> app/views/login/public_navbar}}
+	</div>
+{{#Flash}}
+	This is a flash: {{Message}}
+{{/Flash}}
+</div>

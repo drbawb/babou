@@ -16,6 +16,13 @@ type ChainableContext interface {
 	ApplyContext(Controller, http.ResponseWriter, *http.Request, []ChainableContext) // Delegate down the chain until somebody answers the request.
 }
 
+// Contexts which have view helpers associated with them
+// If they are passed to a RenderWith method their view helpers will be added.
+type ViewableContext interface {
+	ChainableContext
+	GetViewHelpers() []interface{}
+}
+
 // A controller handles a request for a given action.
 // Such controller must be willing to accept GET/POST parameters from an HTTP request.
 // These parameters are passed in the form of a Context object.

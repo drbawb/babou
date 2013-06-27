@@ -248,7 +248,7 @@ ContextChain [struct]
 
 ---
 
-A ContextChain is a doubly-linked list of ChainableContext items:
+A ContextChain is a list of ChainableContext items:
 For e.g: [head] <-> [AuthContext] <-> [WalletContext] <-> [tail]
 
 A ContextChain automatically wraps a route/action with the default context (POST/GET vars).
@@ -264,7 +264,53 @@ fail to apply.
 For example if your authentication context is not available: you could abort the request, 
 or issue a 403 or 500 response, etc.
 
---
+---
+
+Type Safety
+===
+
+To help maintain type safety at runtime: the context chainer will do a dependency check on the
+entire chain when the route is created. (When #Execute() is called on a chain.)
+
+This will iterate through the list, passing in the list and a route as a parameter to TestContext() method's.
+Each chain-link can use this TestContext() method to abort the routing if a dependency is not satisfied.
+
+Inside TestContext() you can check two things:
+- That any chain links you need are available in your current context chain.
+- That any controller(s) you need are available from the route.
+
+These tests are usually done by asserting that the route and chain-link's cast to 
+an interface in the `filters` package.
+
+---
+
+ApplyContext() executes similarly; but at this point it is _assumed_ by the runtime that the types
+have been checked by each context.
+
+ApplyContext(), however, passes in an _instance chain_ as well as an _instance controller._
+The difference is that these instances are short-lived (until the request is rendered) and they
+do not share state between requests.
+
+Contextual Views
+===
+
+Contexts can optionally implement babou/lib/web.ViewableContext.
+
+If they do, they can be passed to the RenderWith() methods, which will automatically add any
+helpers that the context has defined to the rendering context.
+
+For example: babou/app/filters.FlashContext offers a boolean view helper which is defined as follows:
+{{Flash}}
+	Everything in here will be rendered: {{Message}}
+{{/Flash}}
+
+Where {{Message}} will be the first message from the session's flash messages.
+{{Flash}} is a boolean; so the entire section will not be rendered if no flashes are available.
+
+Again: these will only show up if they're _explicitly passed_ to the RenderWith() methods.
+As a benefit, RenderWith() methods will ONLY ACCEPT ViewableContext's as their variadic arguments.
+This means that the Go compiler can statically check that you have passed an appropriate context
+to the view renderer.
 
 
 Models & Database

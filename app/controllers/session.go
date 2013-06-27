@@ -20,17 +20,15 @@ type SessionController struct {
 
 func (sc *SessionController) Create(params map[string]string) *web.Result {
 	resultString := fmt.Sprintf("default response for: %s", params["name"])
-
-	if params["name"] == "get" {
-		flashes := sc.flashContext.GetFlashes()
-		if len(flashes) > 0 {
-			resultString = fmt.Sprintf("first flash is: %v", flashes[0])
-		}
-	} else if params["name"] == "save" {
+	if params["name"] == "save" {
 		sc.flashContext.AddFlash("hello from drbawbland")
 	}
 
-	return &web.Result{Status: 200, Body: []byte(fmt.Sprintf(resultString))}
+	output := &web.Result{Status: 200, Body: []byte(resultString)}
+	output.Body = []byte(web.RenderWith("public", "session", "index", sc.flashContext))
+
+	return output
+	//return &web.Result{Status: 200, Body: []byte(fmt.Sprintf(resultString))}
 }
 
 // Returns a routable instance of the Session Controller.

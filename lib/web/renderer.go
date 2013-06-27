@@ -21,7 +21,8 @@ var Router *mux.Router = nil
 // your requested template and automatically pass it the supplied `Context`
 // argument.
 type ViewData struct {
-	Yield   func(params []string, data string) string
+	Yield func(params []string, data string) string
+	//Flash   func() string
 	Context interface{}
 }
 
@@ -84,6 +85,36 @@ func RenderIn(templateName, controllerName, actionName string, viewData *ViewDat
 	viewData.Yield = yieldFn
 
 	out := mustache.RenderFile(layoutFile, viewData, getHelpers())
+
+	return out
+}
+
+func RenderWith(templateName, controllerName, actionName string, filterHelpers ...ViewableContext) string {
+	layoutFile := fmt.Sprintf("app/views/%s.template", templateName)
+	filename := fmt.Sprintf("app/views/%s/%s.template", controllerName, actionName)
+
+	//placeholder for dev.
+
+	expandedFilterHelpers := make([]interface{}, 0)
+
+	yieldFn := func(params []string, data string) string {
+		yieldOut := mustache.RenderFile(filename, expandedFilterHelpers...)
+
+		return yieldOut
+	}
+
+	viewData := &struct {
+		Yield func([]string, string) string
+	}{
+		Yield: yieldFn,
+	}
+
+	expandedFilterHelpers = append(expandedFilterHelpers, viewData, getHelpers())
+	for i := 0; i < len(filterHelpers); i++ {
+		expandedFilterHelpers = append(expandedFilterHelpers, filterHelpers[i].GetViewHelpers()...)
+	}
+
+	out := mustache.RenderFile(layoutFile, expandedFilterHelpers...)
 
 	return out
 }

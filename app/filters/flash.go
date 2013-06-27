@@ -54,6 +54,31 @@ func (fc *FlashContext) AddFlash(message string) {
 	fc.sessionContext.SaveAll()
 }
 
+// Returns a single helper function which a view could use to render a flash when the page is rendered.
+func (fc *FlashContext) GetViewHelpers() []interface{} {
+	out := make([]interface{}, 1)
+
+	flashObj := &struct {
+		Flash   bool
+		Message string
+	}{
+		Flash:   false,
+		Message: "",
+	}
+
+	allFlashes := fc.GetFlashes()
+	if len(allFlashes) > 0 {
+		flashObj.Flash = true
+		flashObj.Message = allFlashes[0].(string)
+	} else {
+		flashObj.Flash = false
+	}
+
+	out[0] = flashObj
+
+	return out
+}
+
 // FlashContext requires a chain with a SessionContext and a FlashableController route.
 func (fc *FlashContext) TestContext(route web.Route, chain []web.ChainableContext) error {
 	hasSession := false
