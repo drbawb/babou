@@ -41,6 +41,8 @@ type postHelpers struct {
 	TextFieldFor func(params []string, data string) string
 }
 
+var templateCache map[string]*mustache.Template = make(map[string]*mustache.Template)
+
 // Returns a set of viewHelpers to be passed to the rendering context.
 func getHelpers() *viewHelpers {
 	return &viewHelpers{LinkTo: LinkTo, UrlFor: UrlFor, FormFor: BuildForm}
@@ -89,6 +91,7 @@ func RenderIn(templateName, controllerName, actionName string, viewData *ViewDat
 	return out
 }
 
+//DEV: using some caching to hopefully cut down file i/o
 func RenderWith(templateName, controllerName, actionName string, filterHelpers ...ViewableContext) string {
 	layoutFile := fmt.Sprintf("app/views/%s.template", templateName)
 	filename := fmt.Sprintf("app/views/%s/%s.template", controllerName, actionName)
@@ -98,7 +101,16 @@ func RenderWith(templateName, controllerName, actionName string, filterHelpers .
 	expandedFilterHelpers := make([]interface{}, 0)
 
 	yieldFn := func(params []string, data string) string {
-		yieldOut := mustache.RenderFile(filename, expandedFilterHelpers...)
+		if templateCache[filename] == nil {
+			var err error
+
+			templateCache[filename], err = mustache.ParseFile(filename)
+			if err != nil {
+				return "Error preparing template."
+			}
+		}
+
+		yieldOut := templateCache[filename].Render(expandedFilterHelpers...)
 
 		return yieldOut
 	}
@@ -114,7 +126,15 @@ func RenderWith(templateName, controllerName, actionName string, filterHelpers .
 		expandedFilterHelpers = append(expandedFilterHelpers, filterHelpers[i].GetViewHelpers()...)
 	}
 
-	out := mustache.RenderFile(layoutFile, expandedFilterHelpers...)
+	if templateCache[layoutFile] == nil {
+		var err error
+		templateCache[layoutFile], err = mustache.ParseFile(layoutFile)
+
+		if err != nil {
+			return "Error parsing template file"
+		}
+	}
+	out := templateCache[layoutFile].Render(expandedFilterHelpers...)
 
 	return out
 }

@@ -38,10 +38,13 @@ func (s *Server) Start() {
 
 	go func() {
 		s.loadRoutes()
+		s.openDb()
 		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.Port), nil))
 	}()
 
-	s.serverIO <- libBabou.WEB_SERVER_START
+	s.serverIO <- libBabou.WEB_SERVER_STARTED
+
+	// Handle signals
 }
 
 // Loads muxer from router.go from `app` package.
@@ -54,4 +57,10 @@ func (s *Server) loadRoutes() {
 	}()
 
 	http.Handle("/", LoadRoutes())
+}
+
+// Instructs the babou library to open a database connection.
+// This DB connection will be closed when babou is gracefully shutdown.
+func (s *Server) openDb() {
+
 }

@@ -7,7 +7,7 @@ import (
 
 	web "github.com/drbawb/babou/app"      // The babou application: composed of a server and muxer.
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
-	libDb "github.com/drbawb/baobu/lib/db"
+	//libDb "github.com/drbawb/babou/lib/db"
 
 	os "os"
 	signal "os/signal"
@@ -45,7 +45,7 @@ func main() {
 	for {
 		select {
 		case webMessage := <-webServerIO:
-			if webMessage == libBabou.WEB_SERVER_START {
+			if webMessage == libBabou.WEB_SERVER_STARTED {
 				fmt.Println("Server has started sucessfully")
 			}
 		case trackerMessage := <-trackerIO:
@@ -65,7 +65,9 @@ func trapSignals(c chan os.Signal) {
 			//TODO: Probably block on webserver shutdown [instant]
 			// 	as well as a concurrent block on app shutdown.
 			// Exit when they're both finished.
-			_ = libDb.FlushPool()
+			fmt.Println("\nwaiting for webserver to shutdown...")
+			fmt.Println("\nwaiting for tracker to shutdown...")
+
 			os.Exit(0)
 		} else if sig == syscall.SIGKILL {
 			// Get out get out get out!!!
