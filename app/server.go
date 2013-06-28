@@ -1,4 +1,8 @@
-// The `babou` middleware implementation
+// The `babou` web application server.
+//
+// The application package includes both a server implementation and a router.
+// The web application itself is included in various sub-packages, and is loaded
+// by the router once the server has started.
 package app
 
 import (
