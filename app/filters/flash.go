@@ -38,12 +38,14 @@ func FlashChain() web.ChainableContext {
 	return &FlashContext{isInit: false}
 }
 
+func (fc *FlashContext) CloseContext() {}
+
 func (fc *FlashContext) GetFlashes() []interface{} {
 	fc.lazyLoadSession()
 
 	allFlashes := fc.session.Flashes()
 	if allFlashes != nil && len(allFlashes) > 0 {
-		fc.sessionContext.SaveAll()
+		//fc.sessionContext.SaveAll()
 		return allFlashes
 	} else {
 		return make([]interface{}, 0)
@@ -59,7 +61,7 @@ func (fc *FlashContext) AddFlash(message string) {
 	fc.lazyLoadSession()
 
 	fc.session.AddFlash(message)
-	fc.sessionContext.SaveAll()
+	//fc.sessionContext.SaveAll()
 }
 
 // Implements a ViewableContext.

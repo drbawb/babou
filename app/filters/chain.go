@@ -81,6 +81,10 @@ func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc
 
 		result := controller.HandleRequest(action)
 
+		for i := 0; i < len(cc.list); i++ {
+			currentChain[i].CloseContext()
+		}
+
 		if result.Status >= 300 && result.Status <= 399 {
 			//handleRedirect(result.Redirect, response, request)
 		} else if result.Status == 404 {

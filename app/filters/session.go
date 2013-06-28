@@ -46,6 +46,10 @@ func SessionChain() *SessionContext {
 	return context
 }
 
+func (sc *SessionContext) CloseContext() {
+	sc.SaveAll()
+}
+
 // Tests that the context is being applied to a route which is SessionAware.
 //
 // This method can be used to ensure that the type-dependencies are satisfied at runtime.

@@ -21,6 +21,7 @@ type ChainableContext interface {
 	NewInstance() ChainableContext                                                   // returns a clean instance that is safe for a single request/response
 	TestContext(Route, []ChainableContext) error                                     // Allows a context to test if a route is properly configured before any requests are serviced.
 	ApplyContext(Controller, http.ResponseWriter, *http.Request, []ChainableContext) // Delegate down the chain until somebody answers the request.
+	CloseContext()
 }
 
 // Contexts which have view helpers associated with them
