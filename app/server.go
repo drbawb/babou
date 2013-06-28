@@ -6,7 +6,7 @@
 package app
 
 import (
-	libBabou "babou/lib"
+	libBabou "github.com/drbawb/babou/lib"
 
 	fmt "fmt"
 	log "log"

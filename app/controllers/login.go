@@ -1,17 +1,16 @@
 package controllers
 
 import (
-	web "babou/lib/web"
-
+	errors "errors"
 	fmt "fmt"
 
 	bcrypt "code.google.com/p/go.crypto/bcrypt"
 	rand "crypto/rand"
 
-	filters "babou/app/filters"
-	models "babou/app/models"
+	filters "github.com/drbawb/babou/app/filters"
+	models "github.com/drbawb/babou/app/models"
 
-	errors "errors"
+	web "github.com/drbawb/babou/lib/web"
 )
 
 // Implements babou/app.Controller interface.

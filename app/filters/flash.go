@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	web "babou/lib/web"
+	web "github.com/drbawb/babou/lib/web"
 
 	sessions "github.com/gorilla/sessions"
 )

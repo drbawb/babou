@@ -10,9 +10,10 @@
 package filters
 
 import (
-	lib "babou/lib"
-	web "babou/lib/web"
 	"net/http"
+
+	lib "github.com/drbawb/babou/lib"
+	web "github.com/drbawb/babou/lib/web"
 )
 
 // An executable list of ChainableContext's

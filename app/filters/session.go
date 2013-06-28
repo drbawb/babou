@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	web "babou/lib/web"
+	dbStore "github.com/drbawb/babou/lib/session"
+	web "github.com/drbawb/babou/lib/web"
 
-	dbStore "babou/lib/session"
 	sessions "github.com/gorilla/sessions"
 )
 

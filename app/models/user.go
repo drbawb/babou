@@ -1,10 +1,11 @@
 package models
 
 import (
-	db "babou/lib/db"
 	sql "database/sql"
 	errors "errors"
 	fmt "fmt"
+
+	db "github.com/drbawb/babou/lib/db"
 )
 
 // `User` model for `users`

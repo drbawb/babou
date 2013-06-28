@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	web "babou/lib/web"
 	errors "errors"
+
+	web "github.com/drbawb/babou/lib/web"
 )
 
 // A generic routine that will implement `Process` for any `Route` interface

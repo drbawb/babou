@@ -11,9 +11,9 @@ import (
 
 	http "net/http"
 
-	lib "babou/lib"
-	dbLib "babou/lib/db"
 	sql "database/sql"
+	lib "github.com/drbawb/babou/lib"
+	dbLib "github.com/drbawb/babou/lib/db"
 
 	base32 "encoding/base32"
 	strings "strings"

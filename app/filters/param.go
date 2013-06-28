@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	web "babou/lib/web"
+	web "github.com/drbawb/babou/lib/web"
 )
 
 // A chain which can store and retrieve GET/POST request variables.

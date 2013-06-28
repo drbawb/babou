@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	filters "babou/app/filters"
-	web "babou/lib/web"
+	filters "github.com/drbawb/babou/app/filters"
+	web "github.com/drbawb/babou/lib/web"
 )
 
 type SessionController struct {

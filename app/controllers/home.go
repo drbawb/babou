@@ -2,10 +2,10 @@
 package controllers
 
 import (
-	filters "babou/app/filters"
-	web "babou/lib/web"
-
 	errors "errors"
+
+	filters "github.com/drbawb/babou/app/filters"
+	web "github.com/drbawb/babou/lib/web"
 )
 
 // Implements babou/app.Controller interface.

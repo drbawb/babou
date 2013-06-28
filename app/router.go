@@ -1,13 +1,14 @@
 package app
 
 import (
-	controllers "babou/app/controllers"
+	http "net/http"
 
-	filters "babou/app/filters"
-	web "babou/lib/web"
+	controllers "github.com/drbawb/babou/app/controllers"
+	filters "github.com/drbawb/babou/app/filters"
+
+	web "github.com/drbawb/babou/lib/web"
 
 	mux "github.com/gorilla/mux"
-	http "net/http"
 )
 
 func LoadRoutes() *mux.Router {
