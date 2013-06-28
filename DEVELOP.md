@@ -4,6 +4,12 @@ Development Notes
 The following are Babou design documents and development notes.
 They are periodically cleaned up and submitted to the Git repository.
 
+Repository Updates
+===
+Had to perform a filter-branch and nuke some history. My apologies to the 0 contributors that this
+likely affects.
+(Seriously though: please clone the repository if you have cloned it on or before 28 June 2013.)
+
 Requirements
 ===
 While `babou` aims to be a single-binary solution, we recognize that database changes are a pain-point
