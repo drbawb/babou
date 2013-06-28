@@ -35,6 +35,8 @@ func ParameterChain() *DevContext {
 	return context
 }
 
+func (dc *DevContext) CloseContext() {}
+
 // The parameter context requires that a route implements ParamterizedController
 func (dc *DevContext) TestContext(route web.Route, chain []web.ChainableContext) error {
 	_, ok := route.(ParameterizedController)

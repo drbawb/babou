@@ -28,6 +28,8 @@ func AuthChain() *AuthContext {
 	return context
 }
 
+func (ac *AuthContext) CloseContext() {}
+
 // This context requires a chain with a SessionChainLink as well as an AuthorizableController route.
 //
 // This method can be used to ensure that those dependencies are satisfied at runtime.
