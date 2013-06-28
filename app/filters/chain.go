@@ -1,3 +1,12 @@
+// The filters package provides information that is contextual to a given request/response
+// By chaining contexts together you can safely provide a controller access to request/response
+// data with a minimal duplication of logic.
+//
+// This package's chain builder _may panic_ if runtime type dependencies are not satisfied.
+// This is considered an unrecoverable error; and it is caught by the web-server while loading routes.
+//
+// Continuing to use a context-chain which has panic'd will likely result in nil-pointers
+// or calls to improperly initialized contexts.
 package filters
 
 import (

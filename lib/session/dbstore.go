@@ -1,10 +1,9 @@
-package session
-
 // An implementation of  the gorilla/sessions#Store interface for `babou`
 //
 // This uses a PostgreSQL database as a storage backend.
 // This allows sessions to be accessed by any instance of `babou`
 // which share a common session encryption key in their configuration.
+package session
 
 import (
 	securecookie "github.com/gorilla/securecookie"

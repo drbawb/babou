@@ -23,6 +23,8 @@ type SessionChainLink interface {
 	SaveAll()
 }
 
+// A SessionAware controller must be willing to accept a SessionContext.
+// Use of the session context
 type SessionAware interface {
 	SetSessionContext(*SessionContext)
 }
@@ -44,14 +46,9 @@ func SessionChain() *SessionContext {
 	return context
 }
 
-func (sc *SessionContext) SetParams(params map[string]string) {
-	sc.params = params
-}
-
-func (sc *SessionContext) GetParams() map[string]string {
-	return sc.params
-}
-
+// Tests that the context is being applied to a route which is SessionAware.
+//
+// This method can be used to ensure that the type-dependencies are satisfied at runtime.
 func (sc *SessionContext) TestContext(route web.Route, chain []web.ChainableContext) error {
 	// Controller must be session-aware.
 	_, ok := route.(SessionAware)
@@ -62,12 +59,15 @@ func (sc *SessionContext) TestContext(route web.Route, chain []web.ChainableCont
 	return nil
 }
 
+// Returns an instance of this context that can safely be used to process
+// a single response-request pairing.
 func (sc *SessionContext) NewInstance() web.ChainableContext {
 	newSc := &SessionContext{isInit: false}
 
 	return newSc
 }
 
+// Applies this context to a SessionAware controller. Exposing all session variables to the underlying route.
 func (sc *SessionContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 	sc.SetRequestPair(response, request)
 	sc.SetStore(nil)
@@ -87,6 +87,8 @@ func (sc *SessionContext) SetRequestPair(w http.ResponseWriter, r *http.Request)
 	sc.response = w
 }
 
+// Sets the session store to the specified store; or fetches one from the
+// default database-backed session store.
 func (sc *SessionContext) SetStore(store sessions.Store) {
 	if store == nil {
 		sc.store = dbStore.NewDatabaseStore([]byte("3d1fd34f389d799a2539ff554d922683"))
@@ -95,18 +97,28 @@ func (sc *SessionContext) SetStore(store sessions.Store) {
 	}
 }
 
-// Retrieves or creates a session key and stores it in the bsckend.
+// Retrieves or creates a session key and stores it in the backend.
 func (sc *SessionContext) GetSession() (*sessions.Session, error) {
 	if sc.request == nil || sc.response == nil {
 		return nil, errors.New("Runtime tried to sccess a session before this SessionContext was fully initialized.")
 	}
 
+	//TODO: Lazy load session here.
 	session, _ := sc.store.Get(sc.request, "user")
 
 	return session, nil
 }
 
+// Saves all currently open sessions for this request to disk.
 func (sc *SessionContext) SaveAll() {
+	//TODO: Can I somehow defer this save until the request is finished processing?
+	// Maybe a callback from the context-chain.
+
+	// TODO TODO: Is that even a good idea though? Is there an instance where you expect the session
+	// perhaps I'd need some kind of "ForceSave()" method in case a controller actually wnats to persist
+	// state _now._
+
+	//tl;dr: premature optimization.
 	if sc.isInit {
 		sessions.Save(sc.request, sc.response)
 		return

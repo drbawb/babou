@@ -1,4 +1,11 @@
-// The Babou web application core
+// The `babou` web application core
+//
+// Provides library methods that are useful from many different layers
+// in the `app` package.
+//
+// If an appropriate solution exists in this package it should be preferred
+// over a hand-rolled implementation. As they are designed to be fairly generic
+// solutions that are fairly composable.
 package web
 
 import (

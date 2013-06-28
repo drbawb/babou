@@ -47,7 +47,8 @@ Some areas to exercise _extreme caution_ when programming include:
 - Views
 
 Context Chains require thoughtfulness when implementing their `TestContext` methods to ensure
-that the runtime will not add a potentially invalid route.
+that the runtime will not add a potentially invalid route. It helps to think of implementing 
+a context chain-link as test driven development.
 
 Views rely on a templating library that uses lots of reflection to achieve its flexibility.
 As such we have wrapped the underlying templating library with some considerably

@@ -8,32 +8,29 @@ import (
 	web "babou/lib/web"
 )
 
-// An authorizable route must be AuthContext aware.
-// That way it gets access to all helpers defined by the context.
-type AuthorizableRoute interface {
-	Process(string) (AuthorizableController, error)
-	NewInstance() AuthorizableController
-}
-
+// An authorizable controller must be willing to accept an AuthContext.
+//
+// This AuthContext will be tied to a session for a single request.
 type AuthorizableController interface {
 	web.Controller
 	SetAuthContext(*AuthContext) error
 }
 
-// An impl. of SessionContext that uses it to provide helper methods for auth'ing a user.
+// An implementation of SessionContext that uses it to provide helper methods for authorizing a user.
 type AuthContext struct {
-	params map[string]string
 	isInit bool
 }
 
-// Returns an uninitialized AuthContext suitable for use in a context-chain
+// Returns an uninitialized AuthContext suitable for use in a context chain
 func AuthChain() *AuthContext {
 	context := &AuthContext{isInit: false}
 
 	return context
 }
 
-// Tests if the route implements AuthorizableController interface as well as the SessionChain interface.
+// This context requires a chain with a SessionChainLink as well as an AuthorizableController route.
+//
+// This method can be used to ensure that those dependencies are satisfied at runtime.
 func (ac *AuthContext) TestContext(route web.Route, chain []web.ChainableContext) error {
 	//requires AuthorizableController and SessionChain
 	hasSession := false
@@ -57,13 +54,14 @@ func (ac *AuthContext) TestContext(route web.Route, chain []web.ChainableContext
 	}
 }
 
+// Returns a clean instance of AuthContext that can be used safely for a single request.
 func (ac *AuthContext) NewInstance() web.ChainableContext {
 	newAc := &AuthContext{isInit: false}
 
 	return newAc
 }
 
-// Implements ChainableContext
+// Applies the context to an authorizable controller.
 func (ac *AuthContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 	ac.isInit = true
 

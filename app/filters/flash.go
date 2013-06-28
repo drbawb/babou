@@ -24,11 +24,16 @@ type FlashContext struct {
 	session        *sessions.Session
 }
 
+// A controller must accept a FlashContext object in order to support
+// the FlashContext chain-link
 type FlashableController interface {
 	web.Controller
 	SetFlashContext(*FlashContext) error
 }
 
+// Returns an uninitialized FlashContext which is used by the default
+// context chainer to test type-requirements at runtime as well as
+// route requests to a request-specific instance.
 func FlashChain() web.ChainableContext {
 	return &FlashContext{isInit: false}
 }
@@ -47,6 +52,9 @@ func (fc *FlashContext) GetFlashes() []interface{} {
 	return nil
 }
 
+// Add a message to the session's flash context.
+// The message will persist until GetFlashes() is called by
+// the controller or view layer.
 func (fc *FlashContext) AddFlash(message string) {
 	fc.lazyLoadSession()
 
@@ -54,7 +62,15 @@ func (fc *FlashContext) AddFlash(message string) {
 	fc.sessionContext.SaveAll()
 }
 
-// Returns a single helper function which a view could use to render a flash when the page is rendered.
+// Implements a ViewableContext.
+//
+// When passed to a rendering context it adds the following helpers to the template
+// layer:
+//   {{#Flash}}
+//		This content is shown when a flash message is present
+//		{{Message}}
+//		The Message variable holds the first flash message as a string.
+//   {{/Flash}}
 func (fc *FlashContext) GetViewHelpers() []interface{} {
 	out := make([]interface{}, 1)
 
@@ -79,7 +95,9 @@ func (fc *FlashContext) GetViewHelpers() []interface{} {
 	return out
 }
 
-// FlashContext requires a chain with a SessionContext and a FlashableController route.
+// FlashContext requires a chain with a SessionChainLink as well as a FlashableController route.
+//
+// This method can be called to ensure that both those requirements are satisfied for a given route and context chain.
 func (fc *FlashContext) TestContext(route web.Route, chain []web.ChainableContext) error {
 	hasSession := false
 
@@ -103,13 +121,14 @@ func (fc *FlashContext) TestContext(route web.Route, chain []web.ChainableContex
 	}
 }
 
+// Returns a clean instance of FlashContext that can be used to service a request.
 func (fc *FlashContext) NewInstance() web.ChainableContext {
 	newFc := &FlashContext{isInit: true}
 
 	return newFc
 }
 
-// Applies this context to a controller instance.
+// Applies this context to an instance of FlashableController
 func (fc *FlashContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 	fc.controller = controller
 	fc.isInit = true
@@ -136,6 +155,7 @@ func (fc *FlashContext) ApplyContext(controller web.Controller, response http.Re
 	}
 }
 
+// Loads a session from the SessionContext chain if one is not already present for this context.
 func (fc *FlashContext) lazyLoadSession() {
 	// TestContext ensures that if this context is applied our controller is also setup w/ a session
 	if fc.session == nil {

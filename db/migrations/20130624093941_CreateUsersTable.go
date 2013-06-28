@@ -1,3 +1,5 @@
+// These database migrations are usable by the `goose` tool
+// See the README or DEVELOP.md notes for information on how to use them.
 package main
 
 import (
