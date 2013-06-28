@@ -89,6 +89,12 @@ Step 5) . . .
 
 (`./babou -help` is also available.)
 
+Note: `babou` requires the `assets/` directory and the `app/` directory to be present in the current working directory.
+
+`assets/` include static assets and can safely be served from a load-balancer or reverse proxy.
+
+`app/` contains runtime assets such as templates and partials.
+
 Now what?
 ===
 Time to share some linux distributions!
