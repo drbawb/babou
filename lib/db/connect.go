@@ -14,6 +14,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var currentConn BabouDb = nil
+
+type BabouDb struct {
+	database *sql.DB
+}
+
 // A lambda which takes an open database connection.
 // The lambda can return a friendly model-level error which will be passed
 // through ExecuteFn
@@ -23,16 +29,31 @@ type DbAction func(*sql.DB) error
 // Note that this is not thread safe.
 // ExecuteFn will only hold the connection open so long as you block.
 func ExecuteFn(dba DbAction) error {
-	db, err := sql.Open("postgres", "user=rstraw host=localhost dbname=babou sslmode=disable")
-	defer db.Close()
+	if currentConn == nil {
+		db, err := sql.Open("postgres", "user=rstraw host=localhost dbname=babou sslmode=disable")
+		if err != nil {
+			return errors.New(fmt.Sprintf("There was an error opening the database connection: %s", err))
+		}
 
-	// TODO: How come auth-failure doesn't happen until I try to prepare a statement?
-	if err != nil {
-		return errors.New(fmt.Sprintf("There was an error opening the database connection: %s", err))
+		currentConn = &BabouDb{database: db}
 	}
 
-	dbaErr := dba(db)
+	// TODO: How come auth-failure doesn't happen until I try to prepare a statement?
+
+	dbaErr := dba(currentConn.database)
 	return dbaErr
+}
+
+// Will
+func FlushPool() error {
+	if currentConn != nil {
+		err := currentConn.database.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func ChangeSettings(settings *lib.DbSettings) {

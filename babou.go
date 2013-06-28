@@ -7,6 +7,7 @@ import (
 
 	web "github.com/drbawb/babou/app"      // The babou application: composed of a server and muxer.
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
+	libDb "github.com/drbawb/baobu/lib/db"
 
 	os "os"
 	signal "os/signal"
@@ -64,6 +65,7 @@ func trapSignals(c chan os.Signal) {
 			//TODO: Probably block on webserver shutdown [instant]
 			// 	as well as a concurrent block on app shutdown.
 			// Exit when they're both finished.
+			_ = libDb.FlushPool()
 			os.Exit(0)
 		} else if sig == syscall.SIGKILL {
 			// Get out get out get out!!!
