@@ -329,6 +329,15 @@ ApplyContext(), however, passes in an _instance chain_ as well as an _instance c
 The difference is that these instances are short-lived (until the request is rendered) and they
 do not share state between requests.
 
+--
+
+CloseContext() is executed on a request-safe instance by iterating over the chain a second-time,
+_after the request has been served by the controller._
+
+You can use this as a signal to close file or database handles, write out any stateful information, etc.
+
+
+
 Contextual Views
 ===
 
