@@ -18,7 +18,10 @@ import (
 
 type LoginController struct {
 	safeInstance bool //`true` if this instance can service HTTP requests, false otherwise.
-	context      *filters.DevContext
+
+	context *filters.DevContext
+	session *filters.SessionContext
+	flash   *filters.FlashContext
 
 	actionMap map[string]web.Action
 }
@@ -38,9 +41,9 @@ func (lc *LoginController) New(params map[string]string) *web.Result {
 	output := &web.Result{}
 
 	output.Status = 200
-	outData := &web.ViewData{Context: &struct{}{}}
+	outData := &web.ViewData{Context: &struct{}{}} // render the registration form.
 
-	output.Body = []byte(web.RenderIn("public", "login", "new", outData))
+	output.Body = []byte(web.RenderWith("public", "login", "new", outData, lc.flash))
 
 	return output
 }
@@ -54,6 +57,17 @@ func (lc *LoginController) Create(params map[string]string) *web.Result {
 	n, err := rand.Read(passwordSalt)
 	if n != len(passwordSalt) || err != nil {
 		return &web.Result{Status: 500, Body: []byte(fmt.Sprintf("error generating random salt"))}
+	}
+
+	// redirect to login#New() w/ flash message saying passwords don't match.
+	if params["password"] != params["confirm-password"] {
+		fmt.Printf("redirecting to new page; password mismatch")
+		lc.flash.AddFlash("The password and confirmation do not match. Please double-check your supplied passwords.")
+		redirectPath := &web.RedirectPath{
+			NamedRoute: "loginNew", //redirect to login page.
+		}
+
+		return &web.Result{Status: 302, Body: nil, Redirect: redirectPath}
 	}
 
 	password = append(passwordSalt, []byte(params["password"])...)
@@ -71,7 +85,7 @@ func (lc *LoginController) Create(params map[string]string) *web.Result {
 
 	err = models.NewUser(username, hashedPassword, passwordSalt)
 	if err != nil {
-		fmt.Printf("error creating user: %s", err.Error())
+
 	}
 
 	redirectPath := &web.RedirectPath{
@@ -92,6 +106,20 @@ func NewLoginController() *LoginController {
 }
 
 // Implementations of DevController and Route
+
+func (lc *LoginController) SetFlashContext(fc *filters.FlashContext) error {
+	if fc == nil || !lc.safeInstance {
+		return errors.New("Login controller or flash context not ready for request.")
+	}
+
+	lc.flash = fc
+
+	return nil
+}
+
+func (lc *LoginController) SetSessionContext(sc *filters.SessionContext) {
+	lc.session = sc
+}
 
 // Sets the login controller's context which includes POST/GET vars.
 func (lc *LoginController) SetContext(context *filters.DevContext) error {

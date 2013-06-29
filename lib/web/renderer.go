@@ -92,7 +92,7 @@ func RenderIn(templateName, controllerName, actionName string, viewData *ViewDat
 }
 
 //DEV: using some caching to hopefully cut down file i/o
-func RenderWith(templateName, controllerName, actionName string, filterHelpers ...ViewableContext) string {
+func RenderWith(templateName, controllerName, actionName string, filterHelpers ...interface{}) string {
 	layoutFile := fmt.Sprintf("app/views/%s.template", templateName)
 	filename := fmt.Sprintf("app/views/%s/%s.template", controllerName, actionName)
 
@@ -123,7 +123,13 @@ func RenderWith(templateName, controllerName, actionName string, filterHelpers .
 
 	expandedFilterHelpers = append(expandedFilterHelpers, viewData, getHelpers())
 	for i := 0; i < len(filterHelpers); i++ {
-		expandedFilterHelpers = append(expandedFilterHelpers, filterHelpers[i].GetViewHelpers()...)
+		v, ok := filterHelpers[i].(ViewableContext)
+		if ok {
+			fmt.Printf("appending a viewable context \n")
+			expandedFilterHelpers = append(expandedFilterHelpers, v.GetViewHelpers()...)
+		} else {
+			expandedFilterHelpers = append(expandedFilterHelpers, filterHelpers[i])
+		}
 	}
 
 	if templateCache[layoutFile] == nil {

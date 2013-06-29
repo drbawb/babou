@@ -29,10 +29,16 @@ func LoadRoutes() *mux.Router {
 		filters.BuildChain().Execute(login, "index")).Name("loginIndex")
 	// Displays a registration form
 	r.HandleFunc("/register",
-		filters.BuildChain().Execute(login, "new")).Methods("GET").Name("loginNew")
+		filters.BuildChain().
+			Chain(filters.SessionChain()).
+			Chain(filters.FlashChain()).
+			Execute(login, "new")).Methods("GET").Name("loginNew")
 	// Handles a new user's registration request.
 	r.HandleFunc("/register",
-		filters.BuildChain().Execute(login, "create")).Methods("POST").Name("loginCreate")
+		filters.BuildChain().
+			Chain(filters.SessionChain()).
+			Chain(filters.FlashChain()).
+			Execute(login, "create")).Methods("POST").Name("loginCreate")
 
 	/* Initializes a session for the user and sets aside 4KiB backend storage
 	// for any stateful information.

@@ -87,7 +87,7 @@ func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc
 		}
 
 		if result.Status >= 300 && result.Status <= 399 {
-			//handleRedirect(result.Redirect, response, request)
+			handleRedirect(result.Redirect, response, request)
 		} else if result.Status == 404 {
 			http.NotFound(response, request)
 		} else if result.Status == 500 {
@@ -96,5 +96,18 @@ func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc
 			// Assume 200
 			response.Write(result.Body)
 		}
+	}
+}
+
+//TODO: still needs to be in a library >_>
+func handleRedirect(redirect *web.RedirectPath, response http.ResponseWriter, request *http.Request) {
+	if redirect.NamedRoute != "" {
+		url, err := web.Router.Get(redirect.NamedRoute).URL()
+		if err != nil {
+			http.Error(response, string("While trying to redirect you to another page the server encountered an error. Please reload the homepage"),
+				500)
+		}
+
+		http.Redirect(response, request, url.Path, 302)
 	}
 }

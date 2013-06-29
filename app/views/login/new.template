@@ -5,6 +5,11 @@
         {{#LinkTo loginCreate}}Register{{/LinkTo}}
 	</div>
 
+flash message woudl be here.
+{{#Flash}}
+	Flash message: {{Message}}
+{{/Flash}}
+
 {{#FormFor loginCreate post}}
         {{> app/views/login/register_form}}
 {{/FormFor}}
