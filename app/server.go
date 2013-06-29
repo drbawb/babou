@@ -7,6 +7,7 @@ package app
 
 import (
 	libBabou "github.com/drbawb/babou/lib"
+	libDb "github.com/drbawb/babou/lib/db"
 
 	fmt "fmt"
 	log "log"
@@ -62,5 +63,8 @@ func (s *Server) loadRoutes() {
 // Instructs the babou library to open a database connection.
 // This DB connection will be closed when babou is gracefully shutdown.
 func (s *Server) openDb() {
-
+	_, err := libDb.Open()
+	if err != nil {
+		panic("database could not be opened: " + err.Error())
+	}
 }
