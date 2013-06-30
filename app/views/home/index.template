@@ -1,7 +1,6 @@
 <div class="entry-brief">
 	<div class="entry-nav">
-		{{#LinkTo homeIndex}}Home{{/LinkTo}} 
-                {{#LinkTo loginIndex}}Login{{/LinkTo}}
+		{{> ../login/public_navbar}}
 	</div>
 To the machines: we are but bits. Ones and zeroes. Electricity.
 We cannot hope to be understood by others, or even ourselves. The edge of our consciousness is a barrier

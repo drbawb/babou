@@ -18,50 +18,24 @@ func LoadRoutes() *mux.Router {
 	// Shorthand for controllers
 	home := controllers.NewHomeController()
 	login := controllers.NewLoginController()
-	session := controllers.NewSessionController()
 
 	// Shows public homepage, redirects to private site if valid session can be found.
 	r.HandleFunc("/",
-		filters.BuildChain().Execute(home, "index")).Name("homeIndex")
+		filters.BuildDefaultChain().
+			Execute(home, "index")).Name("homeIndex")
 
 	// Displays a login form.
 	r.HandleFunc("/login",
-		filters.BuildChain().Execute(login, "index")).Name("loginIndex")
+		filters.BuildDefaultChain().
+			Execute(login, "index")).Name("loginIndex")
 	// Displays a registration form
 	r.HandleFunc("/register",
-		filters.BuildChain().
-			Chain(filters.SessionChain()).
-			Chain(filters.FlashChain()).
+		filters.BuildDefaultChain().
 			Execute(login, "new")).Methods("GET").Name("loginNew")
 	// Handles a new user's registration request.
 	r.HandleFunc("/register",
-		filters.BuildChain().
-			Chain(filters.SessionChain()).
-			Chain(filters.FlashChain()).
+		filters.BuildDefaultChain().
 			Execute(login, "create")).Methods("POST").Name("loginCreate")
-
-	/* Initializes a session for the user and sets aside 4KiB backend storage
-	// for any stateful information.
-	r.HandleFunc("/session/create",
-		wrap(session, "create")).Methods("POST").Name("sessionCreate")
-	*/
-
-	//Handles creating a user-session from a form.
-	r.HandleFunc("/session/test",
-		filters.BuildChain().
-			Chain(filters.SessionChain()).
-			Chain(filters.AuthChain()).
-			Chain(filters.FlashChain()).
-			Execute(session, "create")).Methods("POST").
-		Name("sessionCreate")
-
-	r.HandleFunc("/session/test/{name}",
-		filters.BuildChain().
-			Chain(filters.SessionChain()).
-			Chain(filters.AuthChain()).
-			Chain(filters.FlashChain()).
-			Execute(session, "create")).
-		Name("sessionTest")
 
 	// Catch-All: Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",

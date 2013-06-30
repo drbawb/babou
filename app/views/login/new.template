@@ -5,9 +5,8 @@
         {{#LinkTo loginCreate}}Register{{/LinkTo}}
 	</div>
 
-flash message woudl be here.
 {{#Flash}}
-	Flash message: {{Message}}
+	Registration failed because {{Message}}
 {{/Flash}}
 
 {{#FormFor loginCreate post}}

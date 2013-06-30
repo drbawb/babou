@@ -125,7 +125,6 @@ func RenderWith(templateName, controllerName, actionName string, filterHelpers .
 	for i := 0; i < len(filterHelpers); i++ {
 		v, ok := filterHelpers[i].(ViewableContext)
 		if ok {
-			fmt.Printf("appending a viewable context \n")
 			expandedFilterHelpers = append(expandedFilterHelpers, v.GetViewHelpers()...)
 		} else {
 			expandedFilterHelpers = append(expandedFilterHelpers, filterHelpers[i])
