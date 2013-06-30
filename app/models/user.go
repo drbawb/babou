@@ -16,11 +16,26 @@ type User struct {
 	passwordSalt string
 }
 
-func NewUser(username string, passwordHash, passwordSalt []byte) error {
+// Error-codes returned from some methods that could be presented to the UI.
+type UserModelError int
+
+const (
+	USERNAME_TAKEN        UserModelError = 1 << iota
+	USERNAME_INVALID_CHAR                = 1 << iota
+)
+
+// Creates a new user record in the database.
+// The first return parameter is an error-code that represents a non-fatal
+// problem that could be presented to the user.
+//
+// The second return parameter is a fatal error passed up from the database layer.
+func NewUser(username string, passwordHash, passwordSalt []byte) (UserModelError, error) {
+	var outStatus UserModelError
+
 	fn := func(database *sql.DB) error {
 		if CountUsers(username) > 0 {
-			fmt.Printf("username already exists")
-			return errors.New("Username already exists")
+			outStatus = USERNAME_TAKEN
+			return nil
 		}
 
 		stmt, err := database.Prepare("INSERT INTO users(username,passwordhash,passwordsalt) VALUES($1,$2, $3)")
@@ -35,15 +50,16 @@ func NewUser(username string, passwordHash, passwordSalt []byte) error {
 			return errors.New(fmt.Sprintf("Error executing statement: %s", err.Error()))
 		}
 
-		fmt.Printf("result was: %s", res) //use result to silence compiler
+		fmt.Printf("result was: %s", res) //use result to silence compiler for now.
 		return nil
 	}
 
 	err := db.ExecuteFn(fn)
 	if err != nil {
 		fmt.Printf("Error executing db action Users#New: %s \n -- \n", err)
+		return outStatus, err
 	}
-	return nil
+	return outStatus, err
 }
 
 // Returns -1 if user count cannot be established.
