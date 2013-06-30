@@ -15,6 +15,8 @@ type HomeController struct {
 	safeInstance bool
 
 	context *filters.DevContext
+	session *filters.SessionContext
+	flash   *filters.FlashContext
 
 	actionMap map[string]web.Action
 }
@@ -57,10 +59,6 @@ func (hc *HomeController) HandleRequest(action string) *web.Result {
 }
 
 func (hc *HomeController) SetContext(context *filters.DevContext) error {
-	if !hc.safeInstance {
-		return errors.New("This HomeController cannot safely handle contexts from a request.")
-	}
-
 	if context == nil {
 		return errors.New("No context was supplied to this controller!")
 	}
@@ -69,8 +67,32 @@ func (hc *HomeController) SetContext(context *filters.DevContext) error {
 	return nil
 }
 
+func (hc *HomeController) SetSessionContext(context *filters.SessionContext) error {
+	if context == nil {
+		return errors.New("No SessionContext was supplied to this controller!")
+	}
+
+	hc.session = context
+
+	return nil
+}
+func (hc *HomeController) SetFlashContext(context *filters.FlashContext) error {
+	if context == nil {
+		return errors.New("No FlashContext was supplied to this controller!")
+	}
+
+	hc.flash = context
+
+	return nil
+}
+
 func (hc *HomeController) Process(action string) (web.Controller, error) {
 	return process(hc, action)
+}
+
+// Tests that the current context-chain is suitable for this request.
+func (hc *HomeController) TestContext(chain []web.ChainableContext) error {
+	return testContext(chain)
 }
 
 func (hc *HomeController) NewInstance() web.Controller {

@@ -24,10 +24,21 @@ type contextChain struct {
 	list []web.ChainableContext
 }
 
+// Prepares a route with the default contexts:
+// this includes a ParamterChainLink, FlashChainLink, and SessionChainLink.
+// The latter are lazily loaded when requested by a controller.
+// (This implements the chain tested by the default application controller's `testContext` method.)
+func BuildDefaultChain() *contextChain {
+	chain := &contextChain{list: make([]web.ChainableContext, 0, 3)}
+	chain.Chain(&DevContext{}, &SessionContext{}, &FlashContext{})
+
+	return chain
+}
+
 // Prepares a route with no contexts.
 // Will simply call a bare metal controller by default.
 func BuildChain() *contextChain {
-	chain := &contextChain{list: make([]web.ChainableContext, 0)}
+	chain := &contextChain{list: make([]web.ChainableContext, 0, 1)}
 
 	chain.Chain(&DevContext{})
 
@@ -35,8 +46,8 @@ func BuildChain() *contextChain {
 }
 
 // Appends a context to end of the chain.
-func (cc *contextChain) Chain(context web.ChainableContext) *contextChain {
-	cc.list = append(cc.list, context)
+func (cc *contextChain) Chain(context ...web.ChainableContext) *contextChain {
+	cc.list = append(cc.list, context...)
 
 	return cc
 }
@@ -56,6 +67,10 @@ func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc
 		if err := cc.list[i].TestContext(route, cc.list); err != nil {
 			panicMessages = append(panicMessages, err.Error())
 		}
+	}
+
+	if err := route.TestContext(cc.list); err != nil {
+		panicMessages = append(panicMessages, err.Error())
 	}
 
 	if len(panicMessages) > 0 {
