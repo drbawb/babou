@@ -3,6 +3,6 @@
 		{{> app/views/login/public_navbar}}
 	</div>
 {{#Flash}}
-	This is a flash: {{Message}}
+	{{Message}}
 {{/Flash}}
 </div>

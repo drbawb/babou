@@ -5,6 +5,10 @@
         {{#LinkTo loginCreate}}Register{{/LinkTo}}
 	</div>
 
+{{#Flash}}
+	Registration failed because {{Message}}
+{{/Flash}}
+
 {{#FormFor loginCreate post}}
         {{> app/views/login/register_form}}
 {{/FormFor}}

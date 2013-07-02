@@ -75,6 +75,18 @@ func (ac *AuthContext) ApplyContext(controller web.Controller, response http.Res
 	} else {
 		fmt.Printf("Tried to wrap a controller that is not AuthContext aware \n")
 	}
+
+getSession:
+	for i := 0; i < len(chain); i++ {
+		_, ok := chain[i].(SessionChainLink)
+		if ok {
+			//_, _ = s.GetSession()
+
+			// access session safely in here for user_id perm checks.
+
+			break getSession
+		}
+	}
 }
 
 // Returns `true` if the AuthContext is properly initialized on top of a session store.

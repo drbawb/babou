@@ -1,10 +1,13 @@
-
-
 <div class="entry-brief">
 	<div class="entry-nav">
 		{{> public_navbar}}
 	</div>
-{{#FormFor sessionCreate post}}
+{{#Flash}}
+	{{Message}}
+{{/Flash}}
+
+You will be banned for no discernable reason. <br /><br />
+{{#FormFor loginSession post}}
         {{> app/views/login/login_form}}
 {{/FormFor}}
 </div>

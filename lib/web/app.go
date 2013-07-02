@@ -41,7 +41,8 @@ type Controller interface {
 // A route is part of a controller that is capable
 // of managing instances for a request life-cycle.
 type Route interface {
-	Process(string) (Controller, error)
+	Process(string) (Controller, error) // creates and returns a controller for a route.
+	TestContext([]ChainableContext) error
 	NewInstance() Controller
 	IsSafeInstance() bool // Can this handle requests?
 }

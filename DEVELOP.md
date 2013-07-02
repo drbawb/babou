@@ -46,7 +46,7 @@ Some areas to exercise _extreme caution_ when programming include:
 - Context Chains
 - Views
 
-Context Chains require thoughtfulness when implementing their `TestContext` methods to ensure
+Context Chains and Routes require thoughtfulness when implementing their `TestContext` methods to ensure
 that the runtime will not add a potentially invalid route. It helps to think of implementing 
 a context chain-link as test driven development.
 
@@ -57,6 +57,17 @@ rendering calls.
 
 In summary: `babou` is designed to fail fast and fail hard when a programmer makes an error that
 can only be detected at runtime.
+
+Scaffolding
+===
+To speed up development: the application controller contains several suitable default methods
+which will handle processing a route as well as adequately testing the default context chain.
+
+Using thsse methods allows you to create a basic implementation of a controller relatively easy.
+
+Customization can be achieved simply by replacing the body of the default methods with
+more appropriate logic as you see fit.
+
 
 Stack
 ===

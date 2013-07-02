@@ -26,7 +26,7 @@ type SessionChainLink interface {
 // A SessionAware controller must be willing to accept a SessionContext.
 // Use of the session context
 type SessionAware interface {
-	SetSessionContext(*SessionContext)
+	SetSessionContext(*SessionContext) error
 }
 
 // A context which provides server-backed session storage to a controller.

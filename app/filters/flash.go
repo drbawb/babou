@@ -24,6 +24,12 @@ type FlashContext struct {
 	session        *sessions.Session
 }
 
+type FlashChainLink interface {
+	web.ViewableContext
+	AddFlash(string)
+	GetFlashes() []interface{}
+}
+
 // A controller must accept a FlashContext object in order to support
 // the FlashContext chain-link
 type FlashableController interface {
