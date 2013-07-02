@@ -4,9 +4,6 @@ import (
 	errors "errors"
 	fmt "fmt"
 
-	bcrypt "code.google.com/p/go.crypto/bcrypt"
-	rand "crypto/rand"
-
 	filters "github.com/drbawb/babou/app/filters"
 	models "github.com/drbawb/babou/app/models"
 
@@ -27,6 +24,7 @@ type LoginController struct {
 	context *filters.DevContext
 	session *filters.SessionContext
 	flash   *filters.FlashContext
+	auth    *filters.AuthContext
 
 	actionMap map[string]web.Action
 }
@@ -38,6 +36,45 @@ func (lc *LoginController) Index(params map[string]string) *web.Result {
 	outData := &web.ViewData{Context: &struct{}{}}
 
 	output.Body = []byte(web.RenderWith("public", "login", "index", outData, lc.flash))
+
+	return output
+}
+
+func (lc *LoginController) Session(params map[string]string) *web.Result {
+	output := &web.Result{}
+	// otherwise redirect those bitches to loginPage with an error.
+	redirectPath := &web.RedirectPath{
+		NamedRoute: "loginIndex", //redirect to login page.
+	}
+
+	// check credentials and get user.
+	user := &models.User{}
+	err := user.SelectUsername(params["username"])
+	if err != nil {
+		lc.flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
+		output.Status = 302
+		output.Redirect = redirectPath
+
+		return output
+	}
+
+	err = user.CheckHash(params["password"])
+	if err != nil {
+		lc.flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
+		output.Status = 302
+		output.Redirect = redirectPath
+
+		return output
+	}
+
+	session, _ := lc.session.GetSession()
+
+	session.Values["user_id"] = user.UserId
+
+	output.Status = 302
+	output.Redirect = redirectPath
+
+	lc.flash.AddFlash("Login was success! GREAT SUCCESS!")
 
 	return output
 }
@@ -55,17 +92,7 @@ func (lc *LoginController) New(params map[string]string) *web.Result {
 
 func (lc *LoginController) Create(params map[string]string) *web.Result {
 
-	username := params["username"]
-	//64-char salt
-	saltLength := 64
-	passwordSalt := make([]byte, saltLength)
-	password := make([]byte, 0)
-
-	n, err := rand.Read(passwordSalt)
-	if n != len(passwordSalt) || err != nil {
-		return &web.Result{Status: 500, Body: []byte(ACCT_CREATION_ERROR)}
-	}
-
+	username, password := params["username"], params["password"]
 	// redirect to login#New() w/ flash message saying passwords don't match.
 	if params["password"] != params["confirm-password"] {
 		fmt.Printf("redirecting to new page; password mismatch")
@@ -77,18 +104,7 @@ func (lc *LoginController) Create(params map[string]string) *web.Result {
 		return &web.Result{Status: 302, Body: nil, Redirect: redirectPath}
 	}
 
-	password = append(passwordSalt, []byte(params["password"])...)
-	hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.MinCost)
-	if err != nil {
-		return &web.Result{Status: 500, Body: []byte(ACCT_CREATION_ERROR)}
-	}
-
-	err = bcrypt.CompareHashAndPassword(hashedPassword, password)
-	if err != nil {
-		return &web.Result{Status: 500, Body: []byte(ACCT_CREATION_ERROR)}
-	}
-
-	status, err := models.NewUser(username, hashedPassword, passwordSalt)
+	status, err := models.NewUser(username, password)
 	if err != nil {
 		return &web.Result{Status: 500, Body: []byte(ACCT_CREATION_ERROR)}
 	}
@@ -147,6 +163,15 @@ func (lc *LoginController) SetContext(context *filters.DevContext) error {
 	return errors.New("This instance of LoginController cannot service requests.")
 }
 
+func (lc *LoginController) SetAuthContext(context *filters.AuthContext) error {
+	if lc.safeInstance {
+		lc.auth = context
+		return nil
+	}
+
+	return errors.New("This instance of LoginController cannot service requests.")
+}
+
 // Dispatches routes through this controller's actionMap and returns a result.
 func (lc *LoginController) HandleRequest(action string) *web.Result {
 	if !lc.safeInstance {
@@ -176,9 +201,11 @@ func (lc *LoginController) NewInstance() web.Controller {
 
 	//add your actions here.
 	newLc.actionMap["index"] = newLc.Index
+	//registration
 	newLc.actionMap["create"] = newLc.Create
 	newLc.actionMap["new"] = newLc.New
-
+	//session
+	newLc.actionMap["session"] = newLc.Session
 	return newLc
 }
 

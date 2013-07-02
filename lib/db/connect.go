@@ -38,7 +38,7 @@ func Open() (<-chan DbMessage, error) {
 		return nil, errors.New("A database connection is already open.")
 	}
 
-	dbConn, err := sql.Open("postgres", "host=/var/run/postgresql dbname=babou sslmode=disable")
+	dbConn, err := sql.Open("postgres", "user=rstraw host=localhost dbname=babou sslmode=disable")
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,8 @@
 	{{Message}}
 {{/Flash}}
 
-{{#FormFor loginCreate post}}
+You will be banned for no discernable reason. <br /><br />
+{{#FormFor loginSession post}}
         {{> app/views/login/login_form}}
 {{/FormFor}}
 </div>

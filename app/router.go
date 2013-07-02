@@ -27,7 +27,16 @@ func LoadRoutes() *mux.Router {
 	// Displays a login form.
 	r.HandleFunc("/login",
 		filters.BuildDefaultChain().
-			Execute(login, "index")).Name("loginIndex")
+			Execute(login, "index")).
+		Methods("GET").
+		Name("loginIndex")
+
+	r.HandleFunc("/login",
+		filters.BuildDefaultChain().
+			Execute(login, "session")).
+		Methods("POST").
+		Name("loginSession")
+
 	// Displays a registration form
 	r.HandleFunc("/register",
 		filters.BuildDefaultChain().
