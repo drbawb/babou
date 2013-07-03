@@ -1,0 +1,7 @@
+<div class="articles">
+	{{#Articles}}
+		<div class="article">
+			{{Text}}
+		</div>
+	{{/Articles}}
+</div>

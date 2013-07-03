@@ -393,3 +393,34 @@ connection handle to a separate coroutine.
 ExecuteAsync() will not defer the closing of the database. The closure
 MUST free resources when it is finished executing. Use ExecuteAsync()
 with extreme caution.
+
+
+
+---
+
+Users Sessions:
+
+The user login flow executes as follows:
+The login controller will take a username and password [preferably over HTTPS] and have it
+compared against the database salt, hash [and pepper].
+
+On sucessful authentication:
+- A session will be created for the user which includes various data about
+  the user's presence on the website.
+- A userId and sessionId will be stored in a user's session cookie.
+- The user's session data will be stored in the http_sessions table.
+
+If a user attempts to login and create a session when one already exists: we assume
+they are using a new browser or have removed their login cookies.
+
+We will update the session; but instead of simply updating the `last_seen_` fields
+we will instead create a fresh session and store it with the old ID.
+
+IDs that are not marked as `remember me` will be pruned from our database
+every 2 hours after they are `last seen.`
+
+IDs that are marked as remember me will only be pruned when they logout
+or if they login from another computer w/o checking `remember me.`
+
+---
+

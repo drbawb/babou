@@ -3,6 +3,7 @@ package controllers
 
 import (
 	errors "errors"
+	"fmt"
 
 	filters "github.com/drbawb/babou/app/filters"
 	web "github.com/drbawb/babou/lib/web"
@@ -15,6 +16,7 @@ type HomeController struct {
 	safeInstance bool
 
 	context *filters.DevContext
+	auth    *filters.AuthContext
 	session *filters.SessionContext
 	flash   *filters.FlashContext
 
@@ -24,15 +26,55 @@ type HomeController struct {
 // Will display a public welcome page if the user is not logged in
 // Otherwise it will redirect the user to the /news page.
 func (hc *HomeController) Index(params map[string]string) *web.Result {
+	if hc.auth.Can("homeIndex") {
+		return hc.blog(params)
+	} else {
+		return hc.homePage(params)
+	}
+}
+
+// Public route - rendered as a public index if the user
+// is not logged in or is not authenticated.
+func (hc *HomeController) homePage(params map[string]string) *web.Result {
 	output := &web.Result{}
 
 	output.Status = 200
 	outData := &web.ViewData{Context: &struct {
-		Name  string
 		Yield func(string, string) string
-	}{Name: "Test"}}
+	}{}}
 
 	output.Body = []byte(web.RenderIn("public", "home", "index", outData))
+
+	return output
+}
+
+// Private route - rendered instead of public index if the user
+// is properly authenticated.
+func (hc *HomeController) blog(params map[string]string) *web.Result {
+	output := &web.Result{}
+
+	output.Status = 200
+
+	testArticles := make([]*struct{ Text string }, 0)
+	testArticles = append(testArticles, &struct{ Text string }{Text: "what up bro?"})
+	testArticles = append(testArticles, &struct{ Text string }{Text: "JUST WHO THE HELL DO YOU THINK I AM??"})
+
+	user, err := hc.auth.CurrentUser()
+	if err != nil {
+		fmt.Printf("error printing user: %s \n", err.Error())
+		output.Status = 500
+		return output
+	}
+
+	outData := &struct {
+		Username string
+		Articles []*struct{ Text string }
+	}{
+		Username: user.Username,
+		Articles: testArticles,
+	}
+
+	output.Body = []byte(web.RenderWith("application", "home", "news", outData))
 
 	return output
 }
@@ -92,7 +134,29 @@ func (hc *HomeController) Process(action string) (web.Controller, error) {
 
 // Tests that the current context-chain is suitable for this request.
 func (hc *HomeController) TestContext(chain []web.ChainableContext) error {
-	return testContext(chain)
+	outFlag := false
+	for i := 0; i < len(chain); i++ {
+		_, ok := chain[i].(filters.AuthChainLink)
+		if ok {
+			outFlag = true
+			break
+		}
+	}
+
+	if err := testContext(chain); err != nil {
+		return errors.New("Default chain missing from login route")
+	}
+
+	if !outFlag {
+		return errors.New("Auth chain missing from login route.")
+	}
+
+	return nil
+}
+
+func (hc *HomeController) SetAuthContext(context *filters.AuthContext) error {
+	hc.auth = context
+	return nil
 }
 
 func (hc *HomeController) NewInstance() web.Controller {

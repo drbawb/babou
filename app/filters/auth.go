@@ -5,8 +5,15 @@ import (
 	"fmt"
 	"net/http"
 
+	models "github.com/drbawb/babou/app/models"
 	web "github.com/drbawb/babou/lib/web"
 )
+
+type AuthChainLink interface {
+	web.ChainableContext
+	WriteSessionFor(*models.User) error
+	DeleteCurrentSession() error
+}
 
 // An authorizable controller must be willing to accept an AuthContext.
 //
@@ -19,6 +26,11 @@ type AuthorizableController interface {
 // An implementation of SessionContext that uses it to provide helper methods for authorizing a user.
 type AuthContext struct {
 	isInit bool
+
+	request  *http.Request
+	response http.ResponseWriter
+
+	session SessionChainLink
 }
 
 // Returns an uninitialized AuthContext suitable for use in a context chain
@@ -28,6 +40,71 @@ func AuthChain() *AuthContext {
 	return context
 }
 
+func (ac *AuthContext) DeleteCurrentSession() error {
+	session, _ := ac.session.GetSession()
+	session.Values["user_id"] = nil
+
+	return nil
+}
+
+// Only doing this b/c AC has access to request/response
+// Some way I can make this private to `login` controller?
+func (ac *AuthContext) WriteSessionFor(user *models.User) error {
+	if user == nil || ac.isInit == false {
+		return errors.New("This auth-context is not ready to write a user session.")
+	}
+
+	fmt.Printf("writing a session for user: %s w/ IP: %s \n", user.Username, ac.request.RemoteAddr)
+	userSession := &models.Session{}
+	err := userSession.WriteFor(user, ac.request.RemoteAddr)
+	if err != nil {
+		fmt.Printf("[auth-context] error saving user session: %s \n", err.Error())
+		return err
+	}
+
+	return nil
+	//fmt.Printf("Writing a sessino for user: %s w/ remote IP: %s", user.Username, ac.request.RemoteAddr
+}
+
+// Returns the currently authenticated user
+func (ac *AuthContext) CurrentUser() (*models.User, error) {
+	session, _ := ac.session.GetSession()
+	userId := session.Values["user_id"]
+
+	if userId == nil {
+		return nil, errors.New("No current user.")
+	}
+
+	user := &models.User{}
+	if err := user.SelectId(userId.(int)); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// Checks if a user can perform a specified action:
+func (ac *AuthContext) Can(permission string) bool {
+	// if the user has a session: it will return true for every check.
+	// otherwise it will return false.
+	session, err := ac.session.GetSession()
+	if err != nil {
+		fmt.Printf("Error authorizing: %s", err.Error())
+		return false
+	}
+
+	if session.Values["user_id"] != nil {
+		fmt.Printf("found session for user: %d", session.Values["user_id"])
+		return true
+	} else {
+		fmt.Printf("nope, no session found.")
+		return false
+	}
+
+	// hah, i dont care riiight now.
+}
+
+// No-op
 func (ac *AuthContext) CloseContext() {}
 
 // This context requires a chain with a SessionChainLink as well as an AuthorizableController route.
@@ -67,6 +144,9 @@ func (ac *AuthContext) NewInstance() web.ChainableContext {
 func (ac *AuthContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 	ac.isInit = true
 
+	ac.request = request
+	ac.response = response
+
 	v, ok := controller.(AuthorizableController)
 	if ok {
 		if err := v.SetAuthContext(ac); err != nil {
@@ -78,9 +158,9 @@ func (ac *AuthContext) ApplyContext(controller web.Controller, response http.Res
 
 getSession:
 	for i := 0; i < len(chain); i++ {
-		_, ok := chain[i].(SessionChainLink)
+		v, ok := chain[i].(SessionChainLink)
 		if ok {
-			//_, _ = s.GetSession()
+			ac.session = v
 
 			// access session safely in here for user_id perm checks.
 

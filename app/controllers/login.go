@@ -44,7 +44,7 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 	output := &web.Result{}
 	// otherwise redirect those bitches to loginPage with an error.
 	redirectPath := &web.RedirectPath{
-		NamedRoute: "loginIndex", //redirect to login page.
+		NamedRoute: "homeIndex", //redirect to login page.
 	}
 
 	// check credentials and get user.
@@ -53,7 +53,10 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 	if err != nil {
 		lc.flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
 		output.Status = 302
+
+		redirectPath.NamedRoute = "loginIndex"
 		output.Redirect = redirectPath
+		// redirect them back to the login page w/ an error.
 
 		return output
 	}
@@ -63,7 +66,7 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 		lc.flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
 		output.Status = 302
 		output.Redirect = redirectPath
-
+		// redirect them to the home-page which should now render as a news page.
 		return output
 	}
 
@@ -74,7 +77,34 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 	output.Status = 302
 	output.Redirect = redirectPath
 
-	lc.flash.AddFlash("Login was success! GREAT SUCCESS!")
+	lc.auth.WriteSessionFor(user)
+
+	return output
+}
+
+func (lc *LoginController) Logout(params map[string]string) *web.Result {
+	output := &web.Result{}
+	// otherwise redirect those bitches to loginPage with an error.
+	redirectPath := &web.RedirectPath{
+		NamedRoute: "homeIndex", //redirect to login page.
+	}
+
+	// check credentials and get user.
+	//user := &models.User{}
+	//err := user.SelectUsername(params["username"])
+	err := lc.auth.DeleteCurrentSession()
+	if err != nil {
+		lc.flash.AddFlash(fmt.Sprintf("Error logging you out: %s", err.Error()))
+		output.Status = 302
+
+		output.Redirect = redirectPath
+		// redirect them back to the login page w/ an error.
+
+		return output
+	}
+
+	output.Status = 302
+	output.Redirect = redirectPath
 
 	return output
 }
@@ -193,7 +223,24 @@ func (lc *LoginController) Process(action string) (web.Controller, error) {
 
 // Tests that the current chain is sufficient for this route.
 func (lc *LoginController) TestContext(chain []web.ChainableContext) error {
-	return testContext(chain)
+	outFlag := false
+	for i := 0; i < len(chain); i++ {
+		_, ok := chain[i].(filters.AuthChainLink)
+		if ok {
+			outFlag = true
+			break
+		}
+	}
+
+	if err := testContext(chain); err != nil {
+		return errors.New("Default chain missing from login route")
+	}
+
+	if !outFlag {
+		return errors.New("Auth chain missing from login route.")
+	}
+
+	return nil
 }
 
 func (lc *LoginController) NewInstance() web.Controller {
@@ -206,6 +253,7 @@ func (lc *LoginController) NewInstance() web.Controller {
 	newLc.actionMap["new"] = newLc.New
 	//session
 	newLc.actionMap["session"] = newLc.Session
+	newLc.actionMap["logout"] = newLc.Logout
 	return newLc
 }
 
