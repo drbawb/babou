@@ -8,6 +8,13 @@ html,body {
 	height: 100%;
 }
 
+.flash {
+	background-color: #E4A4A4;
+	color: #6D1E1E;
+	border: 1px #6D1E1E solid;
+	padding: 5px;
+}
+
 .stretch {
 	background-color: #000000;
 	color: #dddddd;

@@ -3,7 +3,9 @@
 		{{> public_navbar}}
 	</div>
 {{#Flash}}
-	{{Message}}
+	<div class="flash">
+		{{Message}}
+	</div>
 {{/Flash}}
 
 You will be banned for no discernable reason. <br /><br />

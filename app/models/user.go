@@ -84,6 +84,10 @@ func (u *User) SelectUsername(username string) error {
 // Returns an error if the user's password cannot be validated.
 func (u *User) CheckHash(password string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(u.passwordHash), []byte(u.passwordSalt+password))
+	if err != nil {
+		return errors.New("The password you entered is incorrect. Please try again. You have [n] tries remaining.")
+	}
+
 	return err
 }
 

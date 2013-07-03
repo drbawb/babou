@@ -323,3 +323,7 @@ func TextFieldFor(params []string, data string) string {
 		return ""
 	}
 }
+
+func EscapeString(in string) string {
+	return template.HTMLEscapeString(in)
+}
