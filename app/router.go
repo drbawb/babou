@@ -22,28 +22,40 @@ func LoadRoutes() *mux.Router {
 	// Shows public homepage, redirects to private site if valid session can be found.
 	r.HandleFunc("/",
 		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
 			Execute(home, "index")).Name("homeIndex")
 
 	// Displays a login form.
 	r.HandleFunc("/login",
 		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
 			Execute(login, "index")).
 		Methods("GET").
 		Name("loginIndex")
 
 	r.HandleFunc("/login",
 		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
 			Execute(login, "session")).
 		Methods("POST").
 		Name("loginSession")
 
+	r.HandleFunc("/logout",
+		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
+			Execute(login, "logout")).
+		Methods("GET").
+		Name("loginDelete")
+
 	// Displays a registration form
 	r.HandleFunc("/register",
 		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
 			Execute(login, "new")).Methods("GET").Name("loginNew")
 	// Handles a new user's registration request.
 	r.HandleFunc("/register",
 		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
 			Execute(login, "create")).Methods("POST").Name("loginCreate")
 
 	// Catch-All: Displays all public assets.

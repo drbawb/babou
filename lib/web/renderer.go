@@ -12,6 +12,8 @@ import (
 	errors "errors"
 )
 
+const DEBUG_RELOAD = false
+
 // A global router or middleware implementation that will service requests
 // from the HTTP server and direct them to an appropriate controller
 var Router *mux.Router = nil

@@ -12,6 +12,7 @@ import (
 type ParamterChainLink interface {
 	SetParams(map[string]string)
 	GetParams() map[string]string
+	SetResponsePair(http.ResponseWriter, *http.Request)
 }
 
 // A controller which accepts GET/POST request variables.
@@ -22,6 +23,10 @@ type ParameterizedController interface {
 // Test impl. of Context interface.
 type DevContext struct {
 	Params map[string]string
+
+	Response http.ResponseWriter
+	Request  *http.Request
+
 	isInit bool
 }
 
@@ -59,6 +64,8 @@ func (dc *DevContext) NewInstance() web.ChainableContext {
 func (dc *DevContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 
 	dc.SetParams(web.RetrieveAllParams(request))
+	dc.SetResponsePair(response, request)
+
 	dc.isInit = true
 
 	v, ok := controller.(ParameterizedController)
@@ -82,4 +89,10 @@ func (dc *DevContext) SetParams(params map[string]string) {
 // any conflict GET variables.
 func (dc *DevContext) GetParams() map[string]string {
 	return dc.Params
+}
+
+// Sets the current HTTP Response & Request pair
+func (dc *DevContext) SetResponsePair(w http.ResponseWriter, r *http.Request) {
+	dc.Request = r
+	dc.Response = w
 }

@@ -38,7 +38,7 @@ func (u *User) SelectId(id int) error {
 
 	dba := func(dbConn *sql.DB) error {
 		row := dbConn.QueryRow(selectUserById, id)
-		err := row.Scan(u.UserId, u.Username, u.passwordHash, u.passwordSalt)
+		err := row.Scan(&u.UserId, &u.Username, &u.passwordHash, &u.passwordSalt)
 		if err != nil {
 			return err
 		}

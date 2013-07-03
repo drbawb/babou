@@ -2,11 +2,20 @@
 
 <html>
 	<head>
-		<title> [Babou] </title>
+		<title> Fatal(Syntax) </title>
+		<link rel="stylesheet" type="text/css" href="/assets/main.css">
 	</head>
 	<body>
+		<div class="stretch">
+			[welcome {{Username}}] - [0 new messages] - [{{#LinkTo loginDelete}}Logout{{/LinkTo}}]
+		</div>
+
 		<div class="content">
 			{{#Yield}}{{/Yield}}
-		</div>	
+		</div>
+
+		<div class="stretch">
+			&copy; 2013, Robert Straw, All Rights Reserved.
+		</div>
 	</body>
 </html>
