@@ -2,7 +2,10 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"net"
+
 	"github.com/drbawb/babou/lib/db"
 )
 
@@ -15,6 +18,27 @@ type Session struct {
 	userId     int
 	loginIp    int
 	lastSeenIp int
+}
+
+func (s *Session) DeleteFor(user *User) error {
+	if user == nil {
+		return errors.New("No user to delete a session for")
+	}
+
+	deleteSession := `DELETE FROM "` + SESSIONS_TABLE + `"
+	WHERE user_id = $1`
+
+	dba := func(dbConn *sql.DB) error {
+		_, err := dbConn.Exec(deleteSession, user.UserId)
+		if err != nil {
+			return err
+		}
+
+		// ignore affected rows.
+		return nil
+	}
+
+	return db.ExecuteFn(dba)
 }
 
 func (s *Session) WriteFor(user *User, ipAddr string) error {
@@ -30,9 +54,21 @@ func (s *Session) WriteFor(user *User, ipAddr string) error {
 	VALUES($1, $2)`
 
 	// try parse IP
+	host, _, err := net.SplitHostPort(ipAddr)
+	if err != nil {
+		fmt.Printf("Error parsing IP from remoteAddr: %s", err.Error())
+		return err
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		ipAddr = "::1"
+	} else {
+		ipAddr = ip.String()
+	}
 
 	dba := func(dbConn *sql.DB) error {
-		result, err := dbConn.Exec(updateSession, user.UserId, "::1")
+		result, err := dbConn.Exec(updateSession, user.UserId, ipAddr)
 		if err != nil {
 			fmt.Printf("error updating user's sessions: %s \n", err.Error())
 			return err
@@ -60,6 +96,6 @@ func (s *Session) WriteFor(user *User, ipAddr string) error {
 		return nil
 	}
 
-	err := db.ExecuteFn(dba)
+	err = db.ExecuteFn(dba)
 	return err
 }

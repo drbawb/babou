@@ -63,8 +63,11 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 
 	err = user.CheckHash(params["password"])
 	if err != nil {
+		fmt.Printf("error logging you in.")
 		lc.flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
 		output.Status = 302
+
+		redirectPath.NamedRoute = "loginIndex"
 		output.Redirect = redirectPath
 		// redirect them to the home-page which should now render as a news page.
 		return output
@@ -94,6 +97,7 @@ func (lc *LoginController) Logout(params map[string]string) *web.Result {
 	//err := user.SelectUsername(params["username"])
 	err := lc.auth.DeleteCurrentSession()
 	if err != nil {
+		//lib.Println("error logging user out: %v \n", err.Error())
 		lc.flash.AddFlash(fmt.Sprintf("Error logging you out: %s", err.Error()))
 		output.Status = 302
 

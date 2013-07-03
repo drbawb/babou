@@ -39,12 +39,9 @@ func (hc *HomeController) homePage(params map[string]string) *web.Result {
 	output := &web.Result{}
 
 	output.Status = 200
-	outData := &web.ViewData{Context: &struct {
-		Yield func(string, string) string
-	}{}}
+	outData := &struct{}{}
 
-	output.Body = []byte(web.RenderIn("public", "home", "index", outData))
-
+	output.Body = []byte(web.RenderWith("public", "home", "index", outData, hc.flash))
 	return output
 }
 

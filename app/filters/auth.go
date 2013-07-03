@@ -42,7 +42,35 @@ func AuthChain() *AuthContext {
 
 func (ac *AuthContext) DeleteCurrentSession() error {
 	session, _ := ac.session.GetSession()
+
+	userId := session.Values["user_id"].(int)
+
+	user := &models.User{}
+	if err := user.SelectId(userId); err != nil {
+		return err
+	}
+
+	if err := ac.deleteSessionFor(user); err != nil {
+		return err
+	}
+
 	session.Values["user_id"] = nil
+
+	return nil
+}
+
+// Delete a session when the user logs out.
+// This will fail all future permission checks for that user.
+func (ac *AuthContext) deleteSessionFor(user *models.User) error {
+	if user == nil || ac.isInit == false {
+		return errors.New("This auth-context is not ready to delete a user's session.")
+	}
+
+	userSession := &models.Session{}
+	err := userSession.DeleteFor(user)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -94,10 +122,8 @@ func (ac *AuthContext) Can(permission string) bool {
 	}
 
 	if session.Values["user_id"] != nil {
-		fmt.Printf("found session for user: %d", session.Values["user_id"])
 		return true
 	} else {
-		fmt.Printf("nope, no session found.")
 		return false
 	}
 
