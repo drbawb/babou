@@ -7,7 +7,7 @@
 	</head>
 	<body>
 		<div class="stretch">
-			<img height="50" src="/assets/babou_invert.png" alt="baobu logo" />
+			<img height="50" src="/assets/babou_invert.png" alt="baobu logo" align="middle" />
 			[welcome {{Username}}] - [0 new messages] - [{{#LinkTo loginDelete}}Logout{{/LinkTo}}]
 		</div>
 

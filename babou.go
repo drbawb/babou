@@ -5,7 +5,9 @@ import (
 	flag "flag"
 	fmt "fmt"
 
-	web "github.com/drbawb/babou/app"      // The babou application: composed of a server and muxer.
+	web "github.com/drbawb/babou/app" // The babou application: composed of a server and muxer.
+	tracker "github.com/drbawb/babou/tracker"
+
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
 	//libDb "github.com/drbawb/babou/lib/db"
 
@@ -31,6 +33,7 @@ func main() {
 
 	if *appSettings.FullStack == true || *appSettings.WebStack == true {
 		// Start web-server
+		fmt.Printf("Starting web")
 		server := web.NewServer(appSettings, webServerIO)
 		// Receive SIGNALs from web server.
 
@@ -39,6 +42,10 @@ func main() {
 
 	if *appSettings.FullStack == true || *appSettings.TrackerStack == true {
 		// Start tracker
+		fmt.Printf("Starting tracker \n")
+		server := tracker.NewServer(appSettings, trackerIO)
+		go server.Start()
+		//tracker.ReadFile("/Users/rstraw/Downloads/Kevin Mitnick - The Art of Deception & The Art of Intrusion.torrent")
 	}
 
 	// Block on server IOs
