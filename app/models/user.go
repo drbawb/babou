@@ -83,7 +83,9 @@ func (u *User) SelectUsername(username string) error {
 // Must be performed on an initialized user-struct.
 // Returns an error if the user's password cannot be validated.
 func (u *User) CheckHash(password string) error {
-	err := bcrypt.CompareHashAndPassword([]byte(u.passwordHash), []byte(u.passwordSalt+password))
+	saltedPassword := append(make([]byte, 0), []byte(u.passwordSalt+password)...)
+
+	err := bcrypt.CompareHashAndPassword([]byte(u.passwordHash), saltedPassword)
 	if err != nil {
 		return errors.New("The password you entered is incorrect. Please try again. You have [n] tries remaining.")
 	}
@@ -180,11 +182,12 @@ func genHash(password string) (string, []byte, error) {
 		return "", nil, errors.New("Error generating salt for password.")
 	}
 
+	saltedPassword = append(saltedPassword, passwordSalt...)
 	saltedPassword = append(saltedPassword, []byte(password)...)
-	hashedPassword, err := bcrypt.GenerateFromPassword(saltedPassword, bcrypt.MinCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword(saltedPassword, 0)
 
 	if err != nil {
-		return "", nil, errors.New("Error encrypting password for storage.")
+		return "", nil, err
 	}
 
 	return string(hashedPassword), passwordSalt, nil
