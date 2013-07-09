@@ -1,0 +1,6 @@
+<div class="articles">
+	<div class="article">
+		Select a torrent to upload: 
+		{{> app/views/torrent/new_torrent}}
+	</div>
+</div>

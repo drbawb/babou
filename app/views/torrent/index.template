@@ -1,0 +1,10 @@
+{{#Flash}}
+	<div class="flash">
+		{{Message}}
+	</div>
+{{/Flash}}
+<div class="articles">
+	List of torrents:
+
+	{{#LinkTo torrentNew}}Upload a Torrent{{/LinkTo}}
+</div>

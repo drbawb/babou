@@ -18,6 +18,7 @@ func LoadRoutes() *mux.Router {
 	// Shorthand for controllers
 	home := controllers.NewHomeController()
 	login := controllers.NewLoginController()
+	torrent := controllers.NewTorrentController()
 
 	// Shows public homepage, redirects to private site if valid session can be found.
 	r.HandleFunc("/",
@@ -64,6 +65,22 @@ func LoadRoutes() *mux.Router {
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
 			Execute(login, "create")).Methods("POST").Name("loginCreate")
+
+	// Handle torrent routes:
+	r.HandleFunc("/torrents",
+		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
+			Execute(torrent, "index")).Methods("GET").Name("torrentIndex")
+
+	r.HandleFunc("/torrents/new",
+		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
+			Execute(torrent, "new")).Methods("GET").Name("torrentNew")
+
+	r.HandleFunc("/torrents/create",
+		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
+			Execute(torrent, "create")).Methods("POST").Name("torrentCreate")
 
 	// Catch-All: Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",
