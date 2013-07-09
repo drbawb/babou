@@ -39,6 +39,14 @@ type TorrentFile struct {
 	Info         map[string]interface{} `bencode:"info"`
 }
 
+// Writes a new torrent to be used by the tracker for maintaining peer lists.
+func NewTorrent(file *TorrentFile) *Torrent {
+	out := &Torrent{peers: make(map[string]*Peer)}
+	out.Info = file
+
+	return out
+}
+
 // Reads a torrent-file from the filesystem.
 // TODO: Model will create torrent-file; obsoleting this.
 func ReadFile(file multipart.File) *Torrent {
@@ -89,7 +97,7 @@ func (t *TorrentFile) WriteFile(secret, hash []byte) ([]byte, error) {
 	fmt.Printf("writing file...")
 
 	t.Announce = fmt.Sprintf("http://tracker.fatalsyntax.com:4200/%s/%s/announce", hex.EncodeToString(secret), hex.EncodeToString(hash))
-
+	t.Encoding = "UTF-8"
 	infoBuffer := bytes.NewBuffer(make([]byte, 0))
 	encoder := bencode.NewEncoder(infoBuffer)
 
