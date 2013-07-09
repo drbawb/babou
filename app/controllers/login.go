@@ -30,6 +30,28 @@ type LoginController struct {
 	actionMap map[string]web.Action
 }
 
+// Creates an instance of this controller with action routes.
+// This instance is ready to route requests.
+//
+// Actions for this controller must be defined here.
+func (lc *LoginController) NewInstance() web.Controller {
+	newLc := &LoginController{safeInstance: true, actionMap: make(map[string]web.Action)}
+
+	//login page.
+	newLc.actionMap["index"] = newLc.Index
+	//registration
+	newLc.actionMap["create"] = newLc.Create
+	newLc.actionMap["new"] = newLc.New
+	//session
+	newLc.actionMap["session"] = newLc.Session
+	newLc.actionMap["logout"] = newLc.Logout
+
+	newLc.actionMap["download"] = newLc.Download
+	return newLc
+}
+
+// TODO: This is simply for testing a torrent download. Will be moved to
+// Torrent controller eventually.
 func (lc *LoginController) Download(params map[string]string) *web.Result {
 	output := &web.Result{}
 
@@ -51,6 +73,7 @@ func (lc *LoginController) Download(params map[string]string) *web.Result {
 	return output
 }
 
+// Displays the login page.
 func (lc *LoginController) Index(params map[string]string) *web.Result {
 	output := &web.Result{}
 
@@ -62,6 +85,7 @@ func (lc *LoginController) Index(params map[string]string) *web.Result {
 	return output
 }
 
+// Creates a new session after a user attempts a login.
 func (lc *LoginController) Session(params map[string]string) *web.Result {
 	output := &web.Result{}
 	// otherwise redirect those bitches to loginPage with an error.
@@ -107,6 +131,8 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 	return output
 }
 
+// Removes a users session from the database. Removes their session cookie.
+// Then redirects them to the homepage. (Which should now show the welcome banner.)
 func (lc *LoginController) Logout(params map[string]string) *web.Result {
 	output := &web.Result{}
 	// otherwise redirect those bitches to loginPage with an error.
@@ -135,6 +161,7 @@ func (lc *LoginController) Logout(params map[string]string) *web.Result {
 	return output
 }
 
+// Displays the registration form.
 func (lc *LoginController) New(params map[string]string) *web.Result {
 	output := &web.Result{}
 
@@ -146,6 +173,7 @@ func (lc *LoginController) New(params map[string]string) *web.Result {
 	return output
 }
 
+// Handles the results from the registration form submission.
 func (lc *LoginController) Create(params map[string]string) *web.Result {
 
 	username, password := params["username"], params["password"]
@@ -184,15 +212,7 @@ func (lc *LoginController) Create(params map[string]string) *web.Result {
 	return &web.Result{Status: 302, Body: nil, Redirect: redirectPath}
 }
 
-// Registers actions for the HomeController and returns it.
-func NewLoginController() *LoginController {
-	lc := &LoginController{}
-	lc.safeInstance = false
-
-	return lc
-}
-
-// Implementations of DevController and Route
+// Sets up contexts.
 
 func (lc *LoginController) SetFlashContext(fc *filters.FlashContext) error {
 	if fc == nil || !lc.safeInstance {
@@ -228,26 +248,39 @@ func (lc *LoginController) SetAuthContext(context *filters.AuthContext) error {
 	return errors.New("This instance of LoginController cannot service requests.")
 }
 
-// Dispatches routes through this controller's actionMap and returns a result.
+// Returns a LoginController instance that is not safe across requests.
+// This is useful for routing as well as context-testing.
+func NewLoginController() *LoginController {
+	lc := &LoginController{}
+	lc.safeInstance = false
+
+	return lc
+}
+
+// Performs one of the actions mapped to this controller.
+// Returns 404 if the action is not found in the map.
 func (lc *LoginController) HandleRequest(action string) *web.Result {
 	if !lc.safeInstance {
 		return &web.Result{Status: 500, Body: []byte("Server could not route your request.")}
 	}
 
 	if lc.actionMap[action] != nil {
-		return lc.actionMap[action](lc.context.GetParams())
+		return lc.actionMap[action](lc.context.GetParams().All)
 	} else {
 		return &web.Result{Status: 404, Body: []byte("Not found")}
 	}
 }
 
-// Prepares a public-facing instance of this route that should be used for a single request.
+// Process calls the application controller's default route processor.
+// This will return a fresh instance of this controller that will be used
+// for a single request-response lifecycle.
 func (lc *LoginController) Process(action string) (web.Controller, error) {
 	//default route processor.
 	return process(lc, action)
 }
 
 // Tests that the current chain is sufficient for this route.
+// This route requires the default chain as well as the authorization context.
 func (lc *LoginController) TestContext(chain []web.ChainableContext) error {
 	outFlag := false
 	for i := 0; i < len(chain); i++ {
@@ -269,22 +302,7 @@ func (lc *LoginController) TestContext(chain []web.ChainableContext) error {
 	return nil
 }
 
-func (lc *LoginController) NewInstance() web.Controller {
-	newLc := &LoginController{safeInstance: true, actionMap: make(map[string]web.Action)}
-
-	//add your actions here.
-	newLc.actionMap["index"] = newLc.Index
-	//registration
-	newLc.actionMap["create"] = newLc.Create
-	newLc.actionMap["new"] = newLc.New
-	//session
-	newLc.actionMap["session"] = newLc.Session
-	newLc.actionMap["logout"] = newLc.Logout
-
-	newLc.actionMap["download"] = newLc.Download
-	return newLc
-}
-
+// Returns true if this controller is ready to process a request.
 func (lc *LoginController) IsSafeInstance() bool {
 	return lc.safeInstance
 }

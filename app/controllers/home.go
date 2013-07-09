@@ -23,6 +23,21 @@ type HomeController struct {
 	actionMap map[string]web.Action
 }
 
+// Creates an instance of this controller with action routes.
+// This instance is ready to route requests.
+//
+// Actions for this controller must be defined here.
+func (hc *HomeController) NewInstance() web.Controller {
+	newHc := &HomeController{safeInstance: true, actionMap: make(map[string]web.Action)}
+
+	//add your actions here.
+	newHc.actionMap["index"] = newHc.Index
+
+	return newHc
+}
+
+// Controller actions and logic.
+
 // Will display a public welcome page if the user is not logged in
 // Otherwise it will redirect the user to the /news page.
 func (hc *HomeController) Index(params map[string]string) *web.Result {
@@ -76,60 +91,41 @@ func (hc *HomeController) blog(params map[string]string) *web.Result {
 	return output
 }
 
+// Routing methods
+// These are required to satisfy the ContextChain interfaces.
+
 // Returns a HomeController instance that is not safe across requests.
+// This is useful for routing as well as context-testing.
 func NewHomeController() *HomeController {
 	hc := &HomeController{safeInstance: false}
 
 	return hc
 }
 
-// Will create a request-specific controller instance and
-// dispatch a request to the appropriate action mapping.
+// Performs one of the actions mapped to this controller.
+// Returns 404 if the action is not found in the map.
 func (hc *HomeController) HandleRequest(action string) *web.Result {
 	if !hc.safeInstance {
 		return &web.Result{Status: 500, Body: []byte("The HomeController cannot service requests from users.")}
 	}
 
 	if hc.actionMap[action] != nil {
-		return hc.actionMap[action](hc.context.GetParams())
+		return hc.actionMap[action](hc.context.GetParams().All)
 	} else {
 		return &web.Result{Status: 404, Body: []byte("Not found")}
 	}
 }
 
-func (hc *HomeController) SetContext(context *filters.DevContext) error {
-	if context == nil {
-		return errors.New("No context was supplied to this controller!")
-	}
-
-	hc.context = context
-	return nil
-}
-
-func (hc *HomeController) SetSessionContext(context *filters.SessionContext) error {
-	if context == nil {
-		return errors.New("No SessionContext was supplied to this controller!")
-	}
-
-	hc.session = context
-
-	return nil
-}
-func (hc *HomeController) SetFlashContext(context *filters.FlashContext) error {
-	if context == nil {
-		return errors.New("No FlashContext was supplied to this controller!")
-	}
-
-	hc.flash = context
-
-	return nil
-}
-
+// Process calls the application controller's default route processor.
+// This will return a fresh instance of this controller that will be used
+// for a single request-response lifecycle.
 func (hc *HomeController) Process(action string) (web.Controller, error) {
 	return process(hc, action)
 }
 
 // Tests that the current context-chain is suitable for this request.
+// For the HomeController: this tests the presence of the default chain
+// in addition to the presence of the Authorizaiton Chain.
 func (hc *HomeController) TestContext(chain []web.ChainableContext) error {
 	outFlag := false
 	for i := 0; i < len(chain); i++ {
@@ -151,20 +147,49 @@ func (hc *HomeController) TestContext(chain []web.ChainableContext) error {
 	return nil
 }
 
+// Set contexts
+
+// Sets the ParameterContext which contains GET/POST data.
+func (hc *HomeController) SetContext(context *filters.DevContext) error {
+	if context == nil {
+		return errors.New("No context was supplied to this controller!")
+	}
+
+	hc.context = context
+	return nil
+}
+
+// Sets the SessionContext which provides session storage for this request.
+func (hc *HomeController) SetSessionContext(context *filters.SessionContext) error {
+	if context == nil {
+		return errors.New("No SessionContext was supplied to this controller!")
+	}
+
+	hc.session = context
+
+	return nil
+}
+
+// Sets the FlashContext which will display a message at the earliest opportunity.
+// (Usually on the next controller/action that is FlashContext aware.)
+func (hc *HomeController) SetFlashContext(context *filters.FlashContext) error {
+	if context == nil {
+		return errors.New("No FlashContext was supplied to this controller!")
+	}
+
+	hc.flash = context
+
+	return nil
+}
+
+// Sets the AuthContext which allows this controller to test permissions
+// for the currently logged in user.
 func (hc *HomeController) SetAuthContext(context *filters.AuthContext) error {
 	hc.auth = context
 	return nil
 }
 
-func (hc *HomeController) NewInstance() web.Controller {
-	newHc := &HomeController{safeInstance: true, actionMap: make(map[string]web.Action)}
-
-	//add your actions here.
-	newHc.actionMap["index"] = newHc.Index
-
-	return newHc
-}
-
+// Retruns true if this controller is ready to process a request.
 func (hc *HomeController) IsSafeInstance() bool {
 	return hc.safeInstance
 }
