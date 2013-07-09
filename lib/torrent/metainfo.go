@@ -8,21 +8,28 @@ import (
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/hex"
-	"strconv"
 
+	"errors"
 	fmt "fmt"
-	net "net"
 	os "os"
 
 	bencode "github.com/zeebo/bencode"
 )
 
+// Performance tuning constants.
+const (
+	MIN_PEER_THRESHOLD = 30
+	DEFAULT_NUMWANT    = 30
+)
+
 // Represents the torrent's metainfo structure (*.torrent file)
 type Torrent struct {
 	Info  *TorrentFile
-	peers map[string]*Peer
+	peers map[string]*Peer // List of peers for this torrent; as a map of their user-secrets.
 }
 
+// Represents a `babou` torrent.
+// We don't care about other fields so they will be discarded from uploaded torrents.
 type TorrentFile struct {
 	Announce     string                 `bencode:"announce"`
 	Comment      string                 `bencode:"comment"`
@@ -32,13 +39,8 @@ type TorrentFile struct {
 	Info         map[string]interface{} `bencode:"info"`
 }
 
-type Peer struct {
-	ID   string `bencode:"peer id"`
-	IP   string `bencode:"ip"`
-	Port uint16 `bencode:"port"`
-}
-
-// tests reading a torrent file.
+// Reads a torrent-file from the filesystem.
+// TODO: Model will create torrent-file; obsoleting this.
 func ReadFile(filename string) *Torrent {
 	fmt.Printf("reading file...")
 	file, err := os.Open(filename)
@@ -82,6 +84,12 @@ func ReadFile(filename string) *Torrent {
 }
 
 // Converts torrent to SUPRA-PRIVATE torrent
+//
+// Sets the private flag to 1 and embeds the supplied secret and hash
+// for authentication purposes.
+//
+// This torrent file SHOULD NOT be shared between users or statistics collection
+// and anti-abuse mechanisms will be skewed for that user.
 func (t *TorrentFile) WriteFile(secret, hash []byte) ([]byte, error) {
 	fmt.Printf("writing file...")
 
@@ -100,42 +108,87 @@ func (t *TorrentFile) WriteFile(secret, hash []byte) ([]byte, error) {
 
 }
 
-// Adds a peer or seed for this torrent
-func (t *Torrent) AddPeer(peerId, ipAddr, port string) {
-	host, _, _ := net.SplitHostPort(ipAddr)
-	fmt.Printf("host added: %s, peerId: %s \n", host, peerId)
+// Updates the peer-list from an announce requeset.
+func (t *Torrent) AddPeer(peerId, ipAddr, port, secret string) {
+	peer := NewPeer(peerId, ipAddr, port, secret)
 
-	portNum, _ := strconv.Atoi(port)
-
-	newPeer := &Peer{ID: peerId, IP: host, Port: uint16(portNum)}
-	if t.peers[peerId] == nil && host != "" {
-		t.peers[peerId] = newPeer
+	if t.peers[peerId] == nil {
+		// new peer
+		t.peers[peerId] = peer
+	} else {
+		// we have seen this peer before.
+		t.peers[peerId].UpdateLastSeen()
 	}
 
 	fmt.Printf("len peers map: %s", len(t.peers))
 }
 
-func (t *Torrent) NumLeech() int {
-	return len(t.peers)
+// Updates the in-memory statistics for a peer being tracked for this torrent.
+// Returns an error if the peer is not found or the request cannot be fulfilled.
+// The stats-collector job will ensure they get written to disk.
+func (t *Torrent) UpdateStatsFor(peerId string, uploaded, downloaded, left string) error {
+	if t.peers[peerId] == nil {
+		return errors.New("Peer w/ ID[%s] not found on this torrent.")
+	}
+
+	if err := t.peers[peerId].UpdateStats(uploaded, downloaded, left); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (t *Torrent) GetPeerList() string {
-	//tempList := make([]*Peer, 0, len(t.peers))
-
-	outBuf := bytes.NewBuffer(make([]byte, 0))
+// Returns the seeders followed by the leechers for this torrent.
+func (t *Torrent) EnumeratePeers() (int, int) {
+	seeding := 0
+	leeching := 0
 
 	for _, val := range t.peers {
+		switch {
+		case val.Status == 0 || val.Status == LEECHING:
+			leeching += 1
+		case val.Status == SEEDING:
+			seeding += 1
+		}
+	}
 
-		if !(val.Port == 0) && !(val.IP == "") && !(val.ID == "") {
-			ip := net.ParseIP(val.IP)
-			ip = ip.To4()
+	return seeding, leeching
+}
+
+// Send numWant -1 for "no peers requested", 0 for default, and n if client wants more peers.
+// Returns a ranked peerlist that attempts to maintain a balanced ratio of seeders:leechers.
+func (t *Torrent) GetPeerList(numWant int) string {
+	//tempList := make([]*Peer, 0, len(t.peers))
+
+	if numWant == -1 {
+		return "" //peer _specifically requested_ we do not send more peers via numwant => 0
+	} else if numWant == 0 {
+		numWant = DEFAULT_NUMWANT
+	}
+
+	outBuf := bytes.NewBuffer(make([]byte, 0))
+	// send them everything we got; torrent is just starting off.
+	if len(t.peers) < MIN_PEER_THRESHOLD && len(t.peers) < numWant {
+		for _, val := range t.peers {
+			ip := val.IPAddr.To4()
+
 			binary.Write(outBuf, binary.BigEndian, ip)
 			binary.Write(outBuf, binary.BigEndian, val.Port)
 		}
+	} else if len(t.peers) < MIN_PEER_THRESHOLD && len(t.peers) > numWant {
+		i := 0
+		for _, val := range t.peers {
+			if i > numWant {
+				break
+			}
 
+			ip := val.IPAddr
+			binary.Write(outBuf, binary.BigEndian, ip)
+			binary.Write(outBuf, binary.BigEndian, val.Port)
+
+			i++
+		}
 	}
-
-	fmt.Printf("peers field: %v \n", outBuf.Bytes())
 
 	return string(outBuf.Bytes())
 }

@@ -6,6 +6,9 @@ import (
 	fmt "fmt"
 
 	bcrypt "code.google.com/p/go.crypto/bcrypt"
+
+	"encoding/hex"
+
 	hmac "crypto/hmac"
 	rand "crypto/rand"
 	sha256 "crypto/sha256"
@@ -88,12 +91,20 @@ func (u *User) SelectUsername(username string) error {
 
 // Selects a user by their secret key. This is used by the tracker
 // to authorize a user.
-func (u *User) SelectSecret(secret []byte) error {
+//
+// The secret is expected to be a UTF8 string representing a byte array
+// using 2-characters per byte. (As per the standard encoding/hex package.)
+func (u *User) SelectSecret(secret string) error {
 	selectUserBySecret := `SELECT user_id,username,passwordhash,passwordsalt,secret,secret_hash
 	FROM "users" WHERE secret = $1`
 
+	secretHex, err := hex.DecodeString(secret)
+	if err != nil {
+		return errors.New("The user's secret was not in the expected format.")
+	}
+
 	dba := func(dbConn *sql.DB) error {
-		row := dbConn.QueryRow(selectUserBySecret, secret)
+		row := dbConn.QueryRow(selectUserBySecret, secretHex)
 		err := row.Scan(&u.UserId, &u.Username, &u.passwordHash, &u.passwordSalt, &u.Secret, &u.SecretHash)
 		if err != nil {
 			return err
@@ -103,7 +114,7 @@ func (u *User) SelectSecret(secret []byte) error {
 		return nil
 	}
 
-	err := db.ExecuteFn(dba)
+	err = db.ExecuteFn(dba)
 	if err != nil {
 		return err
 	}
