@@ -7,7 +7,7 @@ import (
 func LoadRoutes(s *Server) *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/announce", wrapAnnounceHandle(s))
+	r.HandleFunc("/{secret}/{hash}/announce", wrapAnnounceHandle(s))
 
 	return r
 }

@@ -6,7 +6,9 @@ import (
 	fmt "fmt"
 
 	bcrypt "code.google.com/p/go.crypto/bcrypt"
+	hmac "crypto/hmac"
 	rand "crypto/rand"
+	sha256 "crypto/sha256"
 
 	db "github.com/drbawb/babou/lib/db"
 )
@@ -19,6 +21,9 @@ type User struct {
 	passwordHash string
 	passwordSalt string
 
+	Secret     []byte
+	SecretHash []byte
+
 	isInit bool
 }
 
@@ -28,17 +33,18 @@ type UserModelError int
 const (
 	USERNAME_TAKEN        UserModelError = 1 << iota
 	USERNAME_INVALID_CHAR                = 1 << iota
+	FAIL_GEN_SECRET                      = 1 << iota
 )
 
 // Select user by ID number and populate the current `user` struct with the record data.
 // Returns an error if there was a problem. fetching the user information from the database.
 func (u *User) SelectId(id int) error {
-	selectUserById := `SELECT user_id, username, passwordhash, passwordsalt
+	selectUserById := `SELECT user_id, username, passwordhash, passwordsalt, secret, secret_hash
 	FROM "users" WHERE user_id = $1`
 
 	dba := func(dbConn *sql.DB) error {
 		row := dbConn.QueryRow(selectUserById, id)
-		err := row.Scan(&u.UserId, &u.Username, &u.passwordHash, &u.passwordSalt)
+		err := row.Scan(&u.UserId, &u.Username, &u.passwordHash, &u.passwordSalt, &u.Secret, &u.SecretHash)
 		if err != nil {
 			return err
 		}
@@ -58,12 +64,12 @@ func (u *User) SelectId(id int) error {
 // Select user by username and populate the current `user` struct with the record data.
 // Returns an error if there was a problem. fetching the user information from the database.
 func (u *User) SelectUsername(username string) error {
-	selectUserById := `SELECT user_id, username, passwordhash, passwordsalt
+	selectUserById := `SELECT user_id, username, passwordhash, passwordsalt, secret, secret_hash
 	FROM "users" WHERE username = $1`
 
 	dba := func(dbConn *sql.DB) error {
 		row := dbConn.QueryRow(selectUserById, username)
-		err := row.Scan(&u.UserId, &u.Username, &u.passwordHash, &u.passwordSalt)
+		err := row.Scan(&u.UserId, &u.Username, &u.passwordHash, &u.passwordSalt, &u.Secret, &u.SecretHash)
 		if err != nil {
 			return err
 		}
@@ -78,6 +84,32 @@ func (u *User) SelectUsername(username string) error {
 	}
 
 	return nil //safe to use pointer.
+}
+
+// Selects a user by their secret key. This is used by the tracker
+// to authorize a user.
+func (u *User) SelectSecret(secret []byte) error {
+	selectUserBySecret := `SELECT user_id,username,passwordhash,passwordsalt,secret,secret_hash
+	FROM "users" WHERE secret = $1`
+
+	dba := func(dbConn *sql.DB) error {
+		row := dbConn.QueryRow(selectUserBySecret, secret)
+		err := row.Scan(&u.UserId, &u.Username, &u.passwordHash, &u.passwordSalt, &u.Secret, &u.SecretHash)
+		if err != nil {
+			return err
+		}
+
+		u.isInit = true
+		return nil
+	}
+
+	err := db.ExecuteFn(dba)
+	if err != nil {
+		return err
+	}
+
+	return nil //safe to use pointer.
+
 }
 
 // Must be performed on an initialized user-struct.
@@ -112,13 +144,19 @@ func NewUser(username, password string) (UserModelError, error) {
 			return err
 		}
 
-		stmt, err := database.Prepare("INSERT INTO users(username,passwordhash,passwordsalt) VALUES($1,$2, $3)")
+		announceSecret, announceHash, err := genSecret()
+		if err != nil {
+			return err
+		}
+
+		stmt, err := database.Prepare("INSERT INTO users(username,passwordhash,passwordsalt,secret,secret_hash) VALUES($1,$2, $3, $4, $5)")
+		fmt.Printf("user registered; [DEBUG] \n secret: %s \n hash: %s \n\n", fmt.Sprintf("%x", announceSecret), fmt.Sprintf("%x", announceHash))
 
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error preparing statement: %s", err.Error()))
 		}
 
-		res, err := stmt.Exec(username, string(passwordHash), passwordSalt)
+		res, err := stmt.Exec(username, string(passwordHash), passwordSalt, announceSecret, announceHash)
 
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error executing statement: %s", err.Error()))
@@ -191,4 +229,31 @@ func genHash(password string) (string, []byte, error) {
 	}
 
 	return string(hashedPassword), passwordSalt, nil
+}
+
+// Generates a random announce-secret.
+// The secret is stored in the user's profile
+//
+// This secret is appended to the database along with a hash
+//
+// HMAC to verify the authenticity of the secret; and use the secret
+// to lookup the user.
+// Returns: secret, secret's hash, and any error encountered.
+func genSecret() ([]byte, []byte, error) {
+	//TODO: store shared tracker secret in configuration.
+	sharedKey := []byte("f75778f7425be4db0369d09af37a6c2b9ab3dea0e53e7bd57412e4b060e607f7")
+
+	randomSecret := make([]byte, 64)
+	n, err := rand.Read(randomSecret)
+	if err != nil {
+		return nil, nil, err
+	} else if n != len(randomSecret) {
+		return nil, nil, errors.New("Error generating random secret for user.")
+	}
+
+	// The secret and its hash will be sent with each tracker request
+	mac := hmac.New(sha256.New, sharedKey)
+	mac.Write(randomSecret)
+
+	return randomSecret, mac.Sum(nil), nil
 }

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
+	"encoding/hex"
 	"strconv"
 
 	fmt "fmt"
@@ -17,27 +18,28 @@ import (
 )
 
 // Represents the torrent's metainfo structure (*.torrent file)
-type TorrentFile struct {
-	Announce     string                 "announce"
-	AnnounceList []interface{}          "announce-list"
-	Comment      string                 "comment"
-	CreatedBy    string                 "created by"
-	CreationDate int64                  "creation date"
-	Encoding     string                 "encoding"
-	Info         map[string]interface{} "info"
-	Private      int64                  "private"
+type Torrent struct {
+	Info  *TorrentFile
+	peers map[string]*Peer
+}
 
-	peers []*Peer
+type TorrentFile struct {
+	Announce     string                 `bencode:"announce"`
+	Comment      string                 `bencode:"comment"`
+	CreatedBy    string                 `bencode:"created by"`
+	CreationDate int64                  `bencode:"creation date"`
+	Encoding     string                 `bencode:"encoding"`
+	Info         map[string]interface{} `bencode:"info"`
 }
 
 type Peer struct {
 	ID   string `bencode:"peer id"`
 	IP   string `bencode:"ip"`
-	Port string `bencode:"port"`
+	Port uint16 `bencode:"port"`
 }
 
 // tests reading a torrent file.
-func ReadFile(filename string) *TorrentFile {
+func ReadFile(filename string) *Torrent {
 	fmt.Printf("reading file...")
 	file, err := os.Open(filename)
 	if err != nil {
@@ -45,19 +47,22 @@ func ReadFile(filename string) *TorrentFile {
 		return nil
 	}
 
-	torrent := &TorrentFile{peers: make([]*Peer, 0)}
+	torrent := &Torrent{Info: &TorrentFile{}, peers: make(map[string]*Peer)}
 
 	decoder := bencode.NewDecoder(file)
-	err = decoder.Decode(torrent)
+	err = decoder.Decode(torrent.Info)
 	if err != nil {
 		fmt.Printf("error decoding torrent file: %s", err.Error())
 	}
 
-	fmt.Printf("info[] hash: %x \n", torrent.EncodeInfo())
-	fmt.Printf("# of pieces (hashes): %d \n", len(torrent.Info["pieces"].(string))/20)
-	if torrent.Info["files"] != nil {
+	metainfo := torrent.Info
+	torrent.Info.Info["private"] = 1
+
+	fmt.Printf("info[] hash: %x \n", metainfo.EncodeInfo())
+	fmt.Printf("# of pieces (hashes): %d \n", len(metainfo.Info["pieces"].(string))/20)
+	if metainfo.Info["files"] != nil {
 		fmt.Printf("--- \n multi-file mode \n---\n")
-		fileList := torrent.Info["files"].([]interface{})
+		fileList := metainfo.Info["files"].([]interface{})
 		for _, file := range fileList {
 			fileDict := file.(map[string]interface{})
 			fmt.Printf("file name: %s \n", fileDict["path"])
@@ -65,56 +70,74 @@ func ReadFile(filename string) *TorrentFile {
 			fmt.Printf("   ---   \n")
 		}
 
-	} else if torrent.Info["name"] != nil {
+	} else if metainfo.Info["name"] != nil {
 		fmt.Printf("--- \n single-file mode \n---\n")
-		fmt.Printf("file name: %s \n", torrent.Info["name"])
-		fmt.Printf("file length: %d MiB", torrent.Info["length"].(int64)/(1024*1024))
+		fmt.Printf("file name: %s \n", metainfo.Info["name"])
+		fmt.Printf("file length: %d MiB", metainfo.Info["length"].(int64)/(1024*1024))
 	} else {
 		fmt.Printf("malformed torrent? \n")
 	}
 
 	return torrent
+}
+
+// Converts torrent to SUPRA-PRIVATE torrent
+func (t *TorrentFile) WriteFile(secret, hash []byte) ([]byte, error) {
+	fmt.Printf("writing file...")
+
+	t.Announce = fmt.Sprintf("http://tracker.fatalsyntax.com:4200/%s/%s/announce", hex.EncodeToString(secret), hex.EncodeToString(hash))
+
+	infoBuffer := bytes.NewBuffer(make([]byte, 0))
+	encoder := bencode.NewEncoder(infoBuffer)
+
+	err := encoder.Encode(t)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return infoBuffer.Bytes(), nil
 
 }
 
 // Adds a peer or seed for this torrent
-func (t *TorrentFile) AddPeer(peerId, ipAddr, port string) {
+func (t *Torrent) AddPeer(peerId, ipAddr, port string) {
 	host, _, _ := net.SplitHostPort(ipAddr)
-	fmt.Printf("host added: %s \n", host)
+	fmt.Printf("host added: %s, peerId: %s \n", host, peerId)
 
-	newPeer := &Peer{ID: peerId, IP: host, Port: port}
-	t.peers = append(t.peers, newPeer)
-}
+	portNum, _ := strconv.Atoi(port)
 
-func (t *TorrentFile) GetPeerList() string {
-	outStrBytes := make([]byte, 6)
-	outStr := bytes.NewBuffer(outStrBytes)
-
-	for _, val := range t.peers {
-		ip := net.ParseIP(val.IP)
-		n, _ := outStr.Write(ip.To4())
-		fmt.Printf("wrote %d bytes for ip \n", n)
-
-		portNum, _ := strconv.Atoi(val.Port)
-
-		n = binary.PutVarint(outStrBytes, int64(portNum))
-		fmt.Printf("wrote %d bytes for port \n", n)
-
-		fmt.Printf("len peer: %d \n", len(outStrBytes))
+	newPeer := &Peer{ID: peerId, IP: host, Port: uint16(portNum)}
+	if t.peers[peerId] == nil && host != "" {
+		t.peers[peerId] = newPeer
 	}
 
-	/*peerBuffer := bytes.NewBuffer(make([]byte, 0))
+	fmt.Printf("len peers map: %s", len(t.peers))
+}
 
-	encoder := bencode.NewEncoder(peerBuffer)
-	err := encoder.Encode(t.peers)
+func (t *Torrent) NumLeech() int {
+	return len(t.peers)
+}
 
-	if err != nil {
-		fmt.Printf("err: %s encoding peer list \n", err.Error())
-	}*/
+func (t *Torrent) GetPeerList() string {
+	//tempList := make([]*Peer, 0, len(t.peers))
 
-	fmt.Printf("peer list: %v \n --- \n", string(outStr.Bytes()))
+	outBuf := bytes.NewBuffer(make([]byte, 0))
 
-	return string(outStrBytes)
+	for _, val := range t.peers {
+
+		if !(val.Port == 0) && !(val.IP == "") && !(val.ID == "") {
+			ip := net.ParseIP(val.IP)
+			ip = ip.To4()
+			binary.Write(outBuf, binary.BigEndian, ip)
+			binary.Write(outBuf, binary.BigEndian, val.Port)
+		}
+
+	}
+
+	fmt.Printf("peers field: %v \n", outBuf.Bytes())
+
+	return string(outBuf.Bytes())
 }
 
 // Encode's the `info` dictionary into a SHA1 hash; used to uniquely identify a torrent.

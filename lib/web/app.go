@@ -55,8 +55,12 @@ type Action func(map[string]string) *Result
 // The middleware or router is responsible for using
 // this result appopriately.
 type Result struct {
-	Body     []byte //HTTP Response Body
-	Status   int    //HTTP Status Code
+	Body   []byte //HTTP Response Body
+	Status int    //HTTP Status Code
+
+	IsFile   bool //Indicates that the body should be served as a file.
+	Filename string
+
 	Redirect *RedirectPath
 }
 
