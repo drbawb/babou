@@ -9,7 +9,9 @@
 package web
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
+	"mime/multipart"
 	"net/http"
 	"strings"
 )
@@ -86,18 +88,40 @@ func DisableDirectoryListing(h http.Handler) http.HandlerFunc {
 	})
 }
 
+// Attempts to retrieve multipart formdata; will return an empty map otherwise
+func RetrieveMultipart(request *http.Request) map[string][]*multipart.FileHeader {
+	vars := mux.Vars(request)
+	outMap := make(map[string][]*multipart.FileHeader, 0)
+
+	// Deal with multipart form data; again: POST data takes precedence over GET data.
+	// A separate map of file-info will be returned.
+	if request.MultipartForm != nil {
+		postMP := request.MultipartForm
+		for k, v := range postMP.Value {
+			vars[k] = v[0]
+		}
+
+		outMap = postMP.File
+	}
+
+	return outMap
+}
+
 // Retrieves GET and POST vars from an http Request
 func RetrieveAllParams(request *http.Request) map[string]string {
 	vars := mux.Vars(request)
-	if err := request.ParseForm(); err != nil {
+	if err := request.ParseMultipartForm(8388608); err != nil {
+		fmt.Printf("err parsing form: %s \n", err.Error())
 		return vars // could not parse form
 	}
 
+	// Deal with ordinary data.
 	var postVars map[string][]string
 	postVars = map[string][]string(request.Form)
 	for k, v := range postVars {
 		// Ignore duplicate arguments taking the first.
 		// POST will supersede any GET data in the event of collisions.
+		fmt.Printf("form var: %s, %s", k, v)
 		vars[k] = v[0]
 	}
 

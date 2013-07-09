@@ -39,6 +39,7 @@ type viewHelpers struct {
 // Helper functions which are available to views that are rendered inside
 // the context of a {{#FormFor}} section.
 type postHelpers struct {
+	FileFor      func(params []string, data string) string
 	LabelFor     func(params []string, data string) string
 	TextFieldFor func(params []string, data string) string
 }
@@ -53,7 +54,7 @@ func getHelpers() *viewHelpers {
 // Returns a set of form helpers to be passed to a rendering context which
 // is processing an HTML form.
 func getFormHelpers() *postHelpers {
-	return &postHelpers{LabelFor: LabelFor, TextFieldFor: TextFieldFor}
+	return &postHelpers{FileFor: FileFor, LabelFor: LabelFor, TextFieldFor: TextFieldFor}
 }
 
 //Renders the application template; yielding to app layout if requested.
@@ -123,7 +124,7 @@ func RenderWith(templateName, controllerName, actionName string, filterHelpers .
 		Yield: yieldFn,
 	}
 
-	expandedFilterHelpers = append(expandedFilterHelpers, viewData, getHelpers())
+	expandedFilterHelpers = append(expandedFilterHelpers, viewData, getHelpers(), getFormHelpers())
 	for i := 0; i < len(filterHelpers); i++ {
 		v, ok := filterHelpers[i].(ViewableContext)
 		if ok {
@@ -238,9 +239,30 @@ func buildUrlWithVerb(controllerName string, httpMethod string) (*url.URL, error
 	return url, err
 }
 
+// Generates an input for a file.
+// The id defaults to the `name` property if it is omitted.
+//  Example:
+//    {{#FileFor (name) [id]}}
+//
+//    {{/FileFor}}
+func FileFor(params []string, data string) string {
+	var name string
+	var id string
+
+	if len(params) == 2 {
+		name = params[0]
+		id = params[1]
+	} else {
+		name, id = params[0], params[0]
+	}
+
+	openTag := fmt.Sprintf("<input type=\"file\" name=\"%s\" id=\"%s\" size=\"40\" />", name, id)
+	return openTag
+}
+
 // Builds a form context and renders a sub-template inside of it.
 //  Example:
-//    {{#FormFor}}
+//    {{#FormFor (controller) (method) [enctype] (formId)} }
 //      {{ > app/views/users/register.template }}
 //    {{/FormFor}}
 // Where the register.template can now use any of the Form helpers.
@@ -248,14 +270,19 @@ func BuildForm(params []string, data string) string {
 	var controllerName string
 	var httpMethod string
 	var formId string
+	var enctype string
 
 	// Parse parameters
-	if len(params) == 3 {
+	if len(params) == 4 {
+		controllerName = params[0]
+		httpMethod = params[1]
+		enctype = params[2]
+		formId = params[3]
+	} else if len(params) == 3 {
 		controllerName = params[0]
 		httpMethod = params[1]
 		formId = params[2]
-	}
-	if len(params) == 2 {
+	} else if len(params) == 2 {
 		controllerName = params[0]
 		formId = params[0]
 		httpMethod = params[1]
@@ -273,7 +300,14 @@ func BuildForm(params []string, data string) string {
 	}
 
 	// Opening and closing form tags
-	openTag := fmt.Sprintf("<form id=\"%s\" action=\"%s\" method=\"%s\">", formId, url, httpMethod)
+	var openTag string
+	// Use default enctype unless it is specified
+	if enctype != "" {
+		openTag = fmt.Sprintf("<form id=\"%s\" action=\"%s\" method=\"%s\" enctype=\"%s\">", formId, url, httpMethod, enctype)
+	} else {
+		openTag = fmt.Sprintf("<form id=\"%s\" action=\"%s\" method=\"%s\">", formId, url, httpMethod)
+	}
+
 	closeTag := fmt.Sprintf("</form>")
 
 	// Render inner-content with Form context
