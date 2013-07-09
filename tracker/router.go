@@ -4,10 +4,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func LoadRoutes() *mux.Router {
+func LoadRoutes(s *Server) *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/announce", announceHandle)
+	r.HandleFunc("/{secret}/{hash}/announce", wrapAnnounceHandle(s))
 
 	return r
 }

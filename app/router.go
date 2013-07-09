@@ -47,6 +47,13 @@ func LoadRoutes() *mux.Router {
 		Methods("GET").
 		Name("loginDelete")
 
+	r.HandleFunc("/download",
+		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
+			Execute(login, "download")).
+		Methods("GET").
+		Name("loginDownload")
+
 	// Displays a registration form
 	r.HandleFunc("/register",
 		filters.BuildDefaultChain().

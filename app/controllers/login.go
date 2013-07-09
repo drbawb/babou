@@ -7,6 +7,7 @@ import (
 	filters "github.com/drbawb/babou/app/filters"
 	models "github.com/drbawb/babou/app/models"
 
+	torrent "github.com/drbawb/babou/lib/torrent"
 	web "github.com/drbawb/babou/lib/web"
 )
 
@@ -27,6 +28,27 @@ type LoginController struct {
 	auth    *filters.AuthContext
 
 	actionMap map[string]web.Action
+}
+
+func (lc *LoginController) Download(params map[string]string) *web.Result {
+	output := &web.Result{}
+
+	output.Status = 200
+
+	user, err := lc.auth.CurrentUser()
+	if err != nil {
+		output.Body = []byte(err.Error())
+		return output
+	}
+
+	torrentFile := torrent.ReadFile("/home/drbawb/Downloads/[FFF] Hataraku Maou-sama! - 13 [5467C06D].mkv.torrent")
+	encodedTorrent, err := torrentFile.Info.WriteFile(user.Secret, user.SecretHash)
+
+	output.IsFile = true
+	output.Filename = "test.torrent"
+	output.Body = encodedTorrent
+
+	return output
 }
 
 func (lc *LoginController) Index(params map[string]string) *web.Result {
@@ -258,6 +280,8 @@ func (lc *LoginController) NewInstance() web.Controller {
 	//session
 	newLc.actionMap["session"] = newLc.Session
 	newLc.actionMap["logout"] = newLc.Logout
+
+	newLc.actionMap["download"] = newLc.Download
 	return newLc
 }
 

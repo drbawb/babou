@@ -3,5 +3,8 @@
 		<div class="article">
 			{{Text}}
 		</div>
+		<div class="article-date">
+			1900 Jan 01
+			</div>
 	{{/Articles}}
 </div>

@@ -44,8 +44,8 @@ func main() {
 		// Start tracker
 		fmt.Printf("Starting tracker \n")
 		server := tracker.NewServer(appSettings, trackerIO)
+
 		go server.Start()
-		//tracker.ReadFile("/Users/rstraw/Downloads/Kevin Mitnick - The Art of Deception & The Art of Intrusion.torrent")
 	}
 
 	// Block on server IOs

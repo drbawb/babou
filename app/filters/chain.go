@@ -14,6 +14,8 @@ import (
 
 	lib "github.com/drbawb/babou/lib"
 	web "github.com/drbawb/babou/lib/web"
+
+	"fmt"
 )
 
 // An executable list of ChainableContext's
@@ -109,6 +111,9 @@ func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc
 			http.Error(response, string(result.Body), 500)
 		} else {
 			// Assume 200
+			if result.IsFile && result.Filename != "" {
+				response.Header().Add("content-disposition", fmt.Sprintf(`attachment; filename="%s"`, result.Filename))
+			}
 			response.Write(result.Body)
 		}
 	}
