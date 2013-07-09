@@ -4,7 +4,14 @@
 	</div>
 {{/Flash}}
 <div class="articles">
-	List of torrents:
+	List of torrents (first 100):
+	{{#TorrentList}}
+		<div style="border: 1px #000 solid">
+			ID {{ID}}
+			<br />
+			HASH {{InfoHash}}
+		</div>
+	{{/TorrentList}}
 
 	{{#LinkTo torrentNew}}Upload a Torrent{{/LinkTo}}
 </div>

@@ -219,3 +219,16 @@ func (t *TorrentFile) BencodeInfoDict() ([]byte, error) {
 
 	return infoBuffer.Bytes(), err
 }
+
+func DecodeInfoDict(bencodedInfo []byte) (map[string]interface{}, error) {
+	decodedMap := make(map[string]interface{})
+
+	bencodedBuffer := bytes.NewBuffer(bencodedInfo)
+	dec := bencode.NewDecoder(bencodedBuffer)
+
+	if err := dec.Decode(&decodedMap); err != nil {
+		return nil, err
+	}
+
+	return decodedMap, nil
+}

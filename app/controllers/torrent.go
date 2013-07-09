@@ -9,6 +9,7 @@ import (
 
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -32,15 +33,20 @@ func (tc *TorrentController) Index(params map[string]string) *web.Result {
 
 	output := &web.Result{Status: 200}
 	outData := &struct {
-		Username string
+		Username    string
+		TorrentList []*models.Torrent
 	}{
 		Username: user.Username,
 	}
 
-	tempList := &struct{ Torrents []string }{}
+	allTorrents := &models.Torrent{}
+	torrentList, err := allTorrents.SelectSummaryPage()
+	if err != nil {
+		output.Body = []byte(err.Error())
+		return output
+	}
 
-	tempList.Torrents = make([]string, 0)
-	tempList.Torrents = append(tempList.Torrents, "test.torrent")
+	outData.TorrentList = torrentList
 
 	output.Body = []byte(web.RenderWith("application", "torrent", "index", outData, tc.flash))
 
@@ -119,6 +125,37 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 	}
 
 	output.Body = []byte(web.RenderWith("application", "torrent", "index", outData, tc.flash))
+	return output
+}
+
+func (tc *TorrentController) Download(params map[string]string) *web.Result {
+	redirect, user := tc.RedirectOnAuthFail()
+	if user == nil {
+		return redirect
+	}
+
+	output := &web.Result{
+		Status: 200,
+	}
+
+	record := &models.Torrent{}
+
+	var torrentId int64
+	torrentId, err := strconv.ParseInt(params["torrentId"], 10, 32)
+
+	if err != nil {
+		output.Body = []byte("fudddddge monkies. swimming ones.")
+	}
+
+	record.SelectId(int(torrentId))
+	outFile, err := record.WriteFile(user.Secret, user.SecretHash)
+	if err != nil {
+		output.Body = []byte("fudge monkies. flying ones.")
+	}
+
+	output.IsFile = true
+	output.Filename = "test.torrent"
+	output.Body = outFile
 	return output
 }
 
@@ -243,6 +280,8 @@ func (tc *TorrentController) NewInstance() web.Controller {
 
 	newTc.actionMap["new"] = newTc.New
 	newTc.actionMap["create"] = newTc.Create
+
+	newTc.actionMap["download"] = newTc.Download
 
 	return newTc
 }

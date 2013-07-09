@@ -26,6 +26,27 @@ type Torrent struct {
 /*dba := func(dbConn *sql.DB) error {
 err := db.ExecuteFn(dba)*/
 
+func (t *Torrent) SelectId(id int) error {
+	selectTorrent := `SELECT 
+	torrent_id, name, info_hash, created_by, creation_date, encoding, info_bencoded
+	FROM "torrents"
+		WHERE "torrent_id" = $1`
+
+	dba := func(dbConn *sql.DB) error {
+		row := dbConn.QueryRow(selectTorrent, id)
+		err := row.Scan(&t.ID, &t.Name, &t.InfoHash, &t.CreatedBy, &t.CreationDate,
+			&t.Encoding, &t.EncodedInfo)
+
+		if err == nil {
+			t.isInit = true
+		}
+
+		return err
+	}
+
+	return db.ExecuteFn(dba)
+}
+
 // Looks up a torrent based on its info hash,
 // this is a 20-byte SHA which is encoded as a string [2-chars per byte.]
 func (t *Torrent) SelectHash(hash string) error {
@@ -47,6 +68,33 @@ func (t *Torrent) SelectHash(hash string) error {
 	}
 
 	return db.ExecuteFn(dba)
+}
+
+// Selects an excerpt of torrents. Only fetches an ID, InfoHash, and CreatedBy
+func (t *Torrent) SelectSummaryPage() ([]*Torrent, error) {
+	summaryList := make([]*Torrent, 0, 100)
+
+	selectSummary := `SELECT
+	torrent_id, info_hash, created_by
+	FROM "torrents"
+	LIMIT 100`
+
+	dba := func(dbConn *sql.DB) error {
+		rows, err := dbConn.Query(selectSummary)
+		if err != nil {
+			return err
+		}
+
+		for rows.Next() {
+			t := &Torrent{isInit: true}
+			_ = rows.Scan(&t.ID, &t.InfoHash, &t.CreatedBy)
+			summaryList = append(summaryList, t)
+		}
+
+		return nil
+	}
+
+	return summaryList, db.ExecuteFn(dba)
 }
 
 func (t *Torrent) Write() error {
@@ -117,4 +165,33 @@ func (t *Torrent) Populate(torrentFile *torrent.TorrentFile) error {
 	t.isInit = true
 
 	return nil
+}
+
+/*
+type TorrentFile struct {
+	Announce     string                 `bencode:"announce"`
+	Comment      string                 `bencode:"comment"`
+	CreatedBy    string                 `bencode:"created by"`
+	CreationDate int64                  `bencode:"creation date"`
+	Encoding     string                 `bencode:"encoding"`
+	Info         map[string]interface{} `bencode:"info"`
+}
+*/
+
+func (t *Torrent) WriteFile(secret, hash []byte) ([]byte, error) {
+	file := &torrent.TorrentFile{}
+	file.Comment = "downloaded from babou development instance"
+	file.CreatedBy = t.CreatedBy
+	file.CreationDate = int64(t.CreationDate)
+	file.Encoding = t.Encoding
+
+	infoMap, err := torrent.DecodeInfoDict(t.EncodedInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	file.Info = infoMap
+
+	outBytes, err := file.WriteFile(secret, hash)
+	return outBytes, err
 }

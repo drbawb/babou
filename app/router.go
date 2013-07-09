@@ -48,13 +48,6 @@ func LoadRoutes() *mux.Router {
 		Methods("GET").
 		Name("loginDelete")
 
-	r.HandleFunc("/download",
-		filters.BuildDefaultChain().
-			Chain(filters.AuthChain()).
-			Execute(login, "download")).
-		Methods("GET").
-		Name("loginDownload")
-
 	// Displays a registration form
 	r.HandleFunc("/register",
 		filters.BuildDefaultChain().
@@ -81,6 +74,12 @@ func LoadRoutes() *mux.Router {
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
 			Execute(torrent, "create")).Methods("POST").Name("torrentCreate")
+	r.HandleFunc("/torrents/download/{torrentId}",
+		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
+			Execute(torrent, "download")).
+		Methods("GET").
+		Name("torrentDownload")
 
 	// Catch-All: Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",
