@@ -6,7 +6,6 @@ import (
 
 	"github.com/drbawb/babou/app/models"
 
-	mux "github.com/gorilla/mux"
 	bencode "github.com/zeebo/bencode"
 
 	"bytes"
@@ -25,13 +24,13 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 
 	params := libWeb.RetrieveAllParams(r)
 	responseMap := make(map[string]interface{})
-	routeVars := mux.Vars(r)
+	//routeVars := mux.Vars(r)
 
-	torrent, ok := s.torrentExists(params["info_hash"])
+	torrent, ok := s.torrentExists(params.All["info_hash"])
 
 	user := &models.User{}
-	if err := user.SelectSecret(routeVars["secret"]); err != nil {
-		fmt.Printf("Tracker could not find user by secret\n Error: %s\n Secret: %s \n", err.Error(), routeVars["secret"])
+	if err := user.SelectSecret(params.All["secret"]); err != nil {
+		fmt.Printf("Tracker could not find user by secret\n Error: %s\n Secret: %s \n", err.Error(), params.All["secret"])
 
 		responseMap["failure reason"] = "user could not be found. please redownload the torrent."
 		io.Copy(w, encodeResponseMap(responseMap))
@@ -39,7 +38,7 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 		return
 	}
 
-	if !libTorrent.CheckHmac(routeVars["secret"], routeVars["hash"]) {
+	if !libTorrent.CheckHmac(params.All["secret"], params.All["hash"]) {
 		fmt.Printf("Tracker did not issue this user-secret, or the shared-secret has rotated since this profile was created.")
 
 		responseMap["failure reason"] = "your user secret is out-of-date, please update it from your profile and redownload the torrent."
@@ -58,7 +57,7 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 		return
 	}
 
-	torrent.AddPeer(params["peer_id"], r.RemoteAddr, params["port"], routeVars["secret"])
+	torrent.AddPeer(params.All["peer_id"], r.RemoteAddr, params.All["port"], params.All["secret"])
 
 	responseMap["interval"] = 300 // intentionally short for debugging purposes.
 	responseMap["min interval"] = 10

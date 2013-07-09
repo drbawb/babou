@@ -10,10 +10,12 @@ package web
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
+	"strings"
+
 	"mime/multipart"
 	"net/http"
-	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 // Contexts which can be chained together
@@ -75,6 +77,14 @@ type RedirectPath struct {
 	ActionName     string
 }
 
+// Includes parameters from URLEncoded POST and GET data.
+// Also includes multipart form data if its available
+type Param struct {
+	All map[string]string
+
+	Files map[string][]*multipart.FileHeader
+}
+
 // Returns a 404 error if a user asks `babou` for the contents of
 // a directory. Useful for serving static files.
 func DisableDirectoryListing(h http.Handler) http.HandlerFunc {
@@ -88,42 +98,38 @@ func DisableDirectoryListing(h http.Handler) http.HandlerFunc {
 	})
 }
 
-// Attempts to retrieve multipart formdata; will return an empty map otherwise
-func RetrieveMultipart(request *http.Request) map[string][]*multipart.FileHeader {
-	vars := mux.Vars(request)
-	outMap := make(map[string][]*multipart.FileHeader, 0)
+// Retrieves GET and POST vars from an http Request
+func RetrieveAllParams(request *http.Request) *Param {
+	param := &Param{}
+	param.All = mux.Vars(request)
 
-	// Deal with multipart form data; again: POST data takes precedence over GET data.
-	// A separate map of file-info will be returned.
-	if request.MultipartForm != nil {
-		postMP := request.MultipartForm
-		for k, v := range postMP.Value {
-			vars[k] = v[0]
+	contentType := request.Header.Get("content-type")
+	switch contentType {
+	case "application/x-www-form-urlencoded":
+		param.Files = make(map[string][]*multipart.FileHeader)
+		if err := request.ParseForm(); err != nil {
+			fmt.Printf("err parsing form: %s \n", err.Error())
+			return param
 		}
 
-		outMap = postMP.File
+		for k, v := range request.Form {
+			param.All[k] = v[0]
+		}
+	case "multipart/form-data":
+		param.Files = make(map[string][]*multipart.FileHeader)
+
+		if err := request.ParseMultipartForm(8388608); err != nil {
+			fmt.Printf("err parsing form: %s \n", err.Error())
+			return param
+		}
+
+		param.Files = request.MultipartForm.File
+	default:
+		// Dunno; empty map and do nothing.
+		param.Files = make(map[string][]*multipart.FileHeader)
 	}
 
-	return outMap
+	return param
 }
 
-// Retrieves GET and POST vars from an http Request
-func RetrieveAllParams(request *http.Request) map[string]string {
-	vars := mux.Vars(request)
-	if err := request.ParseMultipartForm(8388608); err != nil {
-		fmt.Printf("err parsing form: %s \n", err.Error())
-		return vars // could not parse form
-	}
-
-	// Deal with ordinary data.
-	var postVars map[string][]string
-	postVars = map[string][]string(request.Form)
-	for k, v := range postVars {
-		// Ignore duplicate arguments taking the first.
-		// POST will supersede any GET data in the event of collisions.
-		fmt.Printf("form var: %s, %s", k, v)
-		vars[k] = v[0]
-	}
-
-	return vars
-}
+// ordinary post-data

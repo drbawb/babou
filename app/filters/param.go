@@ -3,7 +3,6 @@ package filters
 import (
 	"errors"
 	"fmt"
-	"mime/multipart"
 	"net/http"
 
 	web "github.com/drbawb/babou/lib/web"
@@ -11,9 +10,8 @@ import (
 
 // A chain which can store and retrieve GET/POST request variables.
 type ParamterChainLink interface {
-	SetParams(map[string]string)
-	SetMultipart(map[string][]*multipart.FileHeader)
-	GetParams() map[string]string
+	SetParams(*web.Param)
+	GetParams() *web.Param
 	SetResponsePair(http.ResponseWriter, *http.Request)
 }
 
@@ -24,8 +22,7 @@ type ParameterizedController interface {
 
 // Test impl. of Context interface.
 type DevContext struct {
-	Params    map[string]string
-	Multipart map[string][]*multipart.FileHeader
+	Params *web.Param
 
 	Response http.ResponseWriter
 	Request  *http.Request
@@ -66,27 +63,9 @@ func (dc *DevContext) NewInstance() web.ChainableContext {
 // Applies the context to a ParamterizedController
 func (dc *DevContext) ApplyContext(controller web.Controller, response http.ResponseWriter, request *http.Request, chain []web.ChainableContext) {
 	dc.SetParams(web.RetrieveAllParams(request))
-
-	dc.SetMultipart(web.RetrieveMultipart(request))
 	dc.SetResponsePair(response, request)
 
-	if dc.Params == nil {
-		dc.Params = make(map[string]string)
-	}
-
-	if dc.Multipart == nil {
-		dc.Multipart = make(map[string][]*multipart.FileHeader)
-	}
-
 	dc.isInit = true
-
-	files := web.RetrieveMultipart(request)
-	for k, v := range files {
-		fmt.Printf("key of file: %s \n", k)
-		for _, file := range v {
-			fmt.Printf("  |--> filename: %s\n", file.Filename)
-		}
-	}
 
 	v, ok := controller.(ParameterizedController)
 	if ok {
@@ -98,14 +77,8 @@ func (dc *DevContext) ApplyContext(controller web.Controller, response http.Resp
 	}
 }
 
-// Sets MimeMultipart data. Values are added to the muxer and included in normal params.
-// Files, however, are handled by this special map.
-func (dc *DevContext) SetMultipart(params map[string][]*multipart.FileHeader) {
-	dc.Multipart = params
-}
-
 // Sets the get/post variables for this request.
-func (dc *DevContext) SetParams(params map[string]string) {
+func (dc *DevContext) SetParams(params *web.Param) {
 	dc.Params = params
 }
 
@@ -113,7 +86,7 @@ func (dc *DevContext) SetParams(params map[string]string) {
 //
 // Note that in the case of name conflicts - the POST variables take precedence and replace
 // any conflict GET variables.
-func (dc *DevContext) GetParams() map[string]string {
+func (dc *DevContext) GetParams() *web.Param {
 	return dc.Params
 }
 

@@ -68,7 +68,7 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 
 	outData.Context = outCtx
 
-	formFiles := tc.context.Multipart
+	formFiles := tc.context.GetParams().Files
 	if formFiles["metainfo"] == nil {
 		tc.flash.AddFlash("File upload appears to be missing.")
 	} else if len(formFiles["metainfo"]) <= 0 || len(formFiles["metainfo"]) > 1 {
@@ -151,7 +151,7 @@ func (tc *TorrentController) HandleRequest(action string) *web.Result {
 	}
 
 	if tc.actionMap[action] != nil {
-		return tc.actionMap[action](tc.context.GetParams())
+		return tc.actionMap[action](tc.context.GetParams().All)
 	} else {
 		return &web.Result{Status: 404, Body: []byte("Not found")}
 	}
