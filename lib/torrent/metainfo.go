@@ -11,7 +11,7 @@ import (
 
 	"errors"
 	fmt "fmt"
-	os "os"
+	"mime/multipart"
 
 	bencode "github.com/zeebo/bencode"
 )
@@ -41,18 +41,13 @@ type TorrentFile struct {
 
 // Reads a torrent-file from the filesystem.
 // TODO: Model will create torrent-file; obsoleting this.
-func ReadFile(filename string) *Torrent {
+func ReadFile(file multipart.File) *Torrent {
 	fmt.Printf("reading file...")
-	file, err := os.Open(filename)
-	if err != nil {
-		fmt.Printf("cannot open file: %s", err.Error())
-		return nil
-	}
 
 	torrent := &Torrent{Info: &TorrentFile{}, peers: make(map[string]*Peer)}
 
 	decoder := bencode.NewDecoder(file)
-	err = decoder.Decode(torrent.Info)
+	err := decoder.Decode(torrent.Info)
 	if err != nil {
 		fmt.Printf("error decoding torrent file: %s", err.Error())
 	}
@@ -210,4 +205,17 @@ func (t *TorrentFile) EncodeInfo() []byte {
 	io.Copy(hash, infoBuffer)
 
 	return hash.Sum(nil)
+}
+
+// Returns a bencoded version of the torrent's info dict.
+func (t *TorrentFile) BencodeInfoDict() ([]byte, error) {
+	infoBuffer := bytes.NewBuffer(make([]byte, 0))
+	encoder := bencode.NewEncoder(infoBuffer)
+
+	err := encoder.Encode(t.Info)
+	if err != nil {
+		fmt.Printf("error encoding torrent file: %s", err.Error())
+	}
+
+	return infoBuffer.Bytes(), err
 }

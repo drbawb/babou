@@ -104,8 +104,11 @@ func RetrieveAllParams(request *http.Request) *Param {
 	param.All = mux.Vars(request)
 
 	contentType := request.Header.Get("content-type")
+	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+
 	switch contentType {
 	case "application/x-www-form-urlencoded":
+		fmt.Printf("form-url-encoded \n")
 		param.Files = make(map[string][]*multipart.FileHeader)
 		if err := request.ParseForm(); err != nil {
 			fmt.Printf("err parsing form: %s \n", err.Error())
@@ -116,6 +119,7 @@ func RetrieveAllParams(request *http.Request) *Param {
 			param.All[k] = v[0]
 		}
 	case "multipart/form-data":
+		fmt.Printf("form-multipart \n")
 		param.Files = make(map[string][]*multipart.FileHeader)
 
 		if err := request.ParseMultipartForm(8388608); err != nil {
@@ -126,6 +130,7 @@ func RetrieveAllParams(request *http.Request) *Param {
 		param.Files = request.MultipartForm.File
 	default:
 		// Dunno; empty map and do nothing.
+		fmt.Printf("da fuq? \n")
 		param.Files = make(map[string][]*multipart.FileHeader)
 	}
 

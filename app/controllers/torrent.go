@@ -2,10 +2,14 @@ package controllers
 
 import (
 	filters "github.com/drbawb/babou/app/filters"
+	models "github.com/drbawb/babou/app/models"
+
+	libTorrent "github.com/drbawb/babou/lib/torrent"
 	web "github.com/drbawb/babou/lib/web"
 
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type TorrentController struct {
@@ -21,13 +25,18 @@ type TorrentController struct {
 
 func (tc *TorrentController) Index(params map[string]string) *web.Result {
 	// Private page.
-	if redirect, ok := tc.RedirectOnAuthFail(); !ok {
+	redirect, user := tc.RedirectOnAuthFail()
+	if user == nil {
 		return redirect
 	}
 
 	output := &web.Result{Status: 200}
+	outData := &struct {
+		Username string
+	}{
+		Username: user.Username,
+	}
 
-	outData := &web.ViewData{}
 	tempList := &struct{ Torrents []string }{}
 
 	tempList.Torrents = make([]string, 0)
@@ -40,12 +49,17 @@ func (tc *TorrentController) Index(params map[string]string) *web.Result {
 
 func (tc *TorrentController) New(params map[string]string) *web.Result {
 	//TODO: permission check; for now any authenticated user can add torrents.
-	if redirect, ok := tc.RedirectOnAuthFail(); !ok {
+	redirect, user := tc.RedirectOnAuthFail()
+	if user == nil {
 		return redirect
 	}
 
 	output := &web.Result{Status: 200}
-	outData := &web.ViewData{}
+	outData := &struct {
+		Username string
+	}{
+		Username: user.Username,
+	}
 
 	// Display new torrent form.
 	output.Body = []byte(web.RenderWith("application", "torrent", "new", outData, tc.flash))
@@ -55,48 +69,84 @@ func (tc *TorrentController) New(params map[string]string) *web.Result {
 
 func (tc *TorrentController) Create(params map[string]string) *web.Result {
 	//TODO: permission check; for now any authenticated user can add torrents.
-	if redirect, ok := tc.RedirectOnAuthFail(); !ok {
+	redirect, user := tc.RedirectOnAuthFail()
+	if user == nil {
 		return redirect
 	}
 
-	output := &web.Result{Status: 200}
-	outData := &web.ViewData{}
-	outCtx := &struct {
-		Filename string
-		Length   string
-	}{}
-
-	outData.Context = outCtx
-
+	outData := &struct {
+		Username string
+	}{
+		Username: user.Username,
+	}
 	formFiles := tc.context.GetParams().Files
 	if formFiles["metainfo"] == nil {
 		tc.flash.AddFlash("File upload appears to be missing.")
 	} else if len(formFiles["metainfo"]) <= 0 || len(formFiles["metainfo"]) > 1 {
 		tc.flash.AddFlash("You are only allowed to upload one torrent at a time.")
+	} else {
+		file := formFiles["metainfo"][0]
+		if !strings.HasSuffix(file.Filename, ".torrent") {
+			tc.flash.AddFlash("File needs to end w/ .torrent!")
+			return tc.RedirectOnUploadFail()
+		}
+
+		fmt.Printf("reading torrent: \n")
+		torrentFile, err := file.Open()
+		if err != nil {
+			tc.flash.AddFlash("Error reading your torrent; please try your upload again")
+			return tc.RedirectOnUploadFail()
+		}
+
+		torrent := libTorrent.ReadFile(torrentFile)
+		torrentRecord := &models.Torrent{}
+
+		if err := torrentRecord.Populate(torrent.Info); err != nil {
+			tc.flash.AddFlash("Error reading your torrent file.")
+			return tc.RedirectOnUploadFail()
+		}
+		if err := torrentRecord.Write(); err != nil {
+			tc.flash.AddFlash(fmt.Sprintf("Error saving your torrent. Please contact a staff member: %s", err.Error()))
+			return tc.RedirectOnUploadFail()
+		}
+
+		tc.flash.AddFlash(fmt.Sprintf(`Your torrents URL is: http://tracker.fatalsyntax.com/torrents/download/%d -- 
+			please save this because babou cannot find things right now.`, torrentRecord.ID))
 	}
 
-	file := formFiles["metainfo"][0]
-	tc.flash.AddFlash(fmt.Sprintf("File uploaded ok: %s", file.Filename))
+	output := &web.Result{
+		Status: 200,
+	}
 
 	output.Body = []byte(web.RenderWith("application", "torrent", "index", outData, tc.flash))
-
 	return output
 }
 
 // Tests if the user is logged in.
 // If not: returns a web.Result that would redirect them to the homepage.
-func (tc *TorrentController) RedirectOnAuthFail() (*web.Result, bool) {
-	if _, err := tc.auth.CurrentUser(); err != nil {
+func (tc *TorrentController) RedirectOnAuthFail() (*web.Result, *models.User) {
+	if user, err := tc.auth.CurrentUser(); err != nil {
 		result := &web.Result{}
 
 		result.Redirect = &web.RedirectPath{}
 		result.Redirect.NamedRoute = "homeIndex"
 
 		result.Status = 302
-		return result, false
+		return result, nil
 	} else {
-		return nil, true
+		return nil, user
 	}
+}
+
+func (tc *TorrentController) RedirectOnUploadFail() *web.Result {
+	result := &web.Result{}
+
+	result.Redirect = &web.RedirectPath{}
+	result.Redirect.NamedRoute = "torrentNew"
+
+	result.Status = 302
+
+	return result
 }
 
 // Returns a routable instance of TorrentController

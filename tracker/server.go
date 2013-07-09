@@ -39,19 +39,10 @@ func (s *Server) Start() {
 }
 
 func wrapAnnounceHandle(s *Server) http.HandlerFunc {
-	torrentData := ReadFile("/test.torrent")
-	if torrentData != nil {
-		s.torrentCache[string(torrentData.Info.EncodeInfo())] = torrentData
-	}
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		announceHandle(w, r, s)
 	}
 
 	return fn
-}
-
-// Test method for loading torrents.
-func ReadFile(filename string) *libTorrent.Torrent {
-	return libTorrent.ReadFile(filename)
 }

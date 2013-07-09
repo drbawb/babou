@@ -6,8 +6,6 @@ import (
 
 	filters "github.com/drbawb/babou/app/filters"
 	models "github.com/drbawb/babou/app/models"
-
-	torrent "github.com/drbawb/babou/lib/torrent"
 	web "github.com/drbawb/babou/lib/web"
 )
 
@@ -46,31 +44,7 @@ func (lc *LoginController) NewInstance() web.Controller {
 	newLc.actionMap["session"] = newLc.Session
 	newLc.actionMap["logout"] = newLc.Logout
 
-	newLc.actionMap["download"] = newLc.Download
 	return newLc
-}
-
-// TODO: This is simply for testing a torrent download. Will be moved to
-// Torrent controller eventually.
-func (lc *LoginController) Download(params map[string]string) *web.Result {
-	output := &web.Result{}
-
-	output.Status = 200
-
-	user, err := lc.auth.CurrentUser()
-	if err != nil {
-		output.Body = []byte(err.Error())
-		return output
-	}
-
-	torrentFile := torrent.ReadFile("/home/drbawb/Downloads/[FFF] Hataraku Maou-sama! - 13 [5467C06D].mkv.torrent")
-	encodedTorrent, err := torrentFile.Info.WriteFile(user.Secret, user.SecretHash)
-
-	output.IsFile = true
-	output.Filename = "test.torrent"
-	output.Body = encodedTorrent
-
-	return output
 }
 
 // Displays the login page.
