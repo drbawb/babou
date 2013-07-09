@@ -424,3 +424,44 @@ or if they login from another computer w/o checking `remember me.`
 
 ---
 
+Tracker:
+
+Presently the tracker loads a small torrent-cache from the filesystem for testing purposes.
+This cache is a map of info_hash values to a Torrent object that tracks peering information, etc.
+
+The babou tracker responds to announce requests in the form of
+GET /{secret}/{hash}/announce
+
+Which is routed as follows:
+- The secret is used to identify the user in the users table.
+- The hash is used to verify that babou [at some point] generated this user's secret. -- In the future this
+  value could be unique per-torrent.
+- The secret is randomly generated; the hash however is a SHA256-based HMAC of the secret appended to
+  a shared key known to the web application and torrent server.
+  This shared key is configurable, and should be changed for each distinct installation of babou.
+  (The shared key MUST BE SHARED among any babou's which are cooperating behind a load-balancer, or otherwise share
+  a database.)
+
+If this suceeds: the torrent is looked up in the cache by its info_hash.
+If it cannot be found babou will defer to distributed caches; and lastly a round-trip to the database.
+
+If none of these hit: the tracker considers the torrent non-existent. 
+(If it is deleted through the site: it will be soft-deleted and the reason will be sent to the torrent client.)
+
+In the event of a hit: the peer is added to the swarm and is given a peer list.
+The peer list will include the first `num_want` peers from the torrent's active swarm.
+Currently `num_want` is defined as the const `DEFAULT_NUMWANT` (30). -- In the future this
+will be set to the default only if the client does not specifically request a number of peers.
+
+
+More intelligent peer-assignment strategies are planned, ideally they will take into account:
+* geographical distribution
+* seeder:leecher ratios of individual peers.
+* peers will be ranked by completed bytes. (Preferring those with more complete downloads.)
+* peer estimated bandwidth will be computed between announce-intervals.
+
+---
+
+
+
+
