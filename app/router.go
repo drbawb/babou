@@ -74,6 +74,7 @@ func LoadRoutes() *mux.Router {
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
 			Execute(torrent, "create")).Methods("POST").Name("torrentCreate")
+
 	r.HandleFunc("/torrents/download/{torrentId}",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).

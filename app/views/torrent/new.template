@@ -5,7 +5,12 @@
 {{/Flash}}
 <div class="articles">
 	<div class="article">
-		Select a torrent to upload: 
+		When creating your new torrent please set the tracker to <br />
+		<strong>{{AnnounceURL}}</strong>
+		<br /><br />
+		This will ensure that you can begin seeding the torrent as soon as it becomes available.
+		<br /><br />
+		Select a torrent to upload: <br />
 		{{> app/views/torrent/new_torrent}}
 	</div>
 </div>

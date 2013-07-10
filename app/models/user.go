@@ -219,6 +219,15 @@ func CountUsers(username string) int {
 	return userCount
 }
 
+//TODO: needs to use sites base url.
+func (u *User) AnnounceURL() string {
+	outStr := ""
+
+	outStr = fmt.Sprintf("http://tracker.fatalsyntax.com:4200/%s/%s/announce", hex.EncodeToString(u.Secret), hex.EncodeToString(u.SecretHash))
+
+	return outStr
+}
+
 // Takes a password and returns a hash and salt.
 func genHash(password string) (string, []byte, error) {
 	//64-char salt

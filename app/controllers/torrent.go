@@ -53,6 +53,7 @@ func (tc *TorrentController) Index(params map[string]string) *web.Result {
 	return output
 }
 
+// Displays a form where a user can upload a new torrent.
 func (tc *TorrentController) New(params map[string]string) *web.Result {
 	//TODO: permission check; for now any authenticated user can add torrents.
 	redirect, user := tc.RedirectOnAuthFail()
@@ -62,9 +63,11 @@ func (tc *TorrentController) New(params map[string]string) *web.Result {
 
 	output := &web.Result{Status: 200}
 	outData := &struct {
-		Username string
+		Username    string
+		AnnounceURL string
 	}{
-		Username: user.Username,
+		Username:    user.Username,
+		AnnounceURL: user.AnnounceURL(),
 	}
 
 	// Display new torrent form.
