@@ -80,8 +80,8 @@ type RedirectPath struct {
 // Includes parameters from URLEncoded POST and GET data.
 // Also includes multipart form data if its available
 type Param struct {
-	All map[string]string
-
+	All   map[string]string
+	Form  map[string]string
 	Files map[string][]*multipart.FileHeader
 }
 
@@ -131,7 +131,12 @@ func RetrieveAllParams(request *http.Request) *Param {
 	default:
 		// Dunno; empty map and do nothing.
 		fmt.Printf("da fuq? \n")
+		_ = request.ParseForm()
 		param.Files = make(map[string][]*multipart.FileHeader)
+	}
+
+	for k, v := range request.Form {
+		param.All[k] = v[0]
 	}
 
 	return param

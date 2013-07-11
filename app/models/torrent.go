@@ -167,18 +167,14 @@ func (t *Torrent) Populate(torrentFile *torrent.TorrentFile) error {
 	return nil
 }
 
-/*
-type TorrentFile struct {
-	Announce     string                 `bencode:"announce"`
-	Comment      string                 `bencode:"comment"`
-	CreatedBy    string                 `bencode:"created by"`
-	CreationDate int64                  `bencode:"creation date"`
-	Encoding     string                 `bencode:"encoding"`
-	Info         map[string]interface{} `bencode:"info"`
-}
-*/
-
 func (t *Torrent) WriteFile(secret, hash []byte) ([]byte, error) {
+	file := t.LoadTorrent()
+
+	outBytes, err := file.WriteFile(secret, hash)
+	return outBytes, err
+}
+
+func (t *Torrent) LoadTorrent() *torrent.TorrentFile {
 	file := &torrent.TorrentFile{}
 	file.Comment = "downloaded from babou development instance"
 	file.CreatedBy = t.CreatedBy
@@ -187,11 +183,10 @@ func (t *Torrent) WriteFile(secret, hash []byte) ([]byte, error) {
 
 	infoMap, err := torrent.DecodeInfoDict(t.EncodedInfo)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	file.Info = infoMap
 
-	outBytes, err := file.WriteFile(secret, hash)
-	return outBytes, err
+	return file
 }

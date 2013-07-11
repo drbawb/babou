@@ -8,6 +8,8 @@ import (
 
 	bencode "github.com/zeebo/bencode"
 
+	"encoding/hex"
+
 	"bytes"
 	"fmt"
 	"io"
@@ -24,9 +26,11 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 
 	params := libWeb.RetrieveAllParams(r)
 	responseMap := make(map[string]interface{})
-	//routeVars := mux.Vars(r)
 
-	torrent, ok := s.torrentExists(params.All["info_hash"])
+	hexHash := hex.EncodeToString([]byte(params.All["info_hash"]))
+	fmt.Printf("params.All encoded hash: %s \n", hexHash)
+	torrent, ok := s.torrentExists(hexHash)
+	fmt.Printf("\n---\nparams: %v \n---\n", params.All)
 
 	user := &models.User{}
 	if err := user.SelectSecret(params.All["secret"]); err != nil {
@@ -58,6 +62,7 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 	}
 
 	torrent.AddPeer(params.All["peer_id"], r.RemoteAddr, params.All["port"], params.All["secret"])
+	torrent.UpdateStatsFor(params.All["peer_id"], "0", "0", params.All["left"])
 
 	responseMap["interval"] = 300 // intentionally short for debugging purposes.
 	responseMap["min interval"] = 10
@@ -89,9 +94,22 @@ func (s *Server) torrentExists(infoHash string) (*libTorrent.Torrent, bool) {
 
 	if torrent == nil {
 		//cache miss
+		dbTorrent := &models.Torrent{}
+		if err := dbTorrent.SelectHash(infoHash); err != nil {
+			fmt.Printf("error retrieving torrent by hash: %s \n", infoHash)
+			return nil, false
+		} else {
+			fmt.Printf("found torrent by hash")
+			trackerTorrent := libTorrent.NewTorrent(dbTorrent.LoadTorrent())
+			s.torrentCache[infoHash] = trackerTorrent
+			return s.torrentCache[infoHash], true
+		}
+
+		fmt.Printf("missed and didn't find torrent in db.")
 		return nil, false
 	} else {
 		//cache hit.
+		fmt.Printf("cache hit for hash \n")
 		return torrent, true
 	}
 }
