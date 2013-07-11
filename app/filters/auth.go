@@ -43,7 +43,12 @@ func AuthChain() *AuthContext {
 func (ac *AuthContext) DeleteCurrentSession() error {
 	session, _ := ac.session.GetSession()
 
-	userId := session.Values["user_id"].(int)
+	var userId int
+	if session.Values["user_id"] == nil {
+		return errors.New("You are not currently logged in.")
+	} else {
+		userId = session.Values["user_id"].(int)
+	}
 
 	user := &models.User{}
 	if err := user.SelectId(userId); err != nil {
@@ -55,7 +60,6 @@ func (ac *AuthContext) DeleteCurrentSession() error {
 	}
 
 	session.Values["user_id"] = nil
-
 	return nil
 }
 
