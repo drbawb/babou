@@ -3,6 +3,8 @@ Babou
 
 Babou, the rogue ocelot.
 
+![babou logo][logo]
+
 An open source, easy to deploy, lightning fast torrent tracker.
 In the style of TBDev, Gazelle (what.cd,waffles.fm), etc.
 
@@ -98,4 +100,7 @@ Note: `babou` requires the `assets/` directory and the `app/` directory to be pr
 Now what?
 ===
 Time to share some linux distributions!
+
+
+[logo]: http://fatalsyntax.com/babou_gh.png "babou logo"
 
