@@ -9,6 +9,7 @@ import (
 	"net"
 	"strconv"
 
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,15 @@ const (
 	LEECHING            = iota // Announced an incomplete copy of the file.
 	QUASI               = iota // Announced an incomplete copy; but does not appear to be downloading.
 )
+
+// A protected mapping of peerIds to peers.
+//
+// This map is safe for multiple readers; but read
+// and write calls will block while a writer holds the lock.
+type PeerMap struct {
+	peerMap map[string]*Peer
+	rwLock  *sync.RWMutex
+}
 
 // A peer being tracked on a torrent
 type Peer struct {
@@ -43,6 +53,26 @@ type BenPeer struct {
 	ID   string `bencode:"peer id"`
 	IP   string `bencode:"ip"`
 	Port int64  `bencode:"port"`
+}
+
+// Initalizes a new peer map for a torrent
+func NewPeerMap() *PeerMap {
+	outMap := &PeerMap{rwLock: &sync.RWMutex{}, peerMap: make(map[string]*Peer)}
+
+	return outMap
+}
+
+// Returns the map.
+func (pm *PeerMap) Map() map[string]*Peer {
+	return pm.peerMap
+}
+
+// Returns the syncrhonization primitive that can be used to
+// protect concurrent access to this map.
+//
+// This should be used wherever contention of the map is likely.
+func (pm *PeerMap) Sync() *sync.RWMutex {
+	return pm.rwLock
 }
 
 // Creates a new peer object.
