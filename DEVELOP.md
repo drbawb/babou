@@ -432,10 +432,71 @@ or if they login from another computer w/o checking `remember me.`
 
 ---
 
-Tracker:
+Cache
+===
 
-Presently the tracker loads a small torrent-cache from the filesystem for testing purposes.
-This cache is a map of info_hash values to a Torrent object that tracks peering information, etc.
+The babou tracker uses an in-memory cache to store details about active users and torrents. 
+This allows quick generation of peer lists, and once a user is marked active they can start 
+other torrents quickly without round-trips to the database. In addition the throughput of many
+scheduled tasks is greatly improved my keeping torrents in memory.
+
+Once a user is cached, however, the tracker is unaware of further updates to that users' permissions.
+This means that users which become disabled or banned while a download is in progress will be able to
+use the tracker until the cached record is updated.
+
+To help keep this record consistent with the state of the website, the website has a communications
+pipeline which informs known trackers of updates to cached records.
+
+The website will send messages to the tracker under the following circumstances:
+
+* A user's personal announce key is updated.
+
+* A user's account status [disabled, banned, etc.] is updated by an admin OR scheduled task.
+
+* A torrent is removed. (Torrent's cannot be "modified" in any meaningful way to the tracker, since it
+relies on a consistent "info" dictionary in the torrent. -- Thus tracker does not care about modifications
+to the site's metadata.)
+
+---
+
+Cache consistency:
+
+A tracker handles an announce in three distinct phases:
+
+1. READ AND RESPOND
+	* The tracker will read the request parameters; read data [from the cache or disk], and respond
+	to the client's request ASAP.
+2. DEFER WRITE & LOG
+	* The tracker will first issue a cache-write. This is simply a message broadcast to other trackers
+	on the event pipeline, instructing them to update their cache [if possible].
+	* Then the tracker will write to the database.
+	* Failing the database write, the tracker will store the failed transaction in an error log.
+
+Since concurrent reads of the torrent are allowable, we try to prioritize reads to help improve throughput.
+Writes are deferred and buffered to help lower database load, as well as incresaing overall response speed.
+
+
+---
+
+Statistics consistency:
+
+Statistics are updated on every announce but the write is deferred to happen outside the request itself.
+This allows requests to completely quickly without blocking on writes that don't affect the outcome
+of the tracker's response.
+
+Ratio watch (or rather: how it pertains to disabling accounts) is comptued as part of a scheduled task:
+rather than being computed on each announce.
+
+When the ratio watch task is run, it will broadcast an event to active trackers informing them of recently
+disabled user accounts.
+
+
+Tracker
+===
+
+The tracker currently reads torrents from the database by looking up the requested info_hash.
+Once the torrent is loaded it is stored in an in memory cache, and can be quickly retrieved by
+the info_hash for all future requests.
 
 The babou tracker responds to announce requests in the form of
 GET /{secret}/{hash}/announce
