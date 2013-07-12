@@ -33,7 +33,7 @@ func main() {
 
 	if *appSettings.FullStack == true || *appSettings.WebStack == true {
 		// Start web-server
-		fmt.Printf("Starting web")
+		fmt.Printf("Starting web-server \n")
 		server := web.NewServer(appSettings, webServerIO)
 		// Receive SIGNALs from web server.
 
