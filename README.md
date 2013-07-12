@@ -41,65 +41,56 @@ release tip unless otherwise noted.
 - Go 1.1 (or other release version). [For buliding from source.]
 - PostgreSQL 9.2.x (latest update).
 - That's it . . . optionally you can add a web-server in front of Go 
-to proxy requests to the backend. A sample nginx configuration is included.
+to proxy requests to the backend.
 
-IMPORT NOTICE: To build `babou` you will need the mustache templating library.We use a modified version available at `github.com/drbawb/mustache`.
-Since the modifications are not merged into master yet, you will manually
-have to go to $GOPATH/src/github.com/drbawb/mustache and checkout the
-appropriate development branch.
+(You _do not need_ to download and install `Go 1.1` if you have a binary version of 
+`babou` -- we are not distributing binaries of `babou` at this time.)
 
-This _only_ applies if you're _building_ babou from source.
 
-(This configuration is highly recommended because then you can use a battle-hardened
-webserver on trusted ports (80,443), perform SSL, serve static assets, etc.) 
-
-Features
+Features [On the roadmap]
 ==
-Anything Gazelle can do, we can do ... also.
 
-Wiki: but not your grandma's wiki, this thing supports markdown and is made of awesome.  
-Forums: but not your grandma's BBS, this thing supports permissions out the wazoo.  
-Polling: unless you're not into the whole democratically elected sysadmin movement.  
-Torrent Searching: and it's _awesome._  
-Permissions!!!: seriously there's like 50 ways to ban a user.
-Collages: because we &lt;3 music.  
+* Wiki: but not your grandma's wiki. -- Our wiki is lightweight, easy to use, and supports `markdown.`
 
-(All in due time.)
+* Forums: Do you miss the days of bulletin boards and 2400 baud modems? We're going to bring threaded 
+  discussions to the table.
 
-Anything Ocelot can do, we can do quicker.
+* Voting: (Unless you're not into the whole democratically elected sysadmin movement...)
 
-MULTICORE, DO YOU USE IT?!?!?
-YOU THINK OCELOT IS FAST LIKE CHEETAH?
+* Torrent Searching: and it's going to be [so awesome!](http://www.youtube.com/watch?v=l8JCX9E0bEI)
+
+* Classes / Permissions: all the features listed above will be access controlled by configurable permissions.
+
+* Ratio Strategies: We realize that not all private trackers watch ratios the same way. -- In fact, some trackers 
+  may not act on ratios at all. As such we aim to support several different ratio-watch strategies out of the box
+  [which includes global freeleech] -- we also want to make this system fairly easy to extend.
+
+* Torrent "Collections": this includes things like collages, albums, discographies, seasons, series [of books], etc.
+  We want individual torrents to be intelligently grouped together for a myriad of multimedia types.
+
+(All in due time. If you'd like to get a sense of the roadmap please check `TODO.md`)
+
+You think ocelot is fast like cheetah?
 WELL BABOU IS FAST LIKE A BUGATTI VEYRON. THAT IS NEARLY 4 TIMES AS FAST AS CHEETAH.
 
-We even allow you to configure the number of processors you'd like Babou to use for
-his INCREDIBLY OVERPOWERED WARP DRIVE.
+Babou is being designed to run behind reverse proxies (load balancers) which will help sites
+scale quickly and affordably. We're also making sure that all static assets can be easily
+served from a separate server or a CDN.
+
+In addition: babou leverages the powerful concurrency features of the Go runtime to help ensure
+high availability of the torrent tracker, even when scheduled tasks [such as statistics collecting, peer pruning]
+are consuming the server's time.
+
 
 How do I run it?
 ===
 
-REALLY EASILY.
+We've added `INSTALL.md` to the root of this repository. That document should help you get started
+with installing the Go tools and `babou` itself.
 
-Step 1) Compile or obtain the binary & associated assets... throw it in a folder.  
-Step 2) `./babou`  
+Please note that `babou` presently needs some manual configuration of the source to work in your environment.
 
-
-Want more nodes?
-Step 3) `babou --web-stack --web-port=8081`  
-Step 4) `babou --web-stack --web-port=8082`  
-Step 5) . . .  
-
-(`./babou -help` is also available.)
-
-Note: `babou` requires the `assets/` directory and the `app/` directory to be present in the current working directory.
-
-`assets/` include static assets and can safely be served from a load-balancer or reverse proxy.
-
-`app/` contains runtime assets such as templates and partials.
-
-Now what?
-===
-Time to share some linux distributions!
+We are actively working towards creating dedicated configuration files.
 
 
 [logo]: http://fatalsyntax.com/babou_gh.png "babou logo"
