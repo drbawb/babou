@@ -9,6 +9,7 @@ import (
 	tracker "github.com/drbawb/babou/tracker"
 
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
+	bridge "github.com/drbawb/babou/lib/bridge"
 	//libDb "github.com/drbawb/babou/lib/db"
 
 	os "os"
@@ -46,6 +47,19 @@ func main() {
 		server := tracker.NewServer(appSettings, trackerIO)
 
 		go server.Start()
+	}
+
+	if *appSettings.FullStack == true {
+		// Start bridge
+		appBridge := bridge.NewBridge()
+		go func() {
+			fmt.Printf("blocking on receive\n")
+			fmt.Printf("received: %v", <-appBridge.Recv())
+		}()
+
+		go func() {
+			appBridge.Send(nil)
+		}()
 	}
 
 	// Block on server IOs
