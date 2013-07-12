@@ -83,7 +83,7 @@ func NewPeer(peerId, ipAddr, port, secret string) *Peer {
 	newPeer.Secret = secret
 
 	host, _, _ := net.SplitHostPort(ipAddr)
-	ip := net.ParseIP(host).To4() // ipv4 ONLY.
+	ip := net.ParseIP(host).To4() // TODO: ipv4 ONLY.
 	newPeer.IPAddr = ip
 
 	portNum, _ := strconv.Atoi(port)

@@ -2,6 +2,11 @@ package lib
 
 // Application settings that will determine the initial configuration
 // of Babou's web server and tracker.
+
+const (
+	TRACKER_ANNOUNCE_INTERVAL int = 300
+)
+
 type AppSettings struct {
 	Debug *bool // Print debug messages
 

@@ -111,6 +111,28 @@ func (t *TorrentFile) WriteFile(secret, hash []byte) ([]byte, error) {
 
 }
 
+// Takes a closure which will obtain a readlock
+// for this torrent's peer-map.
+//
+// Writing to the peermap is not safe from within your closure.
+func (t *Torrent) ReadPeers(closure func(map[string]*Peer)) {
+	defer t.peers.Sync().RUnlock()
+	t.peers.Sync().RLock()
+
+	closure(t.peers.Map())
+}
+
+// Takes a closure which will obtain a writelock for this
+// torrents' peer-map.
+//
+// Updates to the map are safe within the context of your closure.
+func (t *Torrent) WritePeers(closure func(map[string]*Peer)) {
+	defer t.peers.Sync().Unlock()
+	t.peers.Sync().Lock()
+
+	closure(t.peers.Map())
+}
+
 // Updates the peer-list from an announce requeset.
 func (t *Torrent) AddPeer(peerId, ipAddr, port, secret string) {
 	// Will either add or update a peer; obtain write lock.
@@ -185,10 +207,13 @@ func (t *Torrent) GetPeerList(numWant int) string {
 	mapLength := len(t.peers.Map())
 	if mapLength < MIN_PEER_THRESHOLD && mapLength < numWant {
 		for _, val := range t.peers.Map() {
-			ip := val.IPAddr
 
-			binary.Write(outBuf, binary.BigEndian, ip)
-			binary.Write(outBuf, binary.BigEndian, val.Port)
+			// Do not add the peer to the IPv4 list if we could
+			// not parse a valid IP address for them.
+			if ip := val.IPAddr.To4(); ip != nil {
+				binary.Write(outBuf, binary.BigEndian, ip)
+				binary.Write(outBuf, binary.BigEndian, val.Port)
+			}
 		}
 	} else if mapLength < MIN_PEER_THRESHOLD && mapLength > numWant {
 		i := 0
