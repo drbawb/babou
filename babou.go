@@ -51,14 +51,19 @@ func main() {
 
 	if *appSettings.FullStack == true {
 		// Start bridge
-		appBridge := bridge.NewBridge()
+		// TODO: probably should be pid or dedicated cmd-flag
+		appBridge := bridge.NewBridge(bridge.UNIX_TRANSPORT, fmt.Sprintf("/tmp/babou.%d.sock", *appSettings.WebPort))
 		go func() {
-			fmt.Printf("blocking on receive\n")
-			fmt.Printf("received: %v", <-appBridge.Recv())
+			for {
+				select {
+				case msg := <-appBridge.Recv():
+					fmt.Printf("received: %v", msg)
+				}
+			}
 		}()
 
 		go func() {
-			appBridge.Send(nil)
+			appBridge.Send(bridge.Message{})
 		}()
 	}
 

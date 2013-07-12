@@ -4,21 +4,20 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"io"
 )
 
-func encodeMsg(msg *Message) []byte {
+func encodeMsg(msg Message) []byte {
 	buf := bytes.NewBuffer(make([]byte, 0))
 	encoder := gob.NewEncoder(buf)
 
-	encoder.Encode(*msg)
+	encoder.Encode(msg)
 
 	return buf.Bytes()
 }
 
-func decodeMsg(encodedMessage io.Reader) *Message {
+func decodeMsg(encodedMessage *bytes.Buffer) Message {
 	decoder := gob.NewDecoder(encodedMessage)
-	msg := &Message{}
+	msg := Message{}
 	decoder.Decode(&msg)
 
 	fmt.Printf("decoded message type: %v", msg.Type)

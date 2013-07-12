@@ -41,7 +41,6 @@ type DeleteTorrentMessage struct {
 
 func init() {
 	gob.Register(&Message{})
-	//gob.Register(&MessageType{})
 	gob.Register(&DeleteUserMessage{})
 }
 
