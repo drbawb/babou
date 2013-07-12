@@ -45,13 +45,13 @@ func (s *Server) Start() {
 
 	//TODO: task scheduler of some kind.
 	go func() {
-		tenMinutes := time.Duration(1) * time.Minute
+		tenMinutes := time.Duration(10) * time.Minute
 		timer := time.NewTicker(tenMinutes)
 
 		for {
 			select {
 			case _ = <-timer.C:
-				fmt.Printf("reaping peers - one minute [debug timer] \n")
+				fmt.Printf("\n reaping peers . . . \n")
 				for _, v := range s.torrentCache {
 					s.peerReaper.ReapTorrent(v)
 				}

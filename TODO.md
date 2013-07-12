@@ -98,6 +98,23 @@ The following features are planned but not (currently) under active development:
 
 * IRC integration
 
+---
+
+Development Specific TODOs:
+
+PeerReaper / Announce interaction:
+Announce needs to obtain a writelock on the peer map because it updates their "last seen" as well
+as their bandwidth statistics.
+
+If the peer reaper is running tracker requests are going to block until the reaper exits.
+As such I'm looking to defer peer writes in a separate goroutine so that the goroutines can
+safely block while the rest of the request [read-only] continues unblocked.
+
+This would allow for high availability of the tracker even if a torrent is blocked by a peer reaper.
+
+(All this being said, this is a severe case of premature optimization. -- The block is torrent specific, and
+each torrent has, at most, probably several thousand peers. -- A blocking linear scan of that list should barely be noticeable to the end-users.)
+
 
 
 

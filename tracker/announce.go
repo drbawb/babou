@@ -90,6 +90,8 @@ func encodeResponseMap(responseMap map[string]interface{}) io.Reader {
 
 // Checks if the torrent exists in cache.
 // Otherwise looks it up from database.
+// TODO: this cache will need to be protected by sync primitives in the future.
+// (that can probably wait until the distributed tracker cache / site<->tracker pipeline is finished.)
 func (s *Server) torrentExists(infoHash string) (*libTorrent.Torrent, bool) {
 	torrent := s.torrentCache[infoHash]
 

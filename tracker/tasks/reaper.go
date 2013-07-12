@@ -41,7 +41,7 @@ func (pr *PeerReaper) doWork(target *torrent.Torrent, reapSince int) {
 	// Delete the peers that were marked inactive.
 	target.WritePeers(func(peerMap map[string]*torrent.Peer) {
 		for _, peerId := range peersToRemove {
-			lib.Println("peer of id: %v was removed from a torrent")
+			lib.Printf("peer of id: %v was removed from a torrent \n", peerId)
 			peerMap[peerId] = nil
 		}
 	})
