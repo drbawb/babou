@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type TorrentController struct {
@@ -88,6 +89,7 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 	}{
 		Username: user.Username,
 	}
+
 	formFiles := tc.context.GetParams().Files
 	if formFiles["metainfo"] == nil {
 		tc.flash.AddFlash("File upload appears to be missing.")
@@ -114,6 +116,15 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 			tc.flash.AddFlash("Error reading your torrent file.")
 			return tc.RedirectOnUploadFail()
 		}
+
+		attributes := &models.Attribute{}
+		attributes.AlbumName = params["albumName"]
+		attributes.ReleaseYear = time.Now()
+		attributes.ArtistName = strings.Split(params["artistName"], ",")
+		fmt.Printf("num artists: %d \n", len(attributes.ArtistName))
+
+		torrentRecord.SetAttributes(attributes)
+
 		if err := torrentRecord.Write(); err != nil {
 			tc.flash.AddFlash(fmt.Sprintf("Error saving your torrent. Please contact a staff member: %s", err.Error()))
 			return tc.RedirectOnUploadFail()

@@ -114,6 +114,10 @@ func (t *Torrent) Attributes() (*Attribute, error) {
 
 }
 
+func (t *Torrent) SetAttributes(attributes *Attribute) {
+	t.lazyAttributes = attributes
+}
+
 func (t *Torrent) Write() error {
 	insertTorrent := `INSERT INTO torrents 
 	(name, info_hash, created_by, creation_date, encoding, info_bencoded)
@@ -158,13 +162,12 @@ func (t *Torrent) Write() error {
 				return err
 			}
 
-			// TODO: remove test :: add dummy attributes test
-			attributes := &Attribute{}
-			attributes.AlbumName = "man with a plan"
-			attributes.ArtistName = []string{"stan"}
-			attributes.MusicFormat = "MP3 V0"
+			if t.lazyAttributes == nil {
+				//TODO: attributes not supplied? guess from filenames?
+				t.lazyAttributes = &Attribute{}
+			}
 
-			err = attributes.WriteFor(t.ID)
+			err = t.lazyAttributes.WriteFor(t.ID)
 			if err != nil {
 				return err
 			}

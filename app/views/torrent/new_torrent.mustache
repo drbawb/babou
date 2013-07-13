@@ -3,5 +3,27 @@
 	{{#FileFor metainfo}}{{/FileFor}}
 
 	<br /><br />
+
+	<table>
+		<tr>
+			<td>{{#LabelFor albumName}}Album Name{{/LabelFor}}</td>
+			<td><input type="text" name="albumName" id="albumName" /></td>
+			<td></td>
+		</tr>
+
+		<tr>
+			<td>{{#LabelFor artistName}}Artist Name(s){{/LabelFor}}</td>
+			<td><input type="text" name="artistName" id="artistName" /></td>
+			<td> (comma separated) </td>
+		</tr>
+
+		<tr>
+			<td>{{#LabelFor releaseYear}}Release Year{{/LabelFor}}</td>
+			<td><input type="text" name="releaseYear" id="releaseYear" chars="4" /></td>
+			<td></td>
+		</tr>
+	</table>
+
+	<br /><br />
 	<input type="submit" value="upload" />
 {{/FormFor}}

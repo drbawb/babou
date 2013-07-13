@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
+	"fmt"
 	"time"
 
 	"github.com/drbawb/babou/lib/db"
@@ -37,7 +38,7 @@ type Attribute struct {
 	Name        string
 	ArtistName  []string
 	AlbumName   string
-	ReleaseYear *time.Time
+	ReleaseYear time.Time
 
 	MusicFormat string
 	DiscNumber  int
@@ -58,9 +59,7 @@ func (elem *Attribute) SelectTorrent(torrentId int) error {
 
 	dba := func(dbConn *sql.DB) error {
 		row := dbConn.QueryRow(selectAttributes, torrentId)
-		artistBytes := make([]byte, 0)
-		artistBuf := bytes.NewBuffer(artistBytes)
-		decoder := gob.NewDecoder(artistBuf)
+		var artistBytes []byte
 
 		err := row.Scan(&elem.id, &elem.TorrentId,
 			&elem.Name, &artistBytes, &elem.AlbumName, &elem.ReleaseYear,
@@ -68,17 +67,20 @@ func (elem *Attribute) SelectTorrent(torrentId int) error {
 			&elem.AlbumDescription, &elem.ReleaseDescription,
 		)
 
+		fmt.Printf("len artistNames bytes: %d \n", len(artistBytes))
+
 		if err != nil {
 			return err
 		}
 
-		artistList := make([]string, 0)
-		err = decoder.Decode(&artistList)
+		artistBuf := bytes.NewBuffer(artistBytes)
+		decoder := gob.NewDecoder(artistBuf)
+
+		err = decoder.Decode(&elem.ArtistName)
 		if err != nil {
 			return err
 		}
 
-		elem.ArtistName = artistList
 		return nil
 	}
 
