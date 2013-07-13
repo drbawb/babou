@@ -11,15 +11,18 @@ import (
 type Bridge struct {
 	transports []Transport // other bridges to deliver messages to
 
-	in  chan Message // channel of messages to be read from other transports
-	out chan Message // channel of messages to be shared with other transports
+	in  chan Message  // channel of messages to be read from other transports
+	out chan *Message // channel of messages to be shared with other transports
+
+	quit chan bool // send any value to gracefully shutdown the bridge.
 }
 
 func NewBridge(listenOn TransportType, socketAddress string) *Bridge {
 	bridge := &Bridge{
 		transports: make([]Transport, 0),
 		in:         make(chan Message),
-		out:        make(chan Message),
+		out:        make(chan *Message),
+		quit:       make(chan bool),
 	}
 
 	// Implement all transport types for the default bridge.
@@ -39,8 +42,6 @@ func NewBridge(listenOn TransportType, socketAddress string) *Bridge {
 	}
 
 	go bridge.broadcast()
-
-	// TODO: should be from config file.
 
 	return bridge
 }
@@ -75,11 +76,19 @@ func (b *Bridge) netListen(network, addr string) {
 
 	fmt.Printf("listening on: %s \n", addr)
 
+	go func(net.Listener) {
+		select {
+		case _ = <-b.quit:
+			_ = l.Close()
+			b.quit <- true
+		}
+	}(l)
+
 	for {
-		fmt.Printf("top of listen loop \n")
 		fd, err := l.Accept()
 		if err != nil {
 			fmt.Printf("error listening for pack: %s \n", err.Error())
+			break
 		}
 
 		msgBuf := make([]byte, 1024)
@@ -92,16 +101,15 @@ func (b *Bridge) netListen(network, addr string) {
 
 		// gob decode it into a bridge-message
 		b.in <- decodeMsg(bytes.NewBuffer(msgBuf)) // send blocked receiver a message
-
 	}
 }
 
-func (b *Bridge) Send(msg Message) {
+func (b *Bridge) Send(msg *Message) {
 	// send message to other transports
-	msg = Message{}
+	msg = &Message{}
 	msg.Type = DELETE_USER
 
-	dmm := DeleteUserMessage{}
+	dmm := &DeleteUserMessage{}
 	dmm.UserId = 9001
 
 	msg.Payload = dmm
@@ -111,4 +119,8 @@ func (b *Bridge) Send(msg Message) {
 
 func (b *Bridge) Recv() <-chan Message {
 	return b.in
+}
+
+func (b *Bridge) Close() chan bool {
+	return b.quit
 }

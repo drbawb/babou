@@ -15,29 +15,29 @@ const (
 )
 
 type Transport interface {
-	Send(msg Message) // Sends a message to the specified socket
+	Send(msg *Message) // Sends a message to the specified socket
 }
 
 type UnixTransport struct {
 	socketAddr string
 
-	queue chan Message // TODO: could repurpose as send buffer in future.
+	queue chan *Message // TODO: could repurpose as send buffer in future.
 }
 
 type TCPTransport struct {
 	socketAddr string
 
-	queue chan Message // TODO: could repurpose as send buffer in future.
+	queue chan *Message // TODO: could repurpose as send buffer in future.
 }
 
 func NewUnixTransport(socketAddr string) *UnixTransport {
-	transport := &UnixTransport{socketAddr: socketAddr, queue: make(chan Message)}
+	transport := &UnixTransport{socketAddr: socketAddr, queue: make(chan *Message)}
 	go transport.processQueue()
 
 	return transport
 }
 
-func (ut *UnixTransport) Send(msg Message) {
+func (ut *UnixTransport) Send(msg *Message) {
 	ut.queue <- msg
 }
 
@@ -63,13 +63,13 @@ func (ut *UnixTransport) processQueue() {
 }
 
 func NewTCPTransport(socketAddr string) *TCPTransport {
-	transport := &TCPTransport{socketAddr: socketAddr, queue: make(chan Message)}
+	transport := &TCPTransport{socketAddr: socketAddr, queue: make(chan *Message)}
 	go transport.processQueue()
 
 	return transport
 }
 
-func (tcp *TCPTransport) Send(msg Message) {
+func (tcp *TCPTransport) Send(msg *Message) {
 	tcp.queue <- msg
 }
 

@@ -17,6 +17,8 @@ import (
 	syscall "syscall"
 )
 
+var bridgeIO chan bool = make(chan bool)
+
 func main() {
 	//Output welcome message:
 	fmt.Println("babou fast like veyron.")
@@ -53,17 +55,24 @@ func main() {
 		// Start bridge
 		// TODO: probably should be pid or dedicated cmd-flag
 		appBridge := bridge.NewBridge(bridge.UNIX_TRANSPORT, fmt.Sprintf("/tmp/babou.%d.sock", *appSettings.WebPort))
+		bridgeIO = appBridge.Close()
 		go func() {
 			for {
 				select {
 				case msg := <-appBridge.Recv():
 					fmt.Printf("received: %v", msg)
+					switch msg.Type {
+					case bridge.DELETE_USER:
+						v := msg.Payload.(*bridge.DeleteUserMessage)
+						fmt.Printf("should delete: %d \n", v.UserId)
+					}
+
 				}
 			}
 		}()
 
 		go func() {
-			appBridge.Send(bridge.Message{})
+			appBridge.Send(nil)
 		}()
 	}
 
@@ -93,6 +102,9 @@ func trapSignals(c chan os.Signal) {
 			// Exit when they're both finished.
 			fmt.Println("\nwaiting for webserver to shutdown...")
 			fmt.Println("\nwaiting for tracker to shutdown...")
+
+			bridgeIO <- true
+			_ = <-bridgeIO
 
 			os.Exit(0)
 		} else if sig == syscall.SIGKILL {

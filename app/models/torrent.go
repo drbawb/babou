@@ -6,6 +6,7 @@ import (
 
 	"github.com/drbawb/babou/lib/torrent"
 
+	"errors"
 	"fmt"
 )
 
@@ -19,6 +20,8 @@ type Torrent struct {
 
 	Encoding    string
 	EncodedInfo []byte
+
+	lazyAttributes *Attribute
 
 	isInit bool
 }
@@ -97,6 +100,20 @@ func (t *Torrent) SelectSummaryPage() ([]*Torrent, error) {
 	return summaryList, db.ExecuteFn(dba)
 }
 
+func (t *Torrent) Attributes() (*Attribute, error) {
+	if t.ID <= 0 && t.lazyAttributes == nil {
+		return nil, errors.New("This torrent's attributes are not currently available.")
+	} else if t.lazyAttributes != nil {
+		return t.lazyAttributes, nil
+	}
+
+	attributes := &Attribute{}
+	err := attributes.SelectTorrent(t.ID)
+
+	return attributes, err
+
+}
+
 func (t *Torrent) Write() error {
 	insertTorrent := `INSERT INTO torrents 
 	(name, info_hash, created_by, creation_date, encoding, info_bencoded)
@@ -140,6 +157,17 @@ func (t *Torrent) Write() error {
 			if err != nil {
 				return err
 			}
+
+			// TODO: remove test :: add dummy attributes test
+			attributes := &Attribute{}
+			attributes.AlbumName = "man with a plan"
+			attributes.ArtistName = []string{"stan"}
+			attributes.MusicFormat = "MP3 V0"
+
+			err = attributes.WriteFor(t.ID)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -168,13 +196,16 @@ func (t *Torrent) Populate(torrentFile *torrent.TorrentFile) error {
 }
 
 func (t *Torrent) WriteFile(secret, hash []byte) ([]byte, error) {
-	file := t.LoadTorrent()
+	file, err := t.LoadTorrent()
+	if err != nil {
+		return nil, err
+	}
 
 	outBytes, err := file.WriteFile(secret, hash)
 	return outBytes, err
 }
 
-func (t *Torrent) LoadTorrent() *torrent.TorrentFile {
+func (t *Torrent) LoadTorrent() (*torrent.TorrentFile, error) {
 	file := &torrent.TorrentFile{}
 	file.Comment = "downloaded from babou development instance"
 	file.CreatedBy = t.CreatedBy
@@ -183,10 +214,10 @@ func (t *Torrent) LoadTorrent() *torrent.TorrentFile {
 
 	infoMap, err := torrent.DecodeInfoDict(t.EncodedInfo)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	file.Info = infoMap
 
-	return file
+	return file, nil
 }

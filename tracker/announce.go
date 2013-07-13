@@ -103,8 +103,14 @@ func (s *Server) torrentExists(infoHash string) (*libTorrent.Torrent, bool) {
 			return nil, false
 		} else {
 			fmt.Printf("found torrent by hash")
-			trackerTorrent := libTorrent.NewTorrent(dbTorrent.LoadTorrent())
+			prepareTorrent, err := dbTorrent.LoadTorrent()
+			if err != nil {
+				return nil, false
+			}
+
+			trackerTorrent := libTorrent.NewTorrent(prepareTorrent)
 			s.torrentCache[infoHash] = trackerTorrent
+
 			return s.torrentCache[infoHash], true
 		}
 

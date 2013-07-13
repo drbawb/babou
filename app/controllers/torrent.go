@@ -147,18 +147,27 @@ func (tc *TorrentController) Download(params map[string]string) *web.Result {
 	torrentId, err := strconv.ParseInt(params["torrentId"], 10, 32)
 
 	if err != nil {
-		output.Body = []byte("fudddddge monkies. swimming ones.")
+		output.Body = []byte("invalid torrent id.")
+		return output
 	}
 
 	record.SelectId(int(torrentId))
 	outFile, err := record.WriteFile(user.Secret, user.SecretHash)
 	if err != nil {
-		output.Body = []byte("fudge monkies. flying ones.")
+		output.Body = []byte("invalid torrent file or torrent not found")
+		return output
 	}
 
 	output.IsFile = true
 	output.Filename = "test.torrent"
 	output.Body = outFile
+
+	//TODO: Test attributes.
+	attributes, err := record.Attributes()
+	if attributes != nil {
+		fmt.Printf("attributes: %v \n", attributes)
+	}
+
 	return output
 }
 

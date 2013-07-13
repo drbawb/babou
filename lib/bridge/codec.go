@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func encodeMsg(msg Message) []byte {
+func encodeMsg(msg *Message) []byte {
 	buf := bytes.NewBuffer(make([]byte, 0))
 	encoder := gob.NewEncoder(buf)
 
