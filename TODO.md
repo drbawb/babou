@@ -30,7 +30,21 @@ balanced.] (General roadmap: store sessions entirely in-cookie [if feasible], an
 (A document that briefly describes Go, links to tutorials on installing a working Go toolchain, and describes
 how to use that toolchain to retrieve and compile `babou`.)
 
-Website
+
+Event Bridge
+
+---
+
+* Implement event bridge w/ multiple senders and single receiver [DONE]
+
+* Implement TCP, UNIX socket transports, w/ serializable messages. [DONE]
+
+* Implement loopback socket transport [DONE]
+
+* Connection level timeout for TCP/UNIX socket transports so senders don't block indefinitely.
+
+
+Web Server
 
 ---
 
