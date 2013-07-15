@@ -51,6 +51,7 @@ func (s *Server) Start() {
 		for {
 			select {
 			case _ = <-timer.C:
+				//TODO: rate limit ...
 				fmt.Printf("\n reaping peers . . . \n")
 				for _, v := range s.torrentCache {
 					s.peerReaper.ReapTorrent(v)

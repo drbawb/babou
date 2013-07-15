@@ -20,8 +20,9 @@ import (
 type Server struct {
 	Port int
 
-	serverIO  chan int
-	AppBridge *bridge.Bridge
+	serverIO    chan int              // Output for process monitor
+	AppBridge   *bridge.Bridge        // Event bridge this server can use to comm. with other trackers.
+	AppSettings *libBabou.AppSettings // Settings this server was started with
 }
 
 // Initializes a server using babou/lib settings, an event bridge, and a communications channel
@@ -29,6 +30,7 @@ type Server struct {
 func NewServer(appSettings *libBabou.AppSettings, bridge *bridge.Bridge, serverIO chan int) *Server {
 	newServer := &Server{}
 
+	newServer.AppSettings = appSettings
 	newServer.Port = appSettings.WebPort
 	newServer.serverIO = serverIO
 
@@ -69,7 +71,7 @@ func (s *Server) loadRoutes() {
 // Instructs the babou library to open a database connection.
 // This DB connection will be closed when babou is gracefully shutdown.
 func (s *Server) openDb() {
-	_, err := libDb.Open()
+	_, err := libDb.Open(s.AppSettings)
 	if err != nil {
 		panic("database could not be opened: " + err.Error())
 	}
