@@ -186,12 +186,27 @@ user accounts are disabled by ratio-watchers or moderator actions, etc.)
 
 ---
 
+A beautiful ASCII diagram of the stack
+
+	?: [external babou web server] --------------\
+												 |
+										[tcp or unix socket]
+												 |
+	[babou: process monitor]					 V
+			|--- launches event bridge --> 	[event bridge] - - - -|
+			|									^				  |
+			|									|				  |
+			|							[loopback transport]	  |
+			|									|				  |
+			|									|				  |
+			|-?-- launches web server ---> 	[ web server ]		  |
+			|													  |
+			|-?-- launches tracker ------>	[  tracker   ]<-------/
 
 
 
-
-
-
+The event bridge [will eventually] use a shared secret to authenticate messages
+from external transports for security.
 
 
 Directory Layout
@@ -200,18 +215,24 @@ Directory Layout
 Babou uses RESTful routing and an MVC-like design.
 
 babou.go
--D-tracker
 -D-app 
----router.go (Server router)  
----server.go (Webserver)  
---D-views (View implementations)  
---D-models (Model implementations)  
+---router.go 	(Web Server router)  
+---server.go 	(Webserver)  
+--D-views 		(View implementations)  
+--D-models 		(Model implementations)  
 --D-controllers (Controller implementations)  
---D-filters (babou/lib/web.Context implementations)
--D-lib  (Core libraries that are useful across stack)
---D-web (Libraries that are commonly included by web-server related code.)  
---D-db  (Libraries that are commonly included by model related code.)  
--D-tests  
+--D-filters 	(babou/lib/web.Context implementations)
+-D-bridge		(Event Bridge server)
+-D-tracker		(Tracker)
+--D-tasks		(Scheduled tasks that the tracker runs periodically)
+-D-lib  		(Core libraries that are useful across stack)
+--D-web 		(Libraries that are commonly included by web-server related code.)  
+--D-db  		(Libraries that are commonly included by model related code.)  
+--D-session  	(Database backend for HTTP session storage)
+--D-torrent  	(Common library methods for reading/writing `metainfo` files)
+-D-config	 	(Site settings read when `babou` starts up)
+-D-db		 	(Database migrations for upgrades/downgrades)
+-D-tests  		(Tests that I promise to write ... eventually.)
 
 router.go contains a list of all routes in the application.
 A route is a pattern that is matched against a submitted URL and its corresponding
