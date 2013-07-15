@@ -16,6 +16,9 @@ type AppSettings struct {
 
 	WebPort     *int // Port the web-stack will listen on
 	TrackerPort *int // Port the track-stack will listen on
+
+	WebHost     string // Hostname of the web-server, used for generating URLs
+	TrackerHost string //Hostname of tracker, used for generating URLs.
 }
 
 // Database settings that will be populated from a flat-file by

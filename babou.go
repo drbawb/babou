@@ -9,7 +9,6 @@ import (
 	tracker "github.com/drbawb/babou/tracker"
 
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
-	bridge "github.com/drbawb/babou/lib/bridge"
 	//libDb "github.com/drbawb/babou/lib/db"
 
 	os "os"
@@ -53,27 +52,6 @@ func main() {
 
 	if *appSettings.FullStack == true {
 		// Start bridge
-		// TODO: probably should be pid or dedicated cmd-flag
-		appBridge := bridge.NewBridge(bridge.UNIX_TRANSPORT, fmt.Sprintf("/tmp/babou.%d.sock", *appSettings.WebPort))
-		bridgeIO = appBridge.Close()
-		go func() {
-			for {
-				select {
-				case msg := <-appBridge.Recv():
-					fmt.Printf("received: %v", msg)
-					switch msg.Type {
-					case bridge.DELETE_USER:
-						v := msg.Payload.(*bridge.DeleteUserMessage)
-						fmt.Printf("should delete: %d \n", v.UserId)
-					}
-
-				}
-			}
-		}()
-
-		go func() {
-			appBridge.Send(nil)
-		}()
 	}
 
 	// Block on server IOs
@@ -127,16 +105,22 @@ func parseFlags() *libBabou.AppSettings {
 	appSettings.FullStack = flag.Bool("full-stack", true,
 		"Enables the full application stack. - Disabled if track-stack or web-stack are set.")
 
-	appSettings.WebPort = flag.Int("web-port", 8080,
-		"Sets the web application's port number.")
-	appSettings.TrackerPort = flag.Int("track-port", 4200,
-		"Sets the tracker's listening port number.")
+	appSettings.WebPort = flag.Int("web-port", -1,
+		"Sets the web application's port number. -1 to use configuration file's port.")
+	appSettings.TrackerPort = flag.Int("track-port", -1,
+		"Sets the tracker's listening port number. -1 to use configuration file's port.")
 
 	flag.Parse()
 
 	// If the user has configured their own stack options, do not use the full stack.
 	if *appSettings.WebStack == true || *appSettings.TrackerStack == true {
 		*appSettings.FullStack = false
+	}
+
+	// Panic if configuration fails.
+	err := parseConfig(appSettings)
+	if err != nil {
+		panic(err.Error())
 	}
 
 	return appSettings
