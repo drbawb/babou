@@ -28,7 +28,7 @@ type Server struct {
 func NewServer(appSettings *libBabou.AppSettings, serverIO chan int) *Server {
 	newServer := &Server{torrentCache: make(map[string]*libTorrent.Torrent)}
 
-	newServer.Port = *appSettings.TrackerPort
+	newServer.Port = appSettings.TrackerPort
 	newServer.serverIO = serverIO
 	newServer.peerReaper = &tasks.PeerReaper{} //TODO: constructor.
 

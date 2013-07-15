@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+
+	"github.com/drbawb/babou/lib"
 )
 
 // Represents the programs bridge to send messages to the other pack members.
@@ -17,7 +19,7 @@ type Bridge struct {
 	quit chan bool // send any value to gracefully shutdown the bridge.
 }
 
-func NewBridge(listenOn TransportType, socketAddress string) *Bridge {
+func NewBridge(listenOn lib.TransportType, socketAddress string) *Bridge {
 	bridge := &Bridge{
 		transports: make([]Transport, 0),
 		in:         make(chan Message),
@@ -27,12 +29,12 @@ func NewBridge(listenOn TransportType, socketAddress string) *Bridge {
 
 	// Implement all transport types for the default bridge.
 	switch listenOn {
-	case UNIX_TRANSPORT:
+	case lib.UNIX_TRANSPORT:
 		go bridge.netListen("unix", socketAddress)
 
 		unix := NewUnixTransport(socketAddress) // TODO: Want to make an unserialized loopback; this works for now.
 		bridge.AddTransport(unix)
-	case TCP_TRANSPORT:
+	case lib.TCP_TRANSPORT:
 		go bridge.netListen("tcp", socketAddress)
 
 		tcp := NewTCPTransport(socketAddress) // TODO: Want to make an unserialized loopback; this works for now.

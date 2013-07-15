@@ -105,6 +105,95 @@ any users currently logged into the site.
 This makes adding more nodes an effective strategy for scaling the web-
 portion of your Babou tracker.
 
+Event Bridge
+===
+
+`babou` uses an event bridge as a secured pipeline between multiple nodes of `babou`.
+
+First, you must decide how you'd like to configure your pipeline.
+
+For a single-instance running the full stack, you should use the default `loopback` bridge.
+In this mode: `babou` is using no additional sockets or ports, and he does not waste time serializing data
+into a wire format.
+
+In a multi-instance, single-server setup (for e.g: running -web-stack and -track-stack in two separate processes),
+you should use UNIX sockets if supported by your OS. This will use an additional file-descriptor, and requires
+serialization.
+
+In a multi-instance, multi-server setup, you should probably use TCP which requires binding an IP address
+and an additional port to your `babou` instance. This also requires data serialization, but is workable over
+complex network setups.
+
+In full-stack mode, `babou` will _always_ reserve an inter-process event pipeline 
+that incurs no additional overhead, regardless of the selected transport.
+
+The purpose of specifying `lo` is that babou should not listen for OUTSIDE connections.
+
+---
+
+The relevant configuration
+	events:
+		transport: lo # Must be one of: unix, tcp, lo
+		#socket: /file
+		#address: 0.0.0.0
+		#port: 3000
+		peers:
+		  - transport: unix
+		    socket: /tmp/babou.8081.sock
+		  - transport: tcp
+		    address: 127.0.0.1
+		    port: 3001
+
+The `events` key contains the information for the receive socket.
+The `events.peers` key contains the sockets of OTHER babou instances.
+
+To enable you to share this confiruation file across instances: `babou` will 
+never attempt to  connect to his own instance if it is found in the 
+`events.peers` dictionary.
+
+If `transport: lo` is selected, the `events.peers` dicitonary is ignored entirely.
+
+---
+
+The event bridge allows [n] babou web-servers to work with [m] babou trackers in concert.
+If `babou` is configured to work with other trackers (listening on the `unix` or 
+`tcp` tranpsort) then it will attempt to maintain a connection to each `pack member` listed
+in the `events.peers` dictionary.
+
+
+The event bridge maintains two buffers, a send buffer and receive buffer.
+
+If a worker is non-responsive these buffers will exhaust their resources until eventually the
+application will reject incoming requests and refuse to update its cache.
+
+(TODO: Failure strategies to deal with unresponsive workers.)
+
+
+The send-buffer will forward messages to all available pack members. The receive buffer will
+receive a message from other pack member(s); if the message is authentic it will be added to the receive
+buffer.
+
+The web-server and tracker use the send-buffer to issue messages to other trackers.
+Currently the trackers have exclusive holds on the receive buffer. -- In the future we may add
+a message router to direct messages to different receivers.
+
+---
+
+The event bridge uses a binary encoding to serialize messages back and forth; these messages serve
+to update tracker's caches as website events occur. (For example: announce keys are changed,
+user accounts are disabled by ratio-watchers or moderator actions, etc.)
+
+
+---
+
+
+
+
+
+
+
+
+
 Directory Layout
 ===
 
@@ -204,18 +293,18 @@ Router & Controllers
 
 Diagram:
 
-	[Request] --> [Router]<-----\  
-			 		|	  		|  
-			 		|	   	    |  
-			 		\------->[Wrapper]<---------\  
-								|				|  
-								\----------->[Controller]<---->[View]  
-												| 	A  
-												| 	|  	
-								[Model]<--------/   |
-				  				  |		  			|
-				  				  |		  			|
-				  				  \-----------------/
+	[Request] --> [Router]<-------\  
+			 		|	  	 	  |  
+			 		|	   	      |  
+			 		\------->[Chain]<----------------\  
+							   |	  			     |  
+							   \----------->[Controller]<---->[View]  
+												|  A  
+												|  |  	
+								[Model]<--------/  |
+				  				  |		  		   |
+				  				  |		  		   |
+				  				  \----------------/
 
 An http Request/Response is given to the router which uses a muxer to
 match the request URI to an appropriate route.

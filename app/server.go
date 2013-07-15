@@ -25,7 +25,7 @@ type Server struct {
 func NewServer(appSettings *libBabou.AppSettings, serverIO chan int) *Server {
 	newServer := &Server{}
 
-	newServer.Port = *appSettings.WebPort
+	newServer.Port = appSettings.WebPort
 	newServer.serverIO = serverIO
 
 	return newServer

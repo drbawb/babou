@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
@@ -39,8 +40,9 @@ func parseConfig(settings *libBabou.AppSettings) error {
 	}
 
 	// Default, use config file port.
-	if *settings.WebPort == -1 {
-		*settings.WebPort = port
+	fmt.Printf("web port = %d", settings.WebPort)
+	if settings.WebPort == -1 {
+		settings.WebPort = port
 	}
 
 	fmt.Printf("Reading tracker configuration . . .\n")
@@ -56,8 +58,8 @@ func parseConfig(settings *libBabou.AppSettings) error {
 	}
 
 	// Default, use config file port.
-	if *settings.TrackerPort == -1 {
-		*settings.TrackerPort = port
+	if settings.TrackerPort == -1 {
+		settings.TrackerPort = port
 	}
 
 	settings.TrackerHost = fmt.Sprintf("http://%s:%d", hostname, port)
@@ -81,28 +83,74 @@ func parseEvent(cfg *config.Config, settings *libBabou.AppSettings) error {
 	case "tcp":
 		fmt.Printf("tcp socket \n")
 	case "lo":
-		fmt.Printf("loopback socket \n")
+		fmt.Printf("setting up local socket, ignoring peers \n")
+		settings.Bridge = &libBabou.TransportSettings{}
+
+		settings.Bridge.Transport = libBabou.LOCAL_TRANSPORT
+		settings.BridgePeers = make([]*libBabou.TransportSettings, 0) // TODO: add peers with config reload.
 	default:
 		fmt.Printf("unknown socket type: %s \n", transport)
 		return errors.New("Could not configure event bridge.")
 	}
 
-	peers, err := cfg.List("development.events.peers")
-	if err != nil {
-		return err
-	}
+	fmt.Printf("\n --- \n")
+	return nil
+}
 
-	// attempt conversion
-	for _, peer := range peers {
+func parseBridgePeers(settings *libBabou.AppSettings, peerList []interface{}) error {
+	for _, peer := range peerList {
 		v, ok := peer.(map[string]interface{})
 		if !ok {
-			fmt.Printf("bad format for peer \n")
-			continue
+			return errors.New("bad format for peer")
 		}
 
 		fmt.Printf("peer transport: %s \n", v["transport"])
 	}
 
-	fmt.Printf("\n --- \n")
 	return nil
+}
+
+func parseFlags() *libBabou.AppSettings {
+	appSettings := &libBabou.AppSettings{}
+	var debug, webStack, trackStack, fullStack *bool
+	var webPort, trackPort *int
+
+	debug = flag.Bool("debug", false,
+		"Logs debug information to console.")
+
+	webStack = flag.Bool("web-stack", false,
+		"Enables the web application server.")
+	trackStack = flag.Bool("track-stack", false,
+		"Enables the torrent tracker.")
+	fullStack = flag.Bool("full-stack", true,
+		"Enables the full application stack. - Disabled if track-stack or web-stack are set.")
+
+	webPort = flag.Int("web-port", -1,
+		"Sets the web application's port number. -1 to use configuration file's port.")
+	trackPort = flag.Int("track-port", -1,
+		"Sets the tracker's listening port number. -1 to use configuration file's port.")
+
+	flag.Parse()
+
+	appSettings.Debug = *debug
+
+	appSettings.WebStack = *webStack
+	appSettings.TrackerStack = *trackStack
+	appSettings.FullStack = *fullStack
+
+	appSettings.WebPort = *webPort
+	appSettings.TrackerPort = *trackPort
+
+	// If the user has configured their own stack options, do not use the full stack.
+	if appSettings.WebStack == true || appSettings.TrackerStack == true {
+		appSettings.FullStack = false
+	}
+
+	// Panic if configuration fails.
+	err := parseConfig(appSettings)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return appSettings
 }

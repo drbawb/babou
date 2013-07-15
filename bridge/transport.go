@@ -5,15 +5,6 @@ import (
 	"net"
 )
 
-type TransportType uint8
-
-const (
-	_               TransportType = iota
-	UNIX_TRANSPORT  TransportType = iota
-	TCP_TRANSPORT                 = iota
-	LOCAL_TRANSPORT               = iota
-)
-
 type Transport interface {
 	Send(msg *Message) // Sends a message to the specified socket
 }
