@@ -13,32 +13,33 @@ import (
 type Bridge struct {
 	transports []Transport // other bridges to deliver messages to
 
-	in  chan Message  // channel of messages to be read from other transports
+	in  chan *Message // channel of messages to be read from other transports
 	out chan *Message // channel of messages to be shared with other transports
 
 	quit chan bool // send any value to gracefully shutdown the bridge.
 }
 
-func NewBridge(listenOn lib.TransportType, socketAddress string) *Bridge {
+const (
+	BRIDGE_SEND_BUFFER int = 10
+	BRIDGE_RECV_BUFFER     = 10
+)
+
+// Sets up a bridge w/ a send buffer attached to nothing.
+// All messages will be dropped to drain the buffer until transport(s) are available.
+func NewBridge(settings *lib.TransportSettings) *Bridge {
 	bridge := &Bridge{
 		transports: make([]Transport, 0),
-		in:         make(chan Message),
-		out:        make(chan *Message),
+		in:         make(chan *Message, BRIDGE_RECV_BUFFER),
+		out:        make(chan *Message, BRIDGE_SEND_BUFFER),
 		quit:       make(chan bool),
 	}
 
 	// Implement all transport types for the default bridge.
-	switch listenOn {
+	switch settings.Transport {
 	case lib.UNIX_TRANSPORT:
-		go bridge.netListen("unix", socketAddress)
-
-		unix := NewUnixTransport(socketAddress) // TODO: Want to make an unserialized loopback; this works for now.
-		bridge.AddTransport(unix)
+		go bridge.netListen("unix", settings.Socket)
 	case lib.TCP_TRANSPORT:
-		go bridge.netListen("tcp", socketAddress)
-
-		tcp := NewTCPTransport(socketAddress) // TODO: Want to make an unserialized loopback; this works for now.
-		bridge.AddTransport(tcp)
+		go bridge.netListen("tcp", settings.Socket)
 	default:
 		fmt.Printf("you have selected an unimplemented bridge type. \n")
 	}
@@ -58,13 +59,12 @@ func (b *Bridge) broadcast() {
 		select {
 		case msg := <-b.out:
 			if len(b.transports) == 0 {
-				fmt.Printf("No transports available for send. Message dropped: %v", msg)
-			} else {
-				for _, tp := range b.transports {
-					tp.Send(msg)
-				}
+				fmt.Printf("No transports avail. Event dropped: %v \n", msg)
 			}
 
+			for _, tp := range b.transports {
+				tp.Send(msg)
+			}
 		}
 	}
 }
@@ -106,8 +106,11 @@ func (b *Bridge) netListen(network, addr string) {
 	}
 }
 
+// Sends a message on a channel.
+// Will block indefinitely if the send-buffer is filled and not being drained.
 func (b *Bridge) Send(msg *Message) {
 	// send message to other transports
+	// TODO: dummy message in here.
 	msg = &Message{}
 	msg.Type = DELETE_USER
 
@@ -119,7 +122,24 @@ func (b *Bridge) Send(msg *Message) {
 	b.out <- msg
 }
 
-func (b *Bridge) Recv() <-chan Message {
+// Returns a channel immediately.
+//
+// When the bridge has sucesfully placed your message
+// into the send buffer, a single integer will
+// be sent on the returned channel.
+func (b *Bridge) ASend(msg *Message) <-chan int {
+	// send message to other transports
+	// TODO: dummy message in here.
+	retChan := make(chan int, 1)
+	go func(status chan int) {
+		b.Send(msg) // try to send message
+		status <- 1 // message sent OK
+	}(retChan)
+
+	return retChan
+}
+
+func (b *Bridge) Recv() <-chan *Message {
 	return b.in
 }
 

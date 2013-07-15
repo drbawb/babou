@@ -15,12 +15,12 @@ func encodeMsg(msg *Message) []byte {
 	return buf.Bytes()
 }
 
-func decodeMsg(encodedMessage *bytes.Buffer) Message {
+func decodeMsg(encodedMessage *bytes.Buffer) *Message {
 	decoder := gob.NewDecoder(encodedMessage)
 	msg := Message{}
 	decoder.Decode(&msg)
 
 	fmt.Printf("decoded message type: %v", msg.Type)
 
-	return msg
+	return &msg
 }

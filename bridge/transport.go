@@ -21,6 +21,22 @@ type TCPTransport struct {
 	queue chan *Message // TODO: could repurpose as send buffer in future.
 }
 
+type LocalTransport struct {
+	queue chan *Message
+}
+
+// Forwards message to locally available transport.
+// Must be used on an existing bridge.
+func (b *Bridge) NewLocalTransport() *LocalTransport {
+	transport := &LocalTransport{queue: b.in} // Use bridge's "receiver" channel to send messages.
+
+	return transport
+}
+
+func (lt *LocalTransport) Send(msg *Message) {
+	lt.queue <- msg
+}
+
 func NewUnixTransport(socketAddr string) *UnixTransport {
 	transport := &UnixTransport{socketAddr: socketAddr, queue: make(chan *Message)}
 	go transport.processQueue()

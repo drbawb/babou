@@ -7,6 +7,7 @@ import (
 	web "github.com/drbawb/babou/app" // The babou application: composed of a server and muxer.
 	tracker "github.com/drbawb/babou/tracker"
 
+	"github.com/drbawb/babou/bridge"
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
 	//libDb "github.com/drbawb/babou/lib/db"
 
@@ -32,10 +33,23 @@ func main() {
 	webServerIO := make(chan int, 0)
 	trackerIO := make(chan int, 0)
 
+	// Start event bridge.
+	var appBridge *bridge.Bridge
+
+	switch appSettings.Bridge.Transport {
+	case libBabou.LOCAL_TRANSPORT:
+		appBridge = bridge.NewBridge(appSettings.Bridge)
+
+		// add local transport ONLY
+		appBridge.AddTransport(appBridge.NewLocalTransport())
+	default:
+		panic("Bridge type not impl. yet...")
+	}
+
 	if appSettings.FullStack == true || appSettings.WebStack == true {
 		// Start web-server
 		fmt.Printf("Starting web-server \n")
-		server := web.NewServer(appSettings, webServerIO)
+		server := web.NewServer(appSettings, appBridge, webServerIO)
 		// Receive SIGNALs from web server.
 
 		go server.Start()
@@ -73,6 +87,7 @@ func trapSignals(c chan os.Signal) {
 			//TODO: Probably block on webserver shutdown [instant]
 			fmt.Println("\nwaiting for webserver to shutdown...")
 			fmt.Println("\nwaiting for tracker to shutdown...")
+			fmt.Println("\nwaiting for event-bridge to close sockets...")
 
 			os.Exit(0)
 		} else if sig == syscall.SIGKILL {
