@@ -11,7 +11,7 @@ import (
 	mux "github.com/gorilla/mux"
 )
 
-func LoadRoutes() *mux.Router {
+func LoadRoutes(s *Server) *mux.Router {
 	r := mux.NewRouter()
 	web.Router = r
 
@@ -19,6 +19,8 @@ func LoadRoutes() *mux.Router {
 	home := controllers.NewHomeController()
 	login := controllers.NewLoginController()
 	torrent := controllers.NewTorrentController()
+
+	eventChain := filters.EventChain(s.AppBridge)
 
 	// Shows public homepage, redirects to private site if valid session can be found.
 	r.HandleFunc("/",
@@ -81,6 +83,14 @@ func LoadRoutes() *mux.Router {
 			Execute(torrent, "download")).
 		Methods("GET").
 		Name("torrentDownload")
+
+	r.HandleFunc("/torrents/delete/{torrentId}",
+		filters.BuildDefaultChain().
+			Chain(filters.AuthChain()).
+			Chain(eventChain).
+			Execute(torrent, "delete")).
+		Methods("GET").
+		Name("torrentDelete")
 
 	// Catch-All: Displays all public assets.
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/",

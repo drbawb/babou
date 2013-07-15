@@ -21,6 +21,7 @@ type TorrentController struct {
 	session *filters.SessionContext
 	flash   *filters.FlashContext
 	auth    *filters.AuthContext
+	events  *filters.EventContext
 
 	actionMap map[string]web.Action
 }
@@ -182,6 +183,22 @@ func (tc *TorrentController) Download(params map[string]string) *web.Result {
 	return output
 }
 
+func (tc *TorrentController) Delete(params map[string]string) *web.Result {
+	redirect, user := tc.RedirectOnAuthFail()
+	if user == nil {
+		return redirect
+	}
+
+	output := &web.Result{
+		Status: 200,
+	}
+
+	fmt.Printf("sending pretend delete event to tracker(s) \n")
+	tc.events.SendMessage(nil)
+
+	return output
+}
+
 // Tests if the user is logged in.
 // If not: returns a web.Result that would redirect them to the homepage.
 func (tc *TorrentController) RedirectOnAuthFail() (*web.Result, *models.User) {
@@ -254,6 +271,15 @@ func (tc *TorrentController) SetAuthContext(context *filters.AuthContext) error 
 	return errors.New("This instance of TorrentController cannot service requests.")
 }
 
+func (tc *TorrentController) SetEventContext(context *filters.EventContext) error {
+	if tc.safeInstance {
+		tc.events = context
+		return nil
+	}
+
+	return errors.New("This instance of TorrentController cannot service requests.")
+}
+
 // Dispatches routes through this controller's actionMap and returns a result.
 func (tc *TorrentController) HandleRequest(action string) *web.Result {
 	if !tc.safeInstance {
@@ -276,11 +302,21 @@ func (tc *TorrentController) Process(action string) (web.Controller, error) {
 // Tests that the current chain is sufficient for this route.
 func (tc *TorrentController) TestContext(chain []web.ChainableContext) error {
 	outFlag := false
+	eventFlag := false
 	for i := 0; i < len(chain); i++ {
+		if outFlag && eventFlag {
+			break
+		}
+
 		_, ok := chain[i].(filters.AuthChainLink)
 		if ok {
 			outFlag = true
-			break
+			continue
+		}
+		_, ok = chain[i].(filters.EventChainLink)
+		if ok {
+			eventFlag = true
+			continue
 		}
 	}
 
@@ -290,6 +326,10 @@ func (tc *TorrentController) TestContext(chain []web.ChainableContext) error {
 
 	if !outFlag {
 		return errors.New("Auth chain missing from torrent route.")
+	}
+
+	if !eventFlag {
+		return errors.New("Event chian missing from torrent route")
 	}
 
 	return nil
@@ -305,6 +345,8 @@ func (tc *TorrentController) NewInstance() web.Controller {
 	newTc.actionMap["create"] = newTc.Create
 
 	newTc.actionMap["download"] = newTc.Download
+
+	newTc.actionMap["delete"] = newTc.Delete
 
 	return newTc
 }
