@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type TorrentController struct {
@@ -20,6 +21,7 @@ type TorrentController struct {
 	session *filters.SessionContext
 	flash   *filters.FlashContext
 	auth    *filters.AuthContext
+	events  *filters.EventContext
 
 	actionMap map[string]web.Action
 }
@@ -88,6 +90,7 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 	}{
 		Username: user.Username,
 	}
+
 	formFiles := tc.context.GetParams().Files
 	if formFiles["metainfo"] == nil {
 		tc.flash.AddFlash("File upload appears to be missing.")
@@ -114,6 +117,15 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 			tc.flash.AddFlash("Error reading your torrent file.")
 			return tc.RedirectOnUploadFail()
 		}
+
+		attributes := &models.Attribute{}
+		attributes.AlbumName = params["albumName"]
+		attributes.ReleaseYear = time.Now()
+		attributes.ArtistName = strings.Split(params["artistName"], ",")
+		fmt.Printf("num artists: %d \n", len(attributes.ArtistName))
+
+		torrentRecord.SetAttributes(attributes)
+
 		if err := torrentRecord.Write(); err != nil {
 			tc.flash.AddFlash(fmt.Sprintf("Error saving your torrent. Please contact a staff member: %s", err.Error()))
 			return tc.RedirectOnUploadFail()
@@ -147,18 +159,43 @@ func (tc *TorrentController) Download(params map[string]string) *web.Result {
 	torrentId, err := strconv.ParseInt(params["torrentId"], 10, 32)
 
 	if err != nil {
-		output.Body = []byte("fudddddge monkies. swimming ones.")
+		output.Body = []byte("invalid torrent id.")
+		return output
 	}
 
 	record.SelectId(int(torrentId))
 	outFile, err := record.WriteFile(user.Secret, user.SecretHash)
 	if err != nil {
-		output.Body = []byte("fudge monkies. flying ones.")
+		output.Body = []byte("invalid torrent file or torrent not found")
+		return output
 	}
 
 	output.IsFile = true
 	output.Filename = "test.torrent"
 	output.Body = outFile
+
+	//TODO: Test attributes.
+	attributes, err := record.Attributes()
+	if attributes != nil {
+		fmt.Printf("attributes: %v \n", attributes)
+	}
+
+	return output
+}
+
+func (tc *TorrentController) Delete(params map[string]string) *web.Result {
+	redirect, user := tc.RedirectOnAuthFail()
+	if user == nil {
+		return redirect
+	}
+
+	output := &web.Result{
+		Status: 200,
+	}
+
+	fmt.Printf("sending pretend delete event to tracker(s) \n")
+	tc.events.SendMessage(nil)
+
 	return output
 }
 
@@ -234,6 +271,15 @@ func (tc *TorrentController) SetAuthContext(context *filters.AuthContext) error 
 	return errors.New("This instance of TorrentController cannot service requests.")
 }
 
+func (tc *TorrentController) SetEventContext(context *filters.EventContext) error {
+	if tc.safeInstance {
+		tc.events = context
+		return nil
+	}
+
+	return errors.New("This instance of TorrentController cannot service requests.")
+}
+
 // Dispatches routes through this controller's actionMap and returns a result.
 func (tc *TorrentController) HandleRequest(action string) *web.Result {
 	if !tc.safeInstance {
@@ -256,11 +302,21 @@ func (tc *TorrentController) Process(action string) (web.Controller, error) {
 // Tests that the current chain is sufficient for this route.
 func (tc *TorrentController) TestContext(chain []web.ChainableContext) error {
 	outFlag := false
+	eventFlag := false
 	for i := 0; i < len(chain); i++ {
+		if outFlag && eventFlag {
+			break
+		}
+
 		_, ok := chain[i].(filters.AuthChainLink)
 		if ok {
 			outFlag = true
-			break
+			continue
+		}
+		_, ok = chain[i].(filters.EventChainLink)
+		if ok {
+			eventFlag = true
+			continue
 		}
 	}
 
@@ -270,6 +326,10 @@ func (tc *TorrentController) TestContext(chain []web.ChainableContext) error {
 
 	if !outFlag {
 		return errors.New("Auth chain missing from torrent route.")
+	}
+
+	if !eventFlag {
+		return errors.New("Event chian missing from torrent route")
 	}
 
 	return nil
@@ -285,6 +345,8 @@ func (tc *TorrentController) NewInstance() web.Controller {
 	newTc.actionMap["create"] = newTc.Create
 
 	newTc.actionMap["download"] = newTc.Download
+
+	newTc.actionMap["delete"] = newTc.Delete
 
 	return newTc
 }

@@ -6,6 +6,7 @@
 package app
 
 import (
+	"github.com/drbawb/babou/bridge"
 	libBabou "github.com/drbawb/babou/lib"
 	libDb "github.com/drbawb/babou/lib/db"
 
@@ -17,16 +18,21 @@ import (
 
 // Parameters for babou's web server
 type Server struct {
-	Port     int
-	serverIO chan int
+	Port int
+
+	serverIO  chan int
+	AppBridge *bridge.Bridge
 }
 
-// Initializes a server using babou/lib settings and a communication channel.
-func NewServer(appSettings *libBabou.AppSettings, serverIO chan int) *Server {
+// Initializes a server using babou/lib settings, an event bridge, and a communications channel
+// with the monitoring process.
+func NewServer(appSettings *libBabou.AppSettings, bridge *bridge.Bridge, serverIO chan int) *Server {
 	newServer := &Server{}
 
-	newServer.Port = *appSettings.WebPort
+	newServer.Port = appSettings.WebPort
 	newServer.serverIO = serverIO
+
+	newServer.AppBridge = bridge
 
 	return newServer
 }
@@ -57,7 +63,7 @@ func (s *Server) loadRoutes() {
 		}
 	}()
 
-	http.Handle("/", LoadRoutes())
+	http.Handle("/", LoadRoutes(s))
 }
 
 // Instructs the babou library to open a database connection.

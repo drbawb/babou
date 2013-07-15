@@ -2,12 +2,12 @@
 package main
 
 import (
-	flag "flag"
 	fmt "fmt"
 
 	web "github.com/drbawb/babou/app" // The babou application: composed of a server and muxer.
 	tracker "github.com/drbawb/babou/tracker"
 
+	"github.com/drbawb/babou/bridge"
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
 	//libDb "github.com/drbawb/babou/lib/db"
 
@@ -15,6 +15,8 @@ import (
 	signal "os/signal"
 	syscall "syscall"
 )
+
+var bridgeIO chan bool = make(chan bool)
 
 func main() {
 	//Output welcome message:
@@ -31,16 +33,29 @@ func main() {
 	webServerIO := make(chan int, 0)
 	trackerIO := make(chan int, 0)
 
-	if *appSettings.FullStack == true || *appSettings.WebStack == true {
+	// Start event bridge.
+	var appBridge *bridge.Bridge
+
+	switch appSettings.Bridge.Transport {
+	case libBabou.LOCAL_TRANSPORT:
+		appBridge = bridge.NewBridge(appSettings.Bridge)
+
+		// add local transport ONLY
+		appBridge.AddTransport(appBridge.NewLocalTransport())
+	default:
+		panic("Bridge type not impl. yet...")
+	}
+
+	if appSettings.FullStack == true || appSettings.WebStack == true {
 		// Start web-server
 		fmt.Printf("Starting web-server \n")
-		server := web.NewServer(appSettings, webServerIO)
+		server := web.NewServer(appSettings, appBridge, webServerIO)
 		// Receive SIGNALs from web server.
 
 		go server.Start()
 	}
 
-	if *appSettings.FullStack == true || *appSettings.TrackerStack == true {
+	if appSettings.FullStack == true || appSettings.TrackerStack == true {
 		// Start tracker
 		fmt.Printf("Starting tracker \n")
 		server := tracker.NewServer(appSettings, trackerIO)
@@ -70,10 +85,9 @@ func trapSignals(c chan os.Signal) {
 			fmt.Println("\nbabou is packing up his things ...")
 
 			//TODO: Probably block on webserver shutdown [instant]
-			// 	as well as a concurrent block on app shutdown.
-			// Exit when they're both finished.
 			fmt.Println("\nwaiting for webserver to shutdown...")
 			fmt.Println("\nwaiting for tracker to shutdown...")
+			fmt.Println("\nwaiting for event-bridge to close sockets...")
 
 			os.Exit(0)
 		} else if sig == syscall.SIGKILL {
@@ -81,32 +95,4 @@ func trapSignals(c chan os.Signal) {
 			os.Exit(2)
 		}
 	}
-}
-
-func parseFlags() *libBabou.AppSettings {
-	appSettings := &libBabou.AppSettings{}
-
-	appSettings.Debug = flag.Bool("debug", false,
-		"Logs debug information to console.")
-
-	appSettings.WebStack = flag.Bool("web-stack", false,
-		"Enables the web application server.")
-	appSettings.TrackerStack = flag.Bool("track-stack", false,
-		"Enables the torrent tracker.")
-	appSettings.FullStack = flag.Bool("full-stack", true,
-		"Enables the full application stack. - Disabled if track-stack or web-stack are set.")
-
-	appSettings.WebPort = flag.Int("web-port", 8080,
-		"Sets the web application's port number.")
-	appSettings.TrackerPort = flag.Int("track-port", 4200,
-		"Sets the tracker's listening port number.")
-
-	flag.Parse()
-
-	// If the user has configured their own stack options, do not use the full stack.
-	if *appSettings.WebStack == true || *appSettings.TrackerStack == true {
-		*appSettings.FullStack = false
-	}
-
-	return appSettings
 }

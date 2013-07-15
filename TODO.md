@@ -18,6 +18,11 @@ General
 multiple nodes. Site could be load balanced as is. -- Tracker uses in-memory single-process cache; cannot be load
 balanced.] (General roadmap: store sessions entirely in-cookie [if feasible], and create a distributed cache and/or communication medium that the tracker and site can use to synchronize data across instances.)
 
+* General task scheduler
+
+* Site<->Tracker event pipeline. (Users updated, banned, deleted. Torrents deleted. etc.)
+	* This is needed to ensure integrity of the tracker cache.
+
 * Database migration tool. [COMPLETE: 100%. We are using Goose which is a migration tool written in Go.]
 (As a sidebar: I'd love to reuse the Goose configuration file for babou's database connectivity.)
 
@@ -25,7 +30,21 @@ balanced.] (General roadmap: store sessions entirely in-cookie [if feasible], an
 (A document that briefly describes Go, links to tutorials on installing a working Go toolchain, and describes
 how to use that toolchain to retrieve and compile `babou`.)
 
-Website
+
+Event Bridge
+
+---
+
+* Implement event bridge w/ multiple senders and single receiver [DONE]
+
+* Implement TCP, UNIX socket transports, w/ serializable messages. [DONE]
+
+* Implement loopback socket transport [DONE]
+
+* Connection level timeout for TCP/UNIX socket transports so senders don't block indefinitely.
+
+
+Web Server
 
 ---
 
@@ -43,10 +62,17 @@ This list will grow as the project moves forward.]
 
 * Add database connectivity for the model layer. [COMPLETE: 50%; needs a lot of testing, benchmarking, and
 general improvement. -- However a working connection to PostgreSQL can be established.]
+	* I have change this so that the database connection is opened once by the web server. This is a
+	  problem because it means that only a full stack node will have a properly setup DB connection.
+  	* However this did improve performance, since we are now using connection pooling. 
+  	(500 concurrent requests reading and writing the DB  went from about 800ms to 500ms 
+  	on very slow, encrypted, commodity disks.)
 
 
-* Allow user's to browse the torrent catalog. [COMPLETE: 10%; only a listing of the first 100 torrents is displayed.]
-(Timeline is roughly: pagination, categories, tags, fulltext search)
+
+* Allow user's to browse the torrent catalog. [COMPLETE: 10%; only a listing of the first 100 torrents 
+  is displayed.]
+	* (Timeline is roughly: pagination, categories, tags, fulltext search)
 
 * Site authorization. [COMPLETE: 50%; we have reasonably secure authentication, but we still need a permissions system and administration console.]
 
@@ -74,9 +100,20 @@ to include file listings, tags, and other features that benefit the website's ca
 
 * Attach active peers to torrents. [COMPLETE: 80%; peers are added, but never removed. only supports IPv4 at the
 moment.]
+	* Needs IPv6 support. IPv4 support should be pretty much functional, though.
 
-* Create background jobs to maintain tracker health. [COMPLETE: 5%; Working on the peer reaper which removes
+* Create background jobs to maintain tracker health. [COMPLETE: 65%; Working on the peer reaper which removes
 peers that have not announced recently]
+	* We still need a job to remove deleted torrents and inactive torrents from the cache.
+	* We have a working peer reaper now that runs every 10 minutes through the whole torrent cache.
+	  There are a few problem items that need to be addressed.
+	* First: peer reaper has no rate-limit; so if you had 100s of thousands of torrents its going to
+	  create that many coroutine workers. On the plus side, torrents are locked/unlocked individually.
+	  The disadvantage would be high CPU usage of the server in general.
+		* I aim to fix this w/ a buffered channel as a work queue. This will be part of a general task scheduler.
+	* Second: the peer reaper needs to subscribe to my generalized task scheduler when its created.
+	* Third: when we move to distributed trackers there will be a lot of work to ensure that individual
+	  nodes do not step on each other's toes.
 
 * Store ratio and bandwidth statistics for each user. [COMPLETE: 0%]
 
@@ -114,7 +151,3 @@ This would allow for high availability of the tracker even if a torrent is block
 
 (All this being said, this is a severe case of premature optimization. -- The block is torrent specific, and
 each torrent has, at most, probably several thousand peers. -- A blocking linear scan of that list should barely be noticeable to the end-users.)
-
-
-
-
