@@ -40,6 +40,8 @@ func NewBridge(settings *lib.TransportSettings) *Bridge {
 		go bridge.netListen("unix", settings.Socket)
 	case lib.TCP_TRANSPORT:
 		go bridge.netListen("tcp", settings.Socket)
+	case lib.LOCAL_TRANSPORT:
+		bridge.AddTransport(bridge.NewLocalTransport())
 	default:
 		fmt.Printf("you have selected an unimplemented bridge type. \n")
 	}

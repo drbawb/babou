@@ -40,7 +40,6 @@ func parseConfig(settings *libBabou.AppSettings) error {
 	}
 
 	// Default, use config file port.
-	fmt.Printf("web port = %d", settings.WebPort)
 	if settings.WebPort == -1 {
 		settings.WebPort = port
 	}
