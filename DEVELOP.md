@@ -208,6 +208,19 @@ A beautiful ASCII diagram of the stack
 The event bridge [will eventually] use a shared secret to authenticate messages
 from external transports for security.
 
+(Developer's Note): You will not see much improvement when running multiple nodes of `babou`.
+We support this only because there are special circumstances
+ where it may be useful (high availability, geographically distribution of nodes, etc).
+
+babou's web server (and by extension: the tracker) is already able to serve many concurrent requests.
+The main bottleneck is _always_ going to be database writes, due to the disk I/O and synchronization
+involved. Adding more nodes on the same database will only exacerbate this problem.
+
+Load balancing the tracker will also increase your server's memory requirements. 
+(Each tracker maintains its own cache based on database reads and  the event 
+pipeline. Trackers do not share their cached data.)
+
+
 
 Directory Layout
 ===
