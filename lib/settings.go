@@ -30,6 +30,8 @@ type AppSettings struct {
 
 	Bridge      *TransportSettings   // Local bridge
 	BridgePeers []*TransportSettings // Remote bridges
+
+	DbOpen string
 }
 
 type TransportSettings struct {
@@ -37,17 +39,4 @@ type TransportSettings struct {
 
 	Socket string // if applicable
 	Port   int    // if applicable
-}
-
-// Database settings that will be populated from a flat-file by
-// the babou runtime.
-//
-// DbSettings can be used to open a database connection through
-// any lib/db libraries.
-type DbSettings struct {
-	ServerAddr *string
-	ServerPort *int
-
-	SchemaName   *string
-	DatabaseName *string
 }

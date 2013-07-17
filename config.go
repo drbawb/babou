@@ -64,6 +64,14 @@ func parseConfig(settings *libBabou.AppSettings) error {
 
 	settings.TrackerHost = fmt.Sprintf("http://%s:%d", hostname, port)
 
+	dbOpen, err := cfg.String("development.db.open")
+	if err != nil {
+		return errors.New("development.db.open is not present or not in the expected format.")
+	}
+
+	// TODO: Sanity check before database panics
+	settings.DbOpen = dbOpen
+
 	err = parseEvent(cfg, settings)
 	if err != nil {
 		return errors.New("Error parsing event-bridge configuration.")

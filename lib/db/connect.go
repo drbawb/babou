@@ -33,12 +33,12 @@ type DbAction func(*sql.DB) error
 
 // Opens a database connection if one has not been established.
 // The channel can be used to forward private requests to the database.
-func Open() (<-chan DbMessage, error) {
+func Open(settings *lib.AppSettings) (<-chan DbMessage, error) {
 	if currentConn != nil {
 		return nil, errors.New("A database connection is already open.")
 	}
 
-	dbConn, err := sql.Open("postgres", "user=rstraw host=localhost dbname=babou sslmode=disable")
+	dbConn, err := sql.Open("postgres", settings.DbOpen)
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +62,4 @@ func ExecuteFn(dba DbAction) error {
 
 	dbaErr := dba(currentConn.database)
 	return dbaErr
-}
-
-func ChangeSettings(settings *lib.DbSettings) {
-	// alter database settings
 }
