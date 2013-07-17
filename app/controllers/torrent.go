@@ -7,6 +7,8 @@ import (
 	libTorrent "github.com/drbawb/babou/lib/torrent"
 	web "github.com/drbawb/babou/lib/web"
 
+	"github.com/drbawb/babou/bridge"
+
 	"errors"
 	"fmt"
 	"strconv"
@@ -194,7 +196,12 @@ func (tc *TorrentController) Delete(params map[string]string) *web.Result {
 	}
 
 	fmt.Printf("sending pretend delete event to tracker(s) \n")
-	tc.events.SendMessage(nil)
+	payload := &bridge.DeleteTorrentMessage{}
+	payload.InfoHash = "0xDEADBEEF"
+	payload.Reason = "No logs on FLAC torrent."
+	msg := &bridge.Message{Type: bridge.DELETE_TORRENT, Payload: payload}
+
+	tc.events.SendMessage(msg)
 
 	return output
 }
