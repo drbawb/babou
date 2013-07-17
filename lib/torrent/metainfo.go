@@ -136,17 +136,18 @@ func (t *Torrent) WritePeers(closure func(map[string]*Peer)) {
 // Updates the peer-list from an announce requeset.
 func (t *Torrent) AddPeer(peerId, ipAddr, port, secret string) {
 	// Will either add or update a peer; obtain write lock.
-	defer t.peers.Sync().Unlock()
-	t.peers.Sync().Lock()
-
-	peer := NewPeer(peerId, ipAddr, port, secret)
-	if t.peers.Map()[peerId] == nil {
-		// new peer
-		t.peers.Map()[peerId] = peer
-	} else {
-		// we have seen this peer before.
-		t.peers.Map()[peerId].UpdateLastSeen()
+	fn := func(peerList map[string]*Peer) {
+		peer := NewPeer(peerId, ipAddr, port, secret)
+		if peerList[peerId] == nil {
+			// new peer
+			peerList[peerId] = peer
+		} else {
+			// we have seen this peer before.
+			peerList[peerId].UpdateLastSeen()
+		}
 	}
+
+	t.WritePeers(fn)
 }
 
 // Updates the in-memory statistics for a peer being tracked for this torrent.
