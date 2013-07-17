@@ -9,7 +9,7 @@ import (
 
 	"github.com/drbawb/babou/bridge"
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
-	//libDb "github.com/drbawb/babou/lib/db"
+	libDb "github.com/drbawb/babou/lib/db"
 
 	os "os"
 	signal "os/signal"
@@ -38,12 +38,19 @@ func main() {
 
 	switch appSettings.Bridge.Transport {
 	case libBabou.LOCAL_TRANSPORT:
+		fmt.Printf("Starting event-bridge \n")
 		appBridge = bridge.NewBridge(appSettings.Bridge)
 
 		// add local transport ONLY
 		appBridge.AddTransport(appBridge.NewLocalTransport())
 	default:
 		panic("Bridge type not impl. yet...")
+	}
+
+	fmt.Printf("Opening database connection ... \n")
+	_, err := libDb.Open(appSettings)
+	if err != nil {
+		panic("database could not be opened: " + err.Error())
 	}
 
 	if appSettings.FullStack == true || appSettings.WebStack == true {
@@ -61,6 +68,13 @@ func main() {
 		server := tracker.NewServer(appSettings, trackerIO)
 
 		go server.Start()
+	}
+
+	if appSettings.FullStack == false &&
+		appSettings.TrackerStack == false &&
+		appSettings.WebStack == false {
+		fmt.Printf("babou has nothing to do!")
+		os.Exit(2)
 	}
 
 	// Block on server IOs
