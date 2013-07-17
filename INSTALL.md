@@ -252,40 +252,7 @@ end of august.
 
 ### Potential Contributors ###
 
-We intend to accept contributions, primarily, in two forms: the first is a submission of  
-"changesets / commits", where you  submit a pull request on Github or submit a patch file 
-via email. By submitting these types of changes you agree that your code will be licensed 
-under babou's BSD license.
+Please submit any code contributions as a github `pull request` to github.com/drbawb/babou
+You may add your name [or a pseudonym] and a small tagline to the CONTRIBUTORS.md file if you choose.
 
-The second form is by way of a `go package`, if you have _large_ chunks of code that could possibly
-be used by other projects we would encourage you to consider making it a package and sharing it
-with the Go community at large.
-
-Then we will simply import your package and make use of it.
-
-In the latter case: your project's license will need to be compatible with our BSD license; in addition
-your license [or a reference to it] will be included with the `babou` source and distribution. -- You can
-opt out of this if you like by contacting a repository maintainer.
-
-In either case: your name will be added to a CONTRIBUTOR.md file in the root of this repository.
-You will be contacted for confirmation, however, before you are added to the CONTRIBUTOR.md file. (In other
-words, it is an _opt-in_ procedure.)
-
-You will be given the opportunity to submit a name or pseudonym, as well as a small tagline. 
-We encourage nonsensical taglines [see: the babou README file] -- but we will not publish offensive 
-or abusive contents in the CONTRIBUTORS file; please be respectful not only to the project, 
-but to your fellow contributors whose names will appear alongside yours!
-
-
-### Important Copyright Notice ###
-
-Currently `babou` only has _one style_ defined by `assets/main.css` -- this is the Fatal(Syntax) stylesheet.
-Please note that Fatal(Syntax)&trade; name is trademarked by the administrative staff of fatalsyntax.com, removal of the copyright notice from the footer while using the Fatal(Syntax)&trade; name or logo anywhere on your site DOES CONSTITUTE COPYRIGHT INFRINGEMENT. The CSS and templates themselves [the "look and feel"] fall under the project's BSD license however.
-
-You are welcome to remove or alter the copyright notice if you create another style OR if you use a different logo/name wherever the Fatal(Syntax) logo/name appears.
-
-We do extend limited permission to use the Fatal(Syntax)&trade; name on "small development instances of babou."  
-
-Fatal(Syntax)&trade; reserves the right to determine what constitutes a "small development instance" and Fatal(Syntax) &trade; may revoke this license at any time.
-
-We will be adding a generic `babou` theme [among others] that will be freely usable on ANY SITE and the assets will be include under the BSD license. This theme will be the default and it will carry no such restrictions. 
+Any submitted pull requests submitted will be licensed under babou's BSD license if they are included.

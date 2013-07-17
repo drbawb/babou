@@ -1,10 +1,12 @@
-{{#LabelFor username}}Username{{/LabelFor}}
+<div class="entry-form">
+{{#LabelFor username}} <div class="icon stuser"></div> {{/LabelFor}}
 {{#TextFieldFor username}}{{/TextFieldFor}}
 <br /><br />
-{{#LabelFor password}}Password{{/LabelFor}}
+{{#LabelFor password}} <div class="icon password"></div> {{/LabelFor}}
 {{#TextFieldFor password password}}{{/TextFieldFor}}
 <br /><br />
-{{#LabelFor confirm-password}}Confirm Password{{/LabelFor}}
+{{#LabelFor confirm-password}} <div class="icon password"></div> {{/LabelFor}}
 {{#TextFieldFor confirm-password password}}{{/TextFieldFor}}
-<br /><br />
+</div>
+
 <input type="submit" value="Register" />
