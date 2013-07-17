@@ -8,12 +8,7 @@ html,body {
 	height: 100%;
 }
 
-.flash {
-	background-color: #E4A4A4;
-	color: #6D1E1E;
-	border: 1px #6D1E1E solid;
-	padding: 5px;
-}
+/* Entry */
 
 .stretch {
 	background-color: #000000;
@@ -44,9 +39,9 @@ html,body {
 }
 
 .entry-logo {
-	background-image: url('/assets/fsyn_logo.png');
-	width: 122px;
-	height: 40px;
+	background-image: url('/assets/babbyface.png');
+	width: 200px;
+	height: 204px;
 }
 
 .entry-content {
@@ -75,6 +70,65 @@ html,body {
 	box-pack: center;
 	box-align: center;
 	box-orient: vertical;
+}
+
+
+.entry-nav {
+	overflow: hidden;
+}
+
+.entry-nav a {
+	padding: 5px;
+	font-family: Arial, Helvetica, sans-serif;
+	color: #cccccc;
+	text-decoration: none;
+}
+
+.icon {
+	width: 12px;
+	height: 12px;
+}
+
+.password {
+	background: url('/assets/icons/passkey.png');
+}
+
+.stuser {
+	background: url('/assets/icons/halma.png');
+}
+
+.entry-brief {
+	padding: 12px 0px 9px 0px;
+	background: url('/assets/entry_banner.png') no-repeat;
+	text-align: center;
+	width: 450px;
+	font-family: sans-serif;
+	font-size: 11px;
+}
+
+.entry-form {
+	padding: 15px;
+	font-size: 12px;
+	font-weight: bold;
+}
+
+
+.entry-brief label, .entry-brief input {
+  display:inline-block;
+  width: 300px;
+}
+
+.entry-brief label {
+	width: 12px;
+}
+
+/* Application */
+
+.flash {
+	background-color: #E4A4A4;
+	color: #6D1E1E;
+	border: 1px #6D1E1E solid;
+	padding: 5px;
 }
 
 .content {
@@ -112,43 +166,10 @@ html,body {
 	color: #ffffff;
 }
 
-.entry-brief {
-	text-align: center;
-	width: 400px;
-	font-family: sans-serif;
-	font-size: 11px;
-}
-
-.entry-nav {
-	padding: 5px;
-}
-
-.entry-nav a {
-	padding: 5px;
-}
-
-
-.entry-brief form {
-	border: 1px #000 solid;
-	border-radius: 5px;
-	padding: 15px;
-	font-size: 12px;
-	font-weight: bold;
-}
-
-
-.entry-brief label, .entry-brief input {
-  display:inline-block;
-}
-
-.entry-brief label {
-	width: 120px;
-}
-
 input[type="submit"] {
-	padding: 5px;
-	min-width: 58px;
+	margin: 30px;
 	
+	padding: 2px;
 	border-color: #EEE;
 	border-width: 0;
 	color: #FFF;
