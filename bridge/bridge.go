@@ -111,17 +111,10 @@ func (b *Bridge) netListen(network, addr string) {
 // Sends a message on a channel.
 // Will block indefinitely if the send-buffer is filled and not being drained.
 func (b *Bridge) Send(msg *Message) {
-	// send message to other transports
-	// TODO: dummy message in here.
-	msg = &Message{}
-	msg.Type = DELETE_USER
-
-	dmm := &DeleteUserMessage{}
-	dmm.UserId = 9001
-
-	msg.Payload = dmm
-
-	b.out <- msg
+	// TODO: Basic sanity checks; then forward to bridge for transport.
+	if msg != nil {
+		b.out <- msg
+	}
 }
 
 // Returns a channel immediately.

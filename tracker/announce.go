@@ -62,9 +62,6 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 		return
 	}
 
-	torrent.AddPeer(params.All["peer_id"], r.RemoteAddr, params.All["port"], params.All["secret"])
-	torrent.UpdateStatsFor(params.All["peer_id"], "0", "0", params.All["left"])
-
 	responseMap["interval"] = lib.TRACKER_ANNOUNCE_INTERVAL // intentionally short for debugging purposes.
 	responseMap["min interval"] = 10
 
@@ -74,6 +71,13 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 
 	responseMap["peers"] = torrent.GetPeerList(0) //naive peer ranker.
 	io.Copy(w, encodeResponseMap(responseMap))
+
+	// Defer writes outside of response
+	// (Just in case we block on DB access or have to contend for the peer list's mutex)
+	go func() {
+		torrent.AddPeer(params.All["peer_id"], r.RemoteAddr, params.All["port"], params.All["secret"])
+		torrent.UpdateStatsFor(params.All["peer_id"], "0", "0", params.All["left"])
+	}()
 }
 
 // Bencodes a dictionary as a tracker response.

@@ -23,6 +23,8 @@ const (
 )
 
 // Represents a torrent being actively used by the tracker.
+// A torrent includes a [decoded] copy of the metainfo file
+// as well as a list of active peers that is periodically culled.
 type Torrent struct {
 	Info  *TorrentFile
 	peers *PeerMap
@@ -114,10 +116,10 @@ func (t *TorrentFile) WriteFile(secret, hash []byte) ([]byte, error) {
 // Takes a closure which will obtain a readlock
 // for this torrent's peer-map.
 //
-// Writing to the peermap is not safe from within your closure.
+// Reading from the torrent's peer map is safe from within the closure.
 func (t *Torrent) ReadPeers(closure func(map[string]*Peer)) {
-	defer t.peers.Sync().RUnlock()
 	t.peers.Sync().RLock()
+	defer t.peers.Sync().RUnlock()
 
 	closure(t.peers.Map())
 }
@@ -125,10 +127,10 @@ func (t *Torrent) ReadPeers(closure func(map[string]*Peer)) {
 // Takes a closure which will obtain a writelock for this
 // torrents' peer-map.
 //
-// Updates to the map are safe within the context of your closure.
+// Updates to the map are safe within the context of the closure.
 func (t *Torrent) WritePeers(closure func(map[string]*Peer)) {
-	defer t.peers.Sync().Unlock()
 	t.peers.Sync().Lock()
+	defer t.peers.Sync().Unlock()
 
 	closure(t.peers.Map())
 }
@@ -136,55 +138,61 @@ func (t *Torrent) WritePeers(closure func(map[string]*Peer)) {
 // Updates the peer-list from an announce requeset.
 func (t *Torrent) AddPeer(peerId, ipAddr, port, secret string) {
 	// Will either add or update a peer; obtain write lock.
-	defer t.peers.Sync().Unlock()
-	t.peers.Sync().Lock()
-
-	peer := NewPeer(peerId, ipAddr, port, secret)
-	if t.peers.Map()[peerId] == nil {
-		// new peer
-		t.peers.Map()[peerId] = peer
-	} else {
-		// we have seen this peer before.
-		t.peers.Map()[peerId].UpdateLastSeen()
+	fn := func(peerList map[string]*Peer) {
+		if peerList[peerId] == nil {
+			// new peer
+			peer := NewPeer(peerId, ipAddr, port, secret)
+			peerList[peerId] = peer
+		} else {
+			// we have seen this peer before.
+			peerList[peerId].UpdateLastSeen()
+		}
 	}
+
+	t.WritePeers(fn)
 }
 
 // Updates the in-memory statistics for a peer being tracked for this torrent.
 // Returns an error if the peer is not found or the request cannot be fulfilled.
 // The stats-collector job will ensure they get written to disk.
 func (t *Torrent) UpdateStatsFor(peerId string, uploaded, downloaded, left string) error {
-	// Will update contents of map so long as peer is found.
-	defer t.peers.Sync().Unlock()
-	t.peers.Sync().Lock()
+	var status error
 
-	if t.peers.Map()[peerId] == nil {
-		return errors.New("Peer w/ ID[%s] not found on this torrent.")
+	// Will update contents of map so long as peer is found
+	fn := func(peerList map[string]*Peer) {
+		if peerList[peerId] == nil {
+			status = errors.New("Peer w/ ID[%s] not found on this torrent.")
+		}
+
+		if err := peerList[peerId].UpdateStats(uploaded, downloaded, left); err != nil {
+			status = err
+		}
 	}
 
-	if err := t.peers.Map()[peerId].UpdateStats(uploaded, downloaded, left); err != nil {
-		return err
-	}
+	t.WritePeers(fn)
 
-	return nil
+	return status
 }
 
 // Returns the seeders followed by the leechers for this torrent.
 func (t *Torrent) EnumeratePeers() (int, int) {
 	// Reads number of peers from the map.
-	defer t.peers.Sync().RUnlock()
-	t.peers.Sync().RLock()
 
 	seeding := 0
 	leeching := 0
 
-	for _, val := range t.peers.Map() {
-		switch {
-		case val.Status == 0 || val.Status == LEECHING:
-			leeching += 1
-		case val.Status == SEEDING:
-			seeding += 1
+	fn := func(peerList map[string]*Peer) {
+		for _, val := range peerList {
+			switch {
+			case val.Status == 0 || val.Status == LEECHING:
+				leeching += 1
+			case val.Status == SEEDING:
+				seeding += 1
+			}
 		}
 	}
+
+	t.ReadPeers(fn)
 
 	return seeding, leeching
 }
@@ -192,10 +200,6 @@ func (t *Torrent) EnumeratePeers() (int, int) {
 // Send numWant -1 for "no peers requested", 0 for default, and n if client wants more peers.
 // Returns a ranked peerlist that attempts to maintain a balanced ratio of seeders:leechers.
 func (t *Torrent) GetPeerList(numWant int) string {
-	// Reads list of peers to get their IP Addr and listening port.
-	defer t.peers.Sync().RUnlock()
-	t.peers.Sync().RLock()
-
 	if numWant == -1 {
 		return "" //peer _specifically requested_ we do not send more peers via numwant => 0
 	} else if numWant == 0 {
@@ -203,32 +207,57 @@ func (t *Torrent) GetPeerList(numWant int) string {
 	}
 
 	outBuf := bytes.NewBuffer(make([]byte, 0))
-	// send them everything we got; torrent is just starting off.
-	mapLength := len(t.peers.Map())
-	if mapLength < MIN_PEER_THRESHOLD && mapLength < numWant {
-		for _, val := range t.peers.Map() {
 
-			// Do not add the peer to the IPv4 list if we could
-			// not parse a valid IP address for them.
-			if ip := val.IPAddr.To4(); ip != nil {
+	fn := func(peerList map[string]*Peer) {
+		// send them everything we got; torrent is just starting off.
+		mapLength := len(peerList)
+
+		if mapLength < MIN_PEER_THRESHOLD && mapLength < numWant {
+			for _, val := range peerList {
+
+				// Do not add the peer to the IPv4 list if we could
+				// not parse a valid IP address for them.
+				if ip := val.IPAddr.To4(); ip != nil {
+					binary.Write(outBuf, binary.BigEndian, ip)
+					binary.Write(outBuf, binary.BigEndian, val.Port)
+				}
+			}
+		} else if mapLength < MIN_PEER_THRESHOLD && mapLength > numWant {
+			i := 0
+			for _, val := range peerList {
+				if i >= numWant {
+					break
+				}
+
+				ip := val.IPAddr
+				binary.Write(outBuf, binary.BigEndian, ip)
+				binary.Write(outBuf, binary.BigEndian, val.Port)
+
+				i++
+			}
+		} else if mapLength > numWant {
+			i := 0
+			for _, val := range peerList {
+				if i >= numWant {
+					break
+				}
+
+				ip := val.IPAddr
+				binary.Write(outBuf, binary.BigEndian, ip)
+				binary.Write(outBuf, binary.BigEndian, val.Port)
+
+				i++
+			}
+		} else {
+			for _, val := range peerList {
+				ip := val.IPAddr
 				binary.Write(outBuf, binary.BigEndian, ip)
 				binary.Write(outBuf, binary.BigEndian, val.Port)
 			}
 		}
-	} else if mapLength < MIN_PEER_THRESHOLD && mapLength > numWant {
-		i := 0
-		for _, val := range t.peers.Map() {
-			if i > numWant {
-				break
-			}
-
-			ip := val.IPAddr
-			binary.Write(outBuf, binary.BigEndian, ip)
-			binary.Write(outBuf, binary.BigEndian, val.Port)
-
-			i++
-		}
 	}
+
+	t.ReadPeers(fn)
 
 	return string(outBuf.Bytes())
 }

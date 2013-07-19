@@ -4,6 +4,7 @@
 package tracker
 
 import (
+	"github.com/drbawb/babou/bridge"
 	libBabou "github.com/drbawb/babou/lib"
 	libTorrent "github.com/drbawb/babou/lib/torrent"
 	tasks "github.com/drbawb/babou/tracker/tasks"
@@ -22,15 +23,18 @@ type Server struct {
 	torrentCache map[string]*libTorrent.Torrent
 
 	peerReaper *tasks.PeerReaper
+
+	events <-chan *bridge.Message
 }
 
 // Initializes a server using babou/lib settings and a communication channel.
-func NewServer(appSettings *libBabou.AppSettings, serverIO chan int) *Server {
+func NewServer(appSettings *libBabou.AppSettings, events <-chan *bridge.Message, serverIO chan int) *Server {
 	newServer := &Server{torrentCache: make(map[string]*libTorrent.Torrent)}
 
 	newServer.Port = appSettings.TrackerPort
 	newServer.serverIO = serverIO
 	newServer.peerReaper = &tasks.PeerReaper{} //TODO: constructor.
+	newServer.events = events
 
 	return newServer
 }
@@ -56,10 +60,23 @@ func (s *Server) Start() {
 				for _, v := range s.torrentCache {
 					s.peerReaper.ReapTorrent(v)
 				}
+			case msg := <-s.events:
+				handleWebEvent(msg)
 			}
 		}
 
 	}()
+}
+
+func handleWebEvent(message *bridge.Message) {
+	fmt.Printf("Received [%v] from bridge \n", message)
+	switch message.Type {
+	case bridge.DELETE_TORRENT:
+		v := message.Payload.(*bridge.DeleteTorrentMessage)
+		fmt.Printf("Removing torrent: %s from cache; deleted because %s \n", v.InfoHash, v.Reason)
+	default:
+		fmt.Printf("Message dropped; unknown message type \n")
+	}
 }
 
 func wrapAnnounceHandle(s *Server) http.HandlerFunc {

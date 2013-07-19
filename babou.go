@@ -40,9 +40,6 @@ func main() {
 	case libBabou.LOCAL_TRANSPORT:
 		fmt.Printf("Starting event-bridge \n")
 		appBridge = bridge.NewBridge(appSettings.Bridge)
-
-		// add local transport ONLY
-		appBridge.AddTransport(appBridge.NewLocalTransport())
 	default:
 		panic("Bridge type not impl. yet...")
 	}
@@ -65,7 +62,7 @@ func main() {
 	if appSettings.FullStack == true || appSettings.TrackerStack == true {
 		// Start tracker
 		fmt.Printf("Starting tracker \n")
-		server := tracker.NewServer(appSettings, trackerIO)
+		server := tracker.NewServer(appSettings, appBridge.Recv(), trackerIO)
 
 		go server.Start()
 	}
