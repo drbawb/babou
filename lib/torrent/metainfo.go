@@ -137,9 +137,9 @@ func (t *Torrent) WritePeers(closure func(map[string]*Peer)) {
 func (t *Torrent) AddPeer(peerId, ipAddr, port, secret string) {
 	// Will either add or update a peer; obtain write lock.
 	fn := func(peerList map[string]*Peer) {
-		peer := NewPeer(peerId, ipAddr, port, secret)
 		if peerList[peerId] == nil {
 			// new peer
+			peer := NewPeer(peerId, ipAddr, port, secret)
 			peerList[peerId] = peer
 		} else {
 			// we have seen this peer before.
@@ -154,19 +154,22 @@ func (t *Torrent) AddPeer(peerId, ipAddr, port, secret string) {
 // Returns an error if the peer is not found or the request cannot be fulfilled.
 // The stats-collector job will ensure they get written to disk.
 func (t *Torrent) UpdateStatsFor(peerId string, uploaded, downloaded, left string) error {
-	// Will update contents of map so long as peer is found.
-	defer t.peers.Sync().Unlock()
-	t.peers.Sync().Lock()
+	var status error
 
-	if t.peers.Map()[peerId] == nil {
-		return errors.New("Peer w/ ID[%s] not found on this torrent.")
+	// Will update contents of map so long as peer is found
+	fn := func(peerList map[string]*Peer) {
+		if peerList[peerId] == nil {
+			status = errors.New("Peer w/ ID[%s] not found on this torrent.")
+		}
+
+		if err := peerList[peerId].UpdateStats(uploaded, downloaded, left); err != nil {
+			status = err
+		}
 	}
 
-	if err := t.peers.Map()[peerId].UpdateStats(uploaded, downloaded, left); err != nil {
-		return err
-	}
+	t.WritePeers(fn)
 
-	return nil
+	return status
 }
 
 // Returns the seeders followed by the leechers for this torrent.
