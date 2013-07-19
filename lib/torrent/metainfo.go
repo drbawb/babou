@@ -211,6 +211,7 @@ func (t *Torrent) GetPeerList(numWant int) string {
 	fn := func(peerList map[string]*Peer) {
 		// send them everything we got; torrent is just starting off.
 		mapLength := len(peerList)
+
 		if mapLength < MIN_PEER_THRESHOLD && mapLength < numWant {
 			for _, val := range peerList {
 
@@ -224,7 +225,7 @@ func (t *Torrent) GetPeerList(numWant int) string {
 		} else if mapLength < MIN_PEER_THRESHOLD && mapLength > numWant {
 			i := 0
 			for _, val := range peerList {
-				if i > numWant {
+				if i >= numWant {
 					break
 				}
 
@@ -233,6 +234,25 @@ func (t *Torrent) GetPeerList(numWant int) string {
 				binary.Write(outBuf, binary.BigEndian, val.Port)
 
 				i++
+			}
+		} else if mapLength > numWant {
+			i := 0
+			for _, val := range peerList {
+				if i >= numWant {
+					break
+				}
+
+				ip := val.IPAddr
+				binary.Write(outBuf, binary.BigEndian, ip)
+				binary.Write(outBuf, binary.BigEndian, val.Port)
+
+				i++
+			}
+		} else {
+			for _, val := range peerList {
+				ip := val.IPAddr
+				binary.Write(outBuf, binary.BigEndian, ip)
+				binary.Write(outBuf, binary.BigEndian, val.Port)
 			}
 		}
 	}
