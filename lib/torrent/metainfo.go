@@ -200,10 +200,6 @@ func (t *Torrent) EnumeratePeers() (int, int) {
 // Send numWant -1 for "no peers requested", 0 for default, and n if client wants more peers.
 // Returns a ranked peerlist that attempts to maintain a balanced ratio of seeders:leechers.
 func (t *Torrent) GetPeerList(numWant int) string {
-	// Reads list of peers to get their IP Addr and listening port.
-	defer t.peers.Sync().RUnlock()
-	t.peers.Sync().RLock()
-
 	if numWant == -1 {
 		return "" //peer _specifically requested_ we do not send more peers via numwant => 0
 	} else if numWant == 0 {
@@ -211,32 +207,37 @@ func (t *Torrent) GetPeerList(numWant int) string {
 	}
 
 	outBuf := bytes.NewBuffer(make([]byte, 0))
-	// send them everything we got; torrent is just starting off.
-	mapLength := len(t.peers.Map())
-	if mapLength < MIN_PEER_THRESHOLD && mapLength < numWant {
-		for _, val := range t.peers.Map() {
 
-			// Do not add the peer to the IPv4 list if we could
-			// not parse a valid IP address for them.
-			if ip := val.IPAddr.To4(); ip != nil {
+	fn := func(peerList map[string]*Peer) {
+		// send them everything we got; torrent is just starting off.
+		mapLength := len(peerList)
+		if mapLength < MIN_PEER_THRESHOLD && mapLength < numWant {
+			for _, val := range peerList {
+
+				// Do not add the peer to the IPv4 list if we could
+				// not parse a valid IP address for them.
+				if ip := val.IPAddr.To4(); ip != nil {
+					binary.Write(outBuf, binary.BigEndian, ip)
+					binary.Write(outBuf, binary.BigEndian, val.Port)
+				}
+			}
+		} else if mapLength < MIN_PEER_THRESHOLD && mapLength > numWant {
+			i := 0
+			for _, val := range peerList {
+				if i > numWant {
+					break
+				}
+
+				ip := val.IPAddr
 				binary.Write(outBuf, binary.BigEndian, ip)
 				binary.Write(outBuf, binary.BigEndian, val.Port)
-			}
-		}
-	} else if mapLength < MIN_PEER_THRESHOLD && mapLength > numWant {
-		i := 0
-		for _, val := range t.peers.Map() {
-			if i > numWant {
-				break
-			}
 
-			ip := val.IPAddr
-			binary.Write(outBuf, binary.BigEndian, ip)
-			binary.Write(outBuf, binary.BigEndian, val.Port)
-
-			i++
+				i++
+			}
 		}
 	}
+
+	t.ReadPeers(fn)
 
 	return string(outBuf.Bytes())
 }
