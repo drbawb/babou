@@ -23,6 +23,8 @@ const (
 )
 
 // Represents a torrent being actively used by the tracker.
+// A torrent includes a [decoded] copy of the metainfo file
+// as well as a list of active peers that is periodically culled.
 type Torrent struct {
 	Info  *TorrentFile
 	peers *PeerMap
@@ -114,10 +116,10 @@ func (t *TorrentFile) WriteFile(secret, hash []byte) ([]byte, error) {
 // Takes a closure which will obtain a readlock
 // for this torrent's peer-map.
 //
-// Writing to the peermap is not safe from within your closure.
+// Reading from the torrent's peer map is safe from within the closure.
 func (t *Torrent) ReadPeers(closure func(map[string]*Peer)) {
-	defer t.peers.Sync().RUnlock()
 	t.peers.Sync().RLock()
+	defer t.peers.Sync().RUnlock()
 
 	closure(t.peers.Map())
 }
@@ -125,10 +127,10 @@ func (t *Torrent) ReadPeers(closure func(map[string]*Peer)) {
 // Takes a closure which will obtain a writelock for this
 // torrents' peer-map.
 //
-// Updates to the map are safe within the context of your closure.
+// Updates to the map are safe within the context of the closure.
 func (t *Torrent) WritePeers(closure func(map[string]*Peer)) {
-	defer t.peers.Sync().Unlock()
 	t.peers.Sync().Lock()
+	defer t.peers.Sync().Unlock()
 
 	closure(t.peers.Map())
 }
@@ -175,20 +177,22 @@ func (t *Torrent) UpdateStatsFor(peerId string, uploaded, downloaded, left strin
 // Returns the seeders followed by the leechers for this torrent.
 func (t *Torrent) EnumeratePeers() (int, int) {
 	// Reads number of peers from the map.
-	defer t.peers.Sync().RUnlock()
-	t.peers.Sync().RLock()
 
 	seeding := 0
 	leeching := 0
 
-	for _, val := range t.peers.Map() {
-		switch {
-		case val.Status == 0 || val.Status == LEECHING:
-			leeching += 1
-		case val.Status == SEEDING:
-			seeding += 1
+	fn := func(peerList map[string]*Peer) {
+		for _, val := range peerList {
+			switch {
+			case val.Status == 0 || val.Status == LEECHING:
+				leeching += 1
+			case val.Status == SEEDING:
+				seeding += 1
+			}
 		}
 	}
+
+	t.ReadPeers(fn)
 
 	return seeding, leeching
 }
