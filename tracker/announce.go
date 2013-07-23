@@ -69,7 +69,7 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 	responseMap["complete"] = seeding
 	responseMap["incomplete"] = leeching
 
-	responseMap["peers"] = torrent.GetPeerList(0) //naive peer ranker.
+	responseMap["peers"], responseMap["peers6"] = torrent.GetPeerList(0) //naive peer ranker.
 	io.Copy(w, encodeResponseMap(responseMap))
 
 	// Defer writes outside of response

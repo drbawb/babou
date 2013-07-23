@@ -199,14 +199,16 @@ func (t *Torrent) EnumeratePeers() (int, int) {
 
 // Send numWant -1 for "no peers requested", 0 for default, and n if client wants more peers.
 // Returns a ranked peerlist that attempts to maintain a balanced ratio of seeders:leechers.
-func (t *Torrent) GetPeerList(numWant int) string {
+// First return val is compact-form `peers` dict, second is `peers6` dict.
+func (t *Torrent) GetPeerList(numWant int) (string, string) {
 	if numWant == -1 {
-		return "" //peer _specifically requested_ we do not send more peers via numwant => 0
+		return "", "" //peer _specifically requested_ we do not send more peers via numwant => 0
 	} else if numWant == 0 {
 		numWant = DEFAULT_NUMWANT
 	}
 
-	outBuf := bytes.NewBuffer(make([]byte, 0))
+	outBuf := bytes.NewBuffer(make([]byte, 0))  //peers buffer
+	outBuf6 := bytes.NewBuffer(make([]byte, 0)) //peers6 buffer
 
 	fn := func(peerList map[string]*Peer) {
 		// send them everything we got; torrent is just starting off.
@@ -220,6 +222,9 @@ func (t *Torrent) GetPeerList(numWant int) string {
 				if ip := val.IPAddr.To4(); ip != nil {
 					binary.Write(outBuf, binary.BigEndian, ip)
 					binary.Write(outBuf, binary.BigEndian, val.Port)
+				} else if ip := val.IPAddr.To16(); ip != nil {
+					binary.Write(outBuf6, binary.BigEndian, ip)
+					binary.Write(outBuf6, binary.BigEndian, val.Port)
 				}
 			}
 		} else if mapLength < MIN_PEER_THRESHOLD && mapLength > numWant {
@@ -229,9 +234,13 @@ func (t *Torrent) GetPeerList(numWant int) string {
 					break
 				}
 
-				ip := val.IPAddr
-				binary.Write(outBuf, binary.BigEndian, ip)
-				binary.Write(outBuf, binary.BigEndian, val.Port)
+				if ip := val.IPAddr.To4(); ip != nil {
+					binary.Write(outBuf, binary.BigEndian, ip)
+					binary.Write(outBuf, binary.BigEndian, val.Port)
+				} else if ip := val.IPAddr.To16(); ip != nil {
+					binary.Write(outBuf6, binary.BigEndian, ip)
+					binary.Write(outBuf6, binary.BigEndian, val.Port)
+				}
 
 				i++
 			}
@@ -242,24 +251,32 @@ func (t *Torrent) GetPeerList(numWant int) string {
 					break
 				}
 
-				ip := val.IPAddr
-				binary.Write(outBuf, binary.BigEndian, ip)
-				binary.Write(outBuf, binary.BigEndian, val.Port)
+				if ip := val.IPAddr.To4(); ip != nil {
+					binary.Write(outBuf, binary.BigEndian, ip)
+					binary.Write(outBuf, binary.BigEndian, val.Port)
+				} else if ip := val.IPAddr.To16(); ip != nil {
+					binary.Write(outBuf6, binary.BigEndian, ip)
+					binary.Write(outBuf6, binary.BigEndian, val.Port)
+				}
 
 				i++
 			}
 		} else {
 			for _, val := range peerList {
-				ip := val.IPAddr
-				binary.Write(outBuf, binary.BigEndian, ip)
-				binary.Write(outBuf, binary.BigEndian, val.Port)
+				if ip := val.IPAddr.To4(); ip != nil {
+					binary.Write(outBuf, binary.BigEndian, ip)
+					binary.Write(outBuf, binary.BigEndian, val.Port)
+				} else if ip := val.IPAddr.To16(); ip != nil {
+					binary.Write(outBuf6, binary.BigEndian, ip)
+					binary.Write(outBuf6, binary.BigEndian, val.Port)
+				}
 			}
 		}
 	}
 
 	t.ReadPeers(fn)
 
-	return string(outBuf.Bytes())
+	return string(outBuf.Bytes()), string(outBuf6.Bytes())
 }
 
 // Encode's the `info` dictionary into a SHA1 hash; used to uniquely identify a torrent.
