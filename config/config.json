@@ -1,0 +1,20 @@
+{
+  "development": {
+    "db": {
+      "open": "dbname=babou host=localhost sslmode=disable"
+    },
+    "site": {
+      "domain":"localhost",
+      "port":8080
+    },
+    "tracker":{
+      "domain": "localhost",
+      "port":4200
+    },
+    "events":{
+      "transport": "lo",
+      "peers": []
+    }
+  }
+}
+
