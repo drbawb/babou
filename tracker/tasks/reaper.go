@@ -42,7 +42,7 @@ func (pr *PeerReaper) doWork(target *torrent.Torrent, reapSince int) {
 	target.WritePeers(func(peerMap map[string]*torrent.Peer) {
 		for _, peerId := range peersToRemove {
 			lib.Printf("peer of id: %v was removed from a torrent \n", peerId)
-			peerMap[peerId] = nil
+			delete(peerMap, peerId)
 		}
 	})
 }
