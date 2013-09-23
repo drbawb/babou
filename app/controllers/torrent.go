@@ -52,7 +52,7 @@ func (tc *TorrentController) Index(params map[string]string) *web.Result {
 
 	outData.TorrentList = torrentList
 
-	output.Body = []byte(web.RenderWith("application", "torrent", "index", outData, tc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "torrent", "index", outData, tc.flash))
 
 	return output
 }

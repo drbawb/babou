@@ -1,0 +1,15 @@
+<!doctype html>
+
+<html>
+	<head>
+		<title> Fatal(Syntax) </title>
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    	<!-- Bootstrap -->
+    	<link href="/assets/css/bootstrap.min.css" rel="stylesheet" media="screen">
+	</head>
+	<body>
+		<div class="container" style="margin-top: 40px">
+			{{#Yield}}{{/Yield}}
+		</div>
+	</body>
+</html>
