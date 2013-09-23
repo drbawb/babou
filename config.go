@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
+
 	"errors"
 	"flag"
+
 	"fmt"
 
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
-	"github.com/moraes/config"
 )
 
 /*
@@ -21,98 +25,57 @@ import (
 	and ports are used to define announce URLs in .torrent files.
 	They may also be used for mailer purposes, etc.
 */
+
 func parseConfig(settings *libBabou.AppSettings) error {
-	cfg, err := config.ParseYamlFile("config/config.yml")
+	JSON_CONFIG_PATH := "config/config.json"
+
+	// Open file and read to byte array
+	jsonConfig, err := os.Open(JSON_CONFIG_PATH)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("JSON Configuration not found at: %s",
+			JSON_CONFIG_PATH))
 	}
 
-	fmt.Printf("Reading web-application configuration . . .\n")
-
-	/*hostname, err := cfg.String("development.site.domain")
+	jsonConfigBytes, err := ioutil.ReadAll(jsonConfig)
 	if err != nil {
-		return errors.New("Could not read hostname (`domain`) from configuraiton file.")
-	}*/
+		return errors.New(fmt.Sprintf("Error reading [%s]: %s",
+			JSON_CONFIG_PATH,
+			err.Error()))
+	}
 
-	port, err := cfg.Int("development.site.port")
+	// Parse byte-array as JSON
+	var f interface{}
+
+	err = json.Unmarshal(jsonConfigBytes, &f)
 	if err != nil {
-		return errors.New("Could not read port from configuration file.")
+		return errors.New(fmt.Sprintf("Error decoding JSON [%s]: %s",
+			JSON_CONFIG_PATH,
+			err.Error()))
 	}
 
-	// Default, use config file port.
-	if settings.WebPort == -1 {
-		settings.WebPort = port
+	// Try to read `development` configuration
+	parsedConfig, _ := f.(map[string]interface{})
+	if devConfig, ok := parsedConfig["development"].(map[string]interface{}); ok {
+		fmt.Printf("development-> %v", devConfig)
+	} else {
+		return errors.New(fmt.Sprintf("Unable to find `development` configuration block in [%s]",
+			JSON_CONFIG_PATH))
 	}
 
-	fmt.Printf("Reading tracker configuration . . .\n")
+	//return errors.New("JSON CONFIG PARSER NOT IMPL.")
+	settings.WebHost = "localhost"
+	settings.WebPort = 8080
+	settings.WebStack = true
 
-	hostname, err := cfg.String("development.tracker.domain")
-	if err != nil {
-		return errors.New("Could not read tracker hostname (`domain`) from configuraiton file.")
-	}
+	settings.TrackerHost = "localhost"
+	settings.TrackerPort = 4200
+	settings.TrackerStack = true
 
-	port, err = cfg.Int("development.tracker.port")
-	if err != nil {
-		return errors.New("Could not read tracker port from configuration file.")
-	}
+	settings.FullStack = true
+	settings.DbOpen = "dbname=babou host=localhost sslmode=disable user=postgres password=mobitdata"
 
-	// Default, use config file port.
-	if settings.TrackerPort == -1 {
-		settings.TrackerPort = port
-	}
-
-	settings.TrackerHost = fmt.Sprintf("http://%s:%d", hostname, port)
-
-	dbOpen, err := cfg.String("development.db.open")
-	if err != nil {
-		return errors.New("development.db.open is not present or not in the expected format.")
-	}
-
-	// TODO: Sanity check before database panics
-	settings.DbOpen = dbOpen
-
-	err = parseEvent(cfg, settings)
-	if err != nil {
-		return errors.New("Error parsing event-bridge configuration.")
-	}
-	return nil
-}
-
-func parseEvent(cfg *config.Config, settings *libBabou.AppSettings) error {
-	fmt.Printf("\n --- event bridge --- \n")
-	transport, err := cfg.String("development.events.transport")
-	if err != nil {
-		return err
-	}
-	switch transport {
-	case "unix":
-		fmt.Printf("unix socket \n")
-	case "tcp":
-		fmt.Printf("tcp socket \n")
-	case "lo":
-		fmt.Printf("setting up local socket, ignoring peers \n")
-		settings.Bridge = &libBabou.TransportSettings{}
-
-		settings.Bridge.Transport = libBabou.LOCAL_TRANSPORT
-		settings.BridgePeers = make([]*libBabou.TransportSettings, 0) // TODO: add peers with config reload.
-	default:
-		fmt.Printf("unknown socket type: %s \n", transport)
-		return errors.New("Could not configure event bridge.")
-	}
-
-	fmt.Printf("\n --- \n")
-	return nil
-}
-
-func parseBridgePeers(settings *libBabou.AppSettings, peerList []interface{}) error {
-	for _, peer := range peerList {
-		v, ok := peer.(map[string]interface{})
-		if !ok {
-			return errors.New("bad format for peer")
-		}
-
-		fmt.Printf("peer transport: %s \n", v["transport"])
-	}
+	settings.Bridge = &libBabou.TransportSettings{}
+	settings.Bridge.Transport = libBabou.LOCAL_TRANSPORT
 
 	return nil
 }
