@@ -53,9 +53,31 @@ func parseConfig(settings *libBabou.AppSettings) error {
 			err.Error()))
 	}
 
-	fmt.Printf("json %v", f)
+	// Try to read `development` configuration
+	parsedConfig, _ := f.(map[string]interface{})
+	if devConfig, ok := parsedConfig["development"].(map[string]interface{}); ok {
+		fmt.Printf("development-> %v", devConfig)
+	} else {
+		return errors.New(fmt.Sprintf("Unable to find `development` configuration block in [%s]",
+			JSON_CONFIG_PATH))
+	}
 
-	return errors.New("JSON CONFIG PARSER NOT IMPL.")
+	//return errors.New("JSON CONFIG PARSER NOT IMPL.")
+	settings.WebHost = "localhost"
+	settings.WebPort = 8080
+	settings.WebStack = true
+
+	settings.TrackerHost = "localhost"
+	settings.TrackerPort = 4200
+	settings.TrackerStack = true
+
+	settings.FullStack = true
+	settings.DbOpen = "dbname=babou host=localhost sslmode=disable user=postgres password=mobitdata"
+
+	settings.Bridge = &libBabou.TransportSettings{}
+	settings.Bridge.Transport = libBabou.LOCAL_TRANSPORT
+
+	return nil
 }
 
 func parseFlags() *libBabou.AppSettings {
