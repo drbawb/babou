@@ -1,15 +1,39 @@
+<ul class="breadcrumb">
+  <li><a href="/">Home</a></li>
+  <li><a href="/torrents">Torrents</a> </li>
+  <li class="active">All</li>
+
+  <li class="pull-right">[ {{Username}} ] - 0 alerts</li>
+</ul>
+
 {{#Flash}}
-	<div class="flash">
-		{{Message}}
-	</div>
+<div class="alert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Attention!</strong> {{Message}}
+</div>
 {{/Flash}}
 
-<div class="input-prepend">
-  <span class="add-on"><i class="icon-search"></i></span>
-  <input class="span2" id="inputIcon" type="text">
-  <input class="btn btn-primary" type="submit">Search</button>
-</div>
+<form class="form-inline" role="form">
+  <div class="form-group">
+    <label class="sr-only" for="exampleInputEmail2">Search Terms</label>
+    <input type="email" class="form-control" id="exampleInputEmail2" placeholder="Search Terms">
+  </div>
+  <button type="submit" class="btn btn-default">Search</button>
+</form>
 
+<br />
+
+<div class="btn-group" data-toggle="buttons">
+  <label class="btn btn-default active">
+    <input type="radio" name="options" id="option1"> Artist(s)
+  </label>
+  <label class="btn btn-default">
+    <input type="radio" name="options" id="option2"> Album
+  </label>
+  <label class="btn btn-default">
+    <input type="radio" name="options" id="option3"> Username
+  </label>
+</div>
 
 <table class="table table-striped">
 	<thead>
@@ -30,22 +54,22 @@
 				<a href="/torrents/download/{{ID}}" />
 				.torrent
 			</td>
-			<td><span class="badge badge-important">0</span></td>
-			<td><span class="badge badge-info">10</span></td>
+			<td><span class="label label-danger">0</span></td>
+			<td><span class="label label-primary">10</span></td>
 		</tr>
 		{{/TorrentList}}
 	</tbody>
 </table>
 <hr />
-<div class="pagination">
-  <ul>
-    <li><a href="#">Prev</a></li>
-    <li><a href="#">1</a></li>
-    <li><a href="#">2</a></li>
-    <li><a href="#">3</a></li>
-    <li><a href="#">4</a></li>
-    <li><a href="#">5</a></li>
-    <li><a href="#">Next</a></li>
-  </ul>
-</div>
+
+<ul class="pagination">
+	<li><a href="#">Prev</a></li>
+	<li><a href="#">1</a></li>
+	<li><a href="#">2</a></li>
+	<li><a href="#">3</a></li>
+	<li><a href="#">4</a></li>
+	<li><a href="#">5</a></li>
+	<li><a href="#">Next</a></li>
+</ul>
+<br />
 {{#LinkTo torrentNew}}Upload a Torrent{{/LinkTo}}

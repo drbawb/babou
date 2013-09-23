@@ -1,10 +1,65 @@
-<div class="articles">
-	{{#Articles}}
-		<div class="article">
-			{{Text}}
-		</div>
-		<div class="article-date">
-			1900 Jan 01
-			</div>
-	{{/Articles}}
+<div class="row">
+	<div class="col-md-8">
+		<ul class="breadcrumb">
+		  <li class="active"><a href="/">Home</a></li>
+		  <li><a href="/torrents">Torrents</a> </li>
+		</ul>
+	</div>
+
+	<div class="col-md-4">
+		<ul class="breadcrumb pull-right">
+			<li>{{#LinkTo loginDelete}}Logout{{/LinkTo}}</li>
+		  <li>[ {{Username}} ] - 0 alerts</li>
+		</ul>
+	</div>
 </div>
+
+
+
+
+<div class="row">
+	<!-- main content -->
+	<div class="col-md-8">
+		{{#Articles}}
+		<div class="col-md-12">
+			<div class="panel panel-default">
+			  <div class="panel-body">
+			    <p>{{Text}}</p>
+			  </div>
+			  <div class="panel-footer">1900 Jan 01</div>
+			</div>	
+		</div>
+		{{/Articles}}
+
+	</div>
+
+	<!-- sidebar -->
+	<div class="col-md-4">
+		
+
+		<div class="panel panel-default">
+		  <div class="panel-body">
+		    <h3> Welcome </h3>
+		    <hr />
+		    <p> Thanks for installing <code>babou</code> </p>
+		    <p> 
+		    	If you're seeing this, blah blah blah.
+		    	Babou exists because I got sick of all the decent trackers
+		    	being written in PHP.
+		    </p>
+		    <p>
+		    	We can do better, we have the technology. <br />
+		    	<a href="//github.com/drbawb/babou">Click to view <code>babou/master</code> at github.</a>
+	    	</p>
+		  </div>
+		</div>	
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-md-12 well well-sm">
+		&copy; Copyright Robert Straw, 2013. All rights reserved.
+	</div>
+</div>
+
+
