@@ -1,21 +1,4 @@
-<div class="row">
-	<div class="col-md-8">
-		<ul class="breadcrumb">
-		  <li class="active"><a href="/">Home</a></li>
-		  <li><a href="/torrents">Torrents</a> </li>
-		</ul>
-	</div>
-
-	<div class="col-md-4">
-		<ul class="breadcrumb pull-right">
-			<li>{{#LinkTo loginDelete}}Logout{{/LinkTo}}</li>
-		  <li>[ {{Username}} ] - 0 alerts</li>
-		</ul>
-	</div>
-</div>
-
-
-
+{{> app/views/home/navbar}}
 
 <div class="row">
 	<!-- main content -->
@@ -39,18 +22,7 @@
 
 		<div class="panel panel-default">
 		  <div class="panel-body">
-		    <h3> Welcome </h3>
-		    <hr />
-		    <p> Thanks for installing <code>babou</code> </p>
-		    <p> 
-		    	If you're seeing this, blah blah blah.
-		    	Babou exists because I got sick of all the decent trackers
-		    	being written in PHP.
-		    </p>
-		    <p>
-		    	We can do better, we have the technology. <br />
-		    	<a href="//github.com/drbawb/babou">Click to view <code>babou/master</code> at github.</a>
-	    	</p>
+		    {{> app/views/home/welcome_message}}
 		  </div>
 		</div>	
 	</div>
