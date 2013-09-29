@@ -1,17 +1,95 @@
-{{#Flash}}
-	<div class="flash">
-		{{Message}}
-	</div>
-{{/Flash}}
-<div class="articles">
-	List of torrents (first 100):
-	{{#TorrentList}}
-		<div style="border: 1px #000 solid">
-			ID {{ID}}
-			<br />
-			HASH {{InfoHash}}
-		</div>
-	{{/TorrentList}}
+{{> app/views/home/navbar}}
 
-	{{#LinkTo torrentNew}}Upload a Torrent{{/LinkTo}}
+{{#Flash}}
+<div class="alert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Attention!</strong> {{Message}}
 </div>
+{{/Flash}}
+
+<form class="form-inline" role="form">
+  <div class="form-group">
+    <label class="sr-only" for="exampleInputEmail2">Search Terms</label>
+    <input type="email" class="form-control" id="exampleInputEmail2" placeholder="Search Terms">
+  </div>
+  <button type="submit" class="btn btn-default">Search</button>
+
+  <div class="btn-group" data-toggle="buttons">
+	  <label class="btn btn-default active">
+	    <input type="radio" name="options" id="option1"> Artist(s)
+	  </label>
+	  <label class="btn btn-default">
+	    <input type="radio" name="options" id="option2"> Album
+	  </label>
+	  <label class="btn btn-default">
+	    <input type="radio" name="options" id="option3"> Username
+	  </label>
+	</div>
+</form>
+
+<br />
+
+<table class="table table-striped">
+	<thead>
+		<tr>
+			<th>Torrent Name</th>
+			<th>Unique ID</th>
+			<th>Download</th>
+			<th>Seed</th>
+			<th>Leech</th>
+		</tr>
+	</thead>
+	<tbody>
+		{{#TorrentList}}
+		<tr>
+			<td>{{Name}}</td>
+			<td>{{InfoHash}}</td>
+			<td>
+				<a href="/torrents/download/{{ID}}" />
+				.torrent
+			</td>
+			<td><span class="label label-danger">0</span></td>
+			<td><span class="label label-primary">10</span></td>
+		</tr>
+		{{/TorrentList}}
+
+		{{^TorrentList}}
+		<tr>
+			<td colspan="5">
+				No Torrents Found.
+			</td>
+		</tr>
+		{{/TorrentList}}
+	</tbody>
+</table>
+<hr />
+
+
+
+<!-- pager component -->
+<ul class="pagination">
+	<!-- for n pages -->
+	<li><a href="#" data-page="prev">Prev</a></li>
+	
+	<!-- pager template -->
+	<li><a href="#" data-page="1">1</a></li>
+	<li><a href="#" data-page="2">2</a></li>
+	<li><a href="#" data-page="3">3</a></li>
+	<li><a href="#" data-page="4">4</a></li>
+	<li><a href="#" data-page="5">5</a></li>
+	
+	<li><a href="#" data-page="next">Next</a></li>
+</ul>
+<br />
+{{#LinkTo torrentNew}}Upload a Torrent{{/LinkTo}}
+
+<script type="text/javascript">
+$( document ).ready(function() {
+	var pager = function() {
+		var pageNo = $(this).data("page");
+		alert('clicked: ' + pageNo);
+	};
+
+	$("a[data-page]").click(pager);
+});
+</script>

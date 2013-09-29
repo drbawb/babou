@@ -52,7 +52,7 @@ func (tc *TorrentController) Index(params map[string]string) *web.Result {
 
 	outData.TorrentList = torrentList
 
-	output.Body = []byte(web.RenderWith("application", "torrent", "index", outData, tc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "torrent", "index", outData, tc.flash))
 
 	return output
 }
@@ -75,7 +75,7 @@ func (tc *TorrentController) New(params map[string]string) *web.Result {
 	}
 
 	// Display new torrent form.
-	output.Body = []byte(web.RenderWith("application", "torrent", "new", outData, tc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "torrent", "new", outData, tc.flash))
 
 	return output
 }
@@ -168,8 +168,14 @@ func (tc *TorrentController) Download(params map[string]string) *web.Result {
 	record.SelectId(int(torrentId))
 	outFile, err := record.WriteFile(user.Secret, user.SecretHash)
 	if err != nil {
-		output.Body = []byte("invalid torrent file or torrent not found")
-		return output
+		result := &web.Result{}
+		tc.flash.AddFlash("Could not find the torrent with the specified ID")
+		result.Redirect = &web.RedirectPath{}
+		result.Redirect.NamedRoute = "torrentIndex"
+
+		result.Status = 302
+
+		return result
 	}
 
 	output.IsFile = true
