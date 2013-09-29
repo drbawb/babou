@@ -1,10 +1,4 @@
-<ul class="breadcrumb">
-  <li><a href="/">Home</a></li>
-  <li><a href="/torrents">Torrents</a> </li>
-  <li class="active">All</li>
-
-  <li class="pull-right">[ {{Username}} ] - 0 alerts</li>
-</ul>
+{{> app/views/home/navbar}}
 
 {{#Flash}}
 <div class="alert">
@@ -62,14 +56,30 @@
 </table>
 <hr />
 
+<!-- pager component -->
 <ul class="pagination">
-	<li><a href="#">Prev</a></li>
-	<li><a href="#">1</a></li>
-	<li><a href="#">2</a></li>
-	<li><a href="#">3</a></li>
-	<li><a href="#">4</a></li>
-	<li><a href="#">5</a></li>
-	<li><a href="#">Next</a></li>
+	<!-- for n pages -->
+	<li><a href="#" data-page="prev">Prev</a></li>
+	
+	<!-- pager template -->
+	<li><a href="#" data-page="1">1</a></li>
+	<li><a href="#" data-page="2">2</a></li>
+	<li><a href="#" data-page="3">3</a></li>
+	<li><a href="#" data-page="4">4</a></li>
+	<li><a href="#" data-page="5">5</a></li>
+	
+	<li><a href="#" data-page="next">Next</a></li>
 </ul>
 <br />
 {{#LinkTo torrentNew}}Upload a Torrent{{/LinkTo}}
+
+<script type="text/javascript">
+$( document ).ready(function() {
+	var pager = function() {
+		var pageNo = $(this).data("page");
+		alert('clicked: ' + pageNo);
+	};
+
+	$("a[data-page]").click(pager);
+});
+</script>
