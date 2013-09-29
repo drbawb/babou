@@ -22,5 +22,5 @@
 </div>
 
 <br /><br />
-Select a torrent to upload: <br />
+
 {{> app/views/torrent/new_torrent}}
