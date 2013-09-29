@@ -1,16 +1,24 @@
 {{#Flash}}
-	<div class="flash">
-		{{Message}}
-	</div>
-{{/Flash}}
-<div class="articles">
-	<div class="article">
-		When creating your new torrent please set the tracker to <br />
-		<strong>{{AnnounceURL}}</strong>
-		<br /><br />
-		This will ensure that you can begin seeding the torrent as soon as it becomes available.
-		<br /><br />
-		Select a torrent to upload: <br />
-		{{> app/views/torrent/new_torrent}}
-	</div>
+<div class="alert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Attention!</strong> {{Message}}
 </div>
+{{/Flash}}
+
+<div class="alert alert-warning" style="word-wrap:break-word;">
+	<!-- TODO: Shows up until the user dismisses it permanently. -->
+	<p>
+	When creating your new torrent please set the tracker to <br />
+	<div class="form-group">
+		<input type="email" class="form-control" id="exampleInputEmail1" value="{{AnnounceURL}}">
+	</div>
+	</p>
+
+	<p>
+	This will ensure that you can begin seeding the torrent as soon as it becomes available.
+	</p>
+</div>
+
+<br /><br />
+Select a torrent to upload: <br />
+{{> app/views/torrent/new_torrent}}

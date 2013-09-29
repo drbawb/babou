@@ -1,29 +1,40 @@
 {{#FormFor torrentCreate post multipart/form-data torrent-upload}}
-	{{#LabelFor metainfo}}Torrent File{{/LabelFor}}
-	{{#FileFor metainfo}}{{/FileFor}}
+<div class="row">
+	<div class="col-md-6">
+		<div class="form-group">
+			{{#LabelFor metainfo}}Torrent File{{/LabelFor}}	
+			{{#FileFor metainfo}}{{/FileFor}}	
+			
+			<p class="help-block">Create a torrent file with your favorite client and select it here.</p>
+		</div>
 
-	<br /><br />
+		<br /><br />
 
-	<table>
-		<tr>
-			<td>{{#LabelFor albumName}}Album Name{{/LabelFor}}</td>
-			<td><input type="text" name="albumName" id="albumName" /></td>
-			<td></td>
-		</tr>
+		<div class="form-group">
+			{{#LabelFor albumName}}Album Name{{/LabelFor}}
+			<input type="text" class="form-control" id="albumName" name="albumName" placeholder="Album Name">
+		</div>
 
-		<tr>
-			<td>{{#LabelFor artistName}}Artist Name(s){{/LabelFor}}</td>
-			<td><input type="text" name="artistName" id="artistName" /></td>
-			<td> (comma separated) </td>
-		</tr>
+		<div class="form-group">
+			{{#LabelFor artistName}}Artist Name(s){{/LabelFor}}
+			<input type="text" class="form-control" id="artistName" name="artistName" placeholder="Artist Name(s)">
+			<p class="help-block">For several artists: use commas between artist names.</p>
+		</div>
 
-		<tr>
-			<td>{{#LabelFor releaseYear}}Release Year{{/LabelFor}}</td>
-			<td><input type="text" name="releaseYear" id="releaseYear" chars="4" /></td>
-			<td></td>
-		</tr>
-	</table>
+		<div class="form-group">
+			{{#LabelFor releaseYear}}Release Year{{/LabelFor}}
+			<input type="text" class="form-control" id="releaseYear" name="releaseYear" placeholder="Release Year" chars="4">
+			<p class="help-block">For several artists: use commas between artist names.</p>
+		</div>
 
-	<br /><br />
-	<input type="submit" value="upload" />
+		<button type="submit" class="btn btn-default">Upload</button>
+	</div>
+
+	<div class="col-md-4">
+		<p> Possibly a list of banned uploads or upload help here? </p>
+
+		<p> We could also show auto-complete list of torrents that are possible 
+		duplicates. </p>
+	</div>
+</div>
 {{/FormFor}}

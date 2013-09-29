@@ -75,7 +75,7 @@ func (tc *TorrentController) New(params map[string]string) *web.Result {
 	}
 
 	// Display new torrent form.
-	output.Body = []byte(web.RenderWith("application", "torrent", "new", outData, tc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "torrent", "new", outData, tc.flash))
 
 	return output
 }
