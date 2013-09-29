@@ -129,8 +129,7 @@ func RetrieveAllParams(request *http.Request) *Param {
 
 		param.Files = request.MultipartForm.File
 	default:
-		// Dunno; empty map and do nothing.
-		fmt.Printf("da fuq? \n")
+		// TODO: Empty response. For now initialize an empty response.
 		_ = request.ParseForm()
 		param.Files = make(map[string][]*multipart.FileHeader)
 	}
