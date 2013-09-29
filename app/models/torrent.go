@@ -181,6 +181,11 @@ func (t *Torrent) Write() error {
 }
 
 func (t *Torrent) Populate(torrentFile *torrent.TorrentFile) error {
+	if torrentName, ok := torrentFile.Info["name"].(string); ok {
+		t.Name = torrentName
+	} else {
+		return errors.New("Torrent file did not contain a `name` property in the info-hash. Please try recreating your torrent.")
+	}
 	t.CreatedBy = torrentFile.CreatedBy
 	t.CreationDate = int(torrentFile.CreationDate)
 	t.Encoding = torrentFile.Encoding
