@@ -13,8 +13,36 @@ import (
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
 )
 
+type DatabaseConfig struct {
+	ConnectionParams string `json:"open"`
+}
+
+type ServerConfig struct {
+	DomainName string `json:"domain"`
+	ListenAddr string `json:"listen"`
+	Port       int    `json:"port"`
+}
+
+type BridgePeer struct {
+	Transport     string `json:"transport"` //  Socket Type. //TODO: TRANSPORT_TYPE
+	SocketAddress string `json:"listen"`    // Address for the socket to send or receive.
+	Port          int    `json:"port"`      // Port or suffix [PID,PORT,ETC.] of the remote socket.
+}
+
+type BridgeConfig struct {
+	LocalBridge BridgePeer    `json:"transport"`
+	Peers       []*BridgePeer `json:"peers"`
+}
+
+// The JSON configuration for the components of the babou stack.
+type Config struct {
+	Database  *DatabaseConfig `json:"db"`
+	WebServer *ServerConfig   `json:"site"`
+	Tracker   *ServerConfig   `json:"tracker"`
+}
+
 /*
-	Parses a configuration file from `config/config.yml` OR
+	Parses a configuration file from `config/config.json` OR
 	the path passed on the command line.
 
 	Settings on the command-line take precedent over settings
@@ -44,36 +72,32 @@ func parseConfig(settings *libBabou.AppSettings) error {
 	}
 
 	// Parse byte-array as JSON
-	var f interface{}
+	var parsedConfig Config
 
-	err = json.Unmarshal(jsonConfigBytes, &f)
+	err = json.Unmarshal(jsonConfigBytes, &parsedConfig)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error decoding JSON [%s]: %s",
 			JSON_CONFIG_PATH,
 			err.Error()))
 	}
 
-	// Try to read `development` configuration
-	parsedConfig, _ := f.(map[string]interface{})
-	if devConfig, ok := parsedConfig["development"].(map[string]interface{}); ok {
-		fmt.Printf("development-> %v", devConfig)
-	} else {
-		return errors.New(fmt.Sprintf("Unable to find `development` configuration block in [%s]",
-			JSON_CONFIG_PATH))
+	if parsedConfig.WebServer != nil {
+		settings.WebHost = parsedConfig.WebServer.DomainName
+		settings.WebPort = parsedConfig.WebServer.Port
+
+		settings.WebStack = true
 	}
 
-	//return errors.New("JSON CONFIG PARSER NOT IMPL.")
-	settings.WebHost = "localhost"
-	settings.WebPort = 8080
-	settings.WebStack = true
+	if parsedConfig.Tracker != nil {
+		settings.TrackerHost = parsedConfig.Tracker.DomainName
+		settings.TrackerPort = parsedConfig.Tracker.Port
 
-	settings.TrackerHost = "localhost"
-	settings.TrackerPort = 4200
-	settings.TrackerStack = true
+		settings.TrackerStack = true
+	}
 
-	settings.FullStack = true
-	settings.DbOpen = "dbname=babou host=localhost sslmode=disable user=postgres password=mobitdata"
+	settings.FullStack = (settings.WebStack && settings.TrackerStack)
 
+	//TODO: Setup bridge from config file.
 	settings.Bridge = &libBabou.TransportSettings{}
 	settings.Bridge.Transport = libBabou.LOCAL_TRANSPORT
 
