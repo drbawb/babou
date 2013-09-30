@@ -11,7 +11,7 @@ import (
 	"crypto/rand"
 )
 
-// Returns a fake torrent w/ some fake peers.
+// Creates a fake torrent we can use for testing purposes.
 func MockTorrent() *torrent.Torrent {
 	file := &torrent.TorrentFile{}
 	t := torrent.NewTorrent(file)
@@ -33,11 +33,12 @@ func MockTorrent() *torrent.Torrent {
 	return t
 }
 
-func TestNumWant(test *testing.T) {
+// Checks the number of peers returned for a torrent w/ peers > DEFAULT_NUMWANT
+func TestNumWantLarge(test *testing.T) {
 	torrentFile := MockTorrent()
 
 	// create fifty "peers"
-	randomPeerIds := make([][]byte, 50)
+	randomPeerIds := make([][]byte, torrent.DEFAULT_NUMWANT+10)
 	for i := 0; i < len(randomPeerIds); i++ {
 		randomPeerIds[i] = make([]byte, 20)
 		rand.Read(randomPeerIds[i])
@@ -52,15 +53,54 @@ func TestNumWant(test *testing.T) {
 		test.FailNow()
 	}
 
-	specific := torrentFile.GetPeerList(10)
-	if (len(specific) / 6) != 10 {
-		test.Errorf("Request ten peers, and received %d \n",
+	// want some subset of peers
+	specific := torrentFile.GetPeerList(torrent.DEFAULT_NUMWANT / 2)
+	if (len(specific) / 6) != torrent.DEFAULT_NUMWANT/2 {
+		test.Errorf("Request %d peers, and received %d \n", (torrent.DEFAULT_NUMWANT / 2),
 			len(specific))
 		test.FailNow()
 	}
 
+	// want default num of peers
 	defaultPeers := torrentFile.GetPeerList(0)
 	if (len(defaultPeers) / 6) != torrent.DEFAULT_NUMWANT {
+		test.Errorf("Request default peers, received: %d \n",
+			(len(defaultPeers) / 6))
+	}
+
+}
+
+// Checks the number of peers returned for a torrent w/ peers < DEFAULT_NUMWANT
+func TestNumWantSmall(test *testing.T) {
+	torrentFile := MockTorrent()
+
+	// create fifty "peers"
+	randomPeerIds := make([][]byte, torrent.DEFAULT_NUMWANT/2)
+	for i := 0; i < len(randomPeerIds); i++ {
+		randomPeerIds[i] = make([]byte, 20)
+		rand.Read(randomPeerIds[i])
+
+		torrentFile.AddPeer(string(randomPeerIds[i]), "[127.0.0.1]:1337", "1337", "abcadefgawalthgrathorp")
+	}
+
+	// want no peers
+	noPeers := torrentFile.GetPeerList(-1)
+	if len(noPeers) > 0 {
+		test.Errorf("Requested no peers, and received: %s \n", noPeers)
+		test.FailNow()
+	}
+
+	// want some subset of peers [should return requested number]
+	specific := torrentFile.GetPeerList(torrent.DEFAULT_NUMWANT / 3)
+	if (len(specific) / 6) != torrent.DEFAULT_NUMWANT/3 {
+		test.Errorf("Request %d peers, and received %d \n", (torrent.DEFAULT_NUMWANT / 3),
+			len(specific))
+		test.FailNow()
+	}
+
+	// want default num of peers [should return all available peers]
+	defaultPeers := torrentFile.GetPeerList(0)
+	if (len(defaultPeers) / 6) != torrent.DEFAULT_NUMWANT/2 {
 		test.Errorf("Request default peers, received: %d \n",
 			(len(defaultPeers) / 6))
 	}

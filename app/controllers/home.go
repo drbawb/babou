@@ -56,7 +56,7 @@ func (hc *HomeController) homePage(params map[string]string) *web.Result {
 	output.Status = 200
 	outData := &struct{}{}
 
-	output.Body = []byte(web.RenderWith("public", "home", "index", outData, hc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "home", "index", outData, hc.flash))
 	return output
 }
 
@@ -86,7 +86,7 @@ func (hc *HomeController) blog(params map[string]string) *web.Result {
 		Articles: testArticles,
 	}
 
-	output.Body = []byte(web.RenderWith("application", "home", "news", outData))
+	output.Body = []byte(web.RenderWith("bootstrap", "home", "news", outData))
 
 	return output
 }
