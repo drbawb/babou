@@ -141,7 +141,7 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 		Status: 200,
 	}
 
-	output.Body = []byte(web.RenderWith("application", "torrent", "index", outData, tc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "torrent", "index", outData, tc.flash))
 	return output
 }
 
