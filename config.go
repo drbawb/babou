@@ -95,6 +95,12 @@ func parseConfig(settings *libBabou.AppSettings) error {
 		settings.TrackerStack = true
 	}
 
+	if parsedConfig.Database != nil {
+		settings.DbOpen = parsedConfig.Database.ConnectionParams
+	} else {
+		return errors.New("Could not find a database configuration in your JSON configuration.")
+	}
+
 	settings.FullStack = (settings.WebStack && settings.TrackerStack)
 
 	//TODO: Setup bridge from config file.
