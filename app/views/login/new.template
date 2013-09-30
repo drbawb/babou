@@ -1,15 +1,39 @@
-<div class="entry-brief">
-	<div class="entry-nav">
-		{{#LinkTo homeIndex}}Home{{/LinkTo}} 
-        {{#LinkTo loginIndex}}Login{{/LinkTo}}
-        {{#LinkTo loginCreate}}Register{{/LinkTo}}
+{{> app/views/login/public_navbar}}
+
+<div class="row">
+	<div class="col-md-6">
+		{{#Flash}}
+		<div class="panel panel-danger">
+			<div class="panel-heading">
+				<h3 class="panel-title">Trouble Creating Your Account</h3>
+			</div>
+
+			<div class="panel-body">
+				{{Message}}
+			</div>
+		</div>
+		{{/Flash}}
+
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title">Register</h3>
+			</div>
+
+			<div class="panel-body">
+				{{#FormFor loginCreate post}}
+				        {{> app/views/login/register_form}}
+				{{/FormFor}}
+			</div>
+		</div>
 	</div>
 
-{{#Flash}}
-	Registration failed because {{Message}}
-{{/Flash}}
-
-{{#FormFor loginCreate post}}
-        {{> app/views/login/register_form}}
-{{/FormFor}}
+	<div class="col-md-5">
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<ul>
+					<li> -- links to tos and stuff? -- </li>
+				</ul>
+			</div>
+		</div>
+	</div>
 </div>

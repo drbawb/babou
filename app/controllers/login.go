@@ -54,7 +54,7 @@ func (lc *LoginController) Index(params map[string]string) *web.Result {
 	output.Status = 200
 	outData := &web.ViewData{Context: &struct{}{}}
 
-	output.Body = []byte(web.RenderWith("public", "login", "index", outData, lc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "login", "index", outData, lc.flash))
 
 	return output
 }
@@ -142,7 +142,7 @@ func (lc *LoginController) New(params map[string]string) *web.Result {
 	output.Status = 200
 	outData := &web.ViewData{Context: &struct{}{}} // render the registration form.
 
-	output.Body = []byte(web.RenderWith("public", "login", "new", outData, lc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "login", "new", outData, lc.flash))
 
 	return output
 }

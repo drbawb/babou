@@ -1,15 +1,40 @@
-<div class="entry-brief">
-	<div class="entry-nav">
-		{{> public_navbar}}
-	</div>
-{{#Flash}}
-	<div class="flash">
-		{{Message}}
-	</div>
-{{/Flash}}
+{{> app/views/login/public_navbar}}
 
-<br />You will be banned for no discernable reason. <br /><br />
-{{#FormFor loginSession post}}
-        {{> app/views/login/login_form}}
-{{/FormFor}}
+<div class="row">
+	<div class="col-md-6">
+		{{#Flash}}
+		<div class="panel panel-danger">
+			<div class="panel-heading">
+				<h3 class="panel-title">Trouble Logging In</h3>
+			</div>
+
+			<div class="panel-body">
+				{{Message}}
+			</div>
+		</div>
+		{{/Flash}}
+
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title">Login</h3>
+			</div>
+
+			<div class="panel-body">
+				{{#FormFor loginSession post}}
+		        	{{> app/views/login/login_form}}
+				{{/FormFor}}
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-5">
+		<div class="panel panel-default">
+			<div class="panel-body">
+				<ul>
+					<li> -- login ban policy (3 attempts, etc.) -- </li>
+					<li> fudge </li>
+				</ul>
+			</div>
+		</div>
+	</div>
 </div>

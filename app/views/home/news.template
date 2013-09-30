@@ -1,10 +1,37 @@
-<div class="articles">
-	{{#Articles}}
-		<div class="article">
-			{{Text}}
+{{> app/views/home/navbar}}
+
+<div class="row">
+	<!-- main content -->
+	<div class="col-md-8">
+		{{#Articles}}
+		<div class="col-md-12">
+			<div class="panel panel-default">
+			  <div class="panel-body">
+			    <p>{{Text}}</p>
+			  </div>
+			  <div class="panel-footer panel-footer-small">1900 Jan 01</div>
+			</div>	
 		</div>
-		<div class="article-date">
-			1900 Jan 01
-			</div>
-	{{/Articles}}
+		{{/Articles}}
+
+	</div>
+
+	<!-- sidebar -->
+	<div class="col-md-4">
+		
+
+		<div class="panel panel-default">
+		  <div class="panel-body">
+		    {{> app/views/home/welcome_message}}
+		  </div>
+		</div>	
+	</div>
 </div>
+
+<div class="row">
+	<div class="col-md-12 well well-sm">
+		&copy; Copyright Robert Straw, 2013. All rights reserved.
+	</div>
+</div>
+
+

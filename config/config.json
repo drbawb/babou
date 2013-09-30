@@ -1,0 +1,20 @@
+{
+  "db": {
+    "open": "dbname=babou host=localhost sslmode=disable"
+  },
+  "site": {
+    "domain":"tracker.fatalsyntax.com",
+    "port":8008
+  },
+  "tracker":{
+    "domain": "tracker.fatalsyntax.com",
+    "port":4000
+  },
+  "events":{
+    "transport": "lo",
+    "listen": "",
+    "port":3000,
+    "peers": []
+  }
+}
+

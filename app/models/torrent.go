@@ -78,7 +78,7 @@ func (t *Torrent) SelectSummaryPage() ([]*Torrent, error) {
 	summaryList := make([]*Torrent, 0, 100)
 
 	selectSummary := `SELECT
-	torrent_id, info_hash, created_by
+	torrent_id, name, info_hash, created_by
 	FROM "torrents"
 	LIMIT 100`
 
@@ -90,7 +90,7 @@ func (t *Torrent) SelectSummaryPage() ([]*Torrent, error) {
 
 		for rows.Next() {
 			t := &Torrent{isInit: true}
-			_ = rows.Scan(&t.ID, &t.InfoHash, &t.CreatedBy)
+			_ = rows.Scan(&t.ID, &t.Name, &t.InfoHash, &t.CreatedBy)
 			summaryList = append(summaryList, t)
 		}
 
@@ -181,6 +181,11 @@ func (t *Torrent) Write() error {
 }
 
 func (t *Torrent) Populate(torrentFile *torrent.TorrentFile) error {
+	if torrentName, ok := torrentFile.Info["name"].(string); ok {
+		t.Name = torrentName
+	} else {
+		return errors.New("Torrent file did not contain a `name` property in the info-hash. Please try recreating your torrent.")
+	}
 	t.CreatedBy = torrentFile.CreatedBy
 	t.CreationDate = int(torrentFile.CreationDate)
 	t.Encoding = torrentFile.Encoding
