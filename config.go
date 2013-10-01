@@ -59,6 +59,8 @@ func parseConfig(settings *libBabou.AppSettings) error {
 
 	// Open file and read to byte array
 	jsonConfig, err := os.Open(JSON_CONFIG_PATH)
+	defer jsonConfig.Close()
+
 	if err != nil {
 		return errors.New(fmt.Sprintf("JSON Configuration not found at: %s",
 			JSON_CONFIG_PATH))
