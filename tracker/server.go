@@ -44,7 +44,7 @@ func (s *Server) Start() {
 
 	go func() {
 		// start with custom muxer.
-		log.Fatal(http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", s.Port), router))
+		log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.Port), router))
 	}()
 
 	//TODO: task scheduler of some kind.

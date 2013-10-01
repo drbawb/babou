@@ -1,0 +1,33 @@
+<table class="table table-striped">
+	<thead>
+		<tr>
+			<th>Torrent Name</th>
+			<th>Unique ID</th>
+			<th>Download</th>
+			<th>Seed</th>
+			<th>Leech</th>
+		</tr>
+	</thead>
+	<tbody>
+		{{#TorrentList}}
+		<tr>
+			<td>{{Name}}</td>
+			<td>{{InfoHash}}</td>
+			<td>
+				<a href="/torrents/download/{{ID}}" />
+				.torrent
+			</td>
+			<td><span class="label label-danger">0</span></td>
+			<td><span class="label label-primary">10</span></td>
+		</tr>
+		{{/TorrentList}}
+
+		{{^TorrentList}}
+		<tr>
+			<td colspan="5">
+				No Torrents Found.
+			</td>
+		</tr>
+		{{/TorrentList}}
+	</tbody>
+</table>

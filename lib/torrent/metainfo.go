@@ -68,19 +68,10 @@ func ReadFile(file multipart.File) *Torrent {
 	fmt.Printf("info[] hash: %x \n", metainfo.EncodeInfo())
 	fmt.Printf("# of pieces (hashes): %d \n", len(metainfo.Info["pieces"].(string))/20)
 	if metainfo.Info["files"] != nil {
-		fmt.Printf("--- \n multi-file mode \n---\n")
 		fileList := metainfo.Info["files"].([]interface{})
 		for _, file := range fileList {
-			fileDict := file.(map[string]interface{})
-			fmt.Printf("file name: %s \n", fileDict["path"])
-			fmt.Printf("file length: %d (KiB) \n", fileDict["length"].(int64)/1024)
-			fmt.Printf("   ---   \n")
+			_ = file.(map[string]interface{})
 		}
-
-	} else if metainfo.Info["name"] != nil {
-		fmt.Printf("--- \n single-file mode \n---\n")
-		fmt.Printf("file name: %s \n", metainfo.Info["name"])
-		fmt.Printf("file length: %d MiB", metainfo.Info["length"].(int64)/(1024*1024))
 	} else {
 		fmt.Printf("malformed torrent? \n")
 	}
