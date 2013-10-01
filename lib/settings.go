@@ -31,7 +31,8 @@ type AppSettings struct {
 	Bridge      *TransportSettings   // Local bridge
 	BridgePeers []*TransportSettings // Remote bridges
 
-	DbOpen string
+	DbOpen     string
+	ConfigPath string
 }
 
 type TransportSettings struct {

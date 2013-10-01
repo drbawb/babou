@@ -4,11 +4,14 @@ import (
 	"github.com/drbawb/babou/lib/torrent"
 
 	"testing"
-
-	"fmt"
 	"time"
 
 	"crypto/rand"
+)
+
+const (
+	SIZE_OF_PEER6 int = 18 // 16-bytes [128-bit] + 2 bytes for port
+	SIZE_OF_PEER4 int = 6  //  4-bytes [ 32-bit] + 2 bytes for port
 )
 
 // Creates a fake torrent we can use for testing purposes.
@@ -43,29 +46,35 @@ func TestNumWantLarge(test *testing.T) {
 		randomPeerIds[i] = make([]byte, 20)
 		rand.Read(randomPeerIds[i])
 
-		torrentFile.AddPeer(string(randomPeerIds[i]), "[127.0.0.1]:1337", "1337", "abcadefgawalthgrathorp")
+		// second half of list gets IPv6
+		if i > torrent.DEFAULT_NUMWANT {
+			torrentFile.AddPeer(string(randomPeerIds[i]), "[::1]:1337", "1337", "abcadefgawalthgrathorp")
+		} else {
+			torrentFile.AddPeer(string(randomPeerIds[i]), "[127.0.0.1]:1337", "1337", "abcadefgawalthgrathorp")
+		}
+
 	}
 
 	// want no peers
-	noPeers := torrentFile.GetPeerList(-1)
-	if len(noPeers) > 0 {
-		test.Errorf("Requested no peers, and received: %s \n", noPeers)
+	noPeers, noPeers6 := torrentFile.GetPeerList(-1)
+	if (len(noPeers) + len(noPeers6)) > 0 {
+		test.Errorf("Requested no peers, and received: %s \n", (noPeers6 + noPeers))
 		test.FailNow()
 	}
 
 	// want some subset of peers
-	specific := torrentFile.GetPeerList(torrent.DEFAULT_NUMWANT / 2)
-	if (len(specific) / 6) != torrent.DEFAULT_NUMWANT/2 {
+	specific, specific6 := torrentFile.GetPeerList(torrent.DEFAULT_NUMWANT / 2)
+	if ((len(specific) / SIZE_OF_PEER4) + (len(specific6) / SIZE_OF_PEER6)) != torrent.DEFAULT_NUMWANT/2 {
 		test.Errorf("Request %d peers, and received %d \n", (torrent.DEFAULT_NUMWANT / 2),
-			len(specific))
+			((len(specific) / SIZE_OF_PEER4) + (len(specific6) / SIZE_OF_PEER6)))
 		test.FailNow()
 	}
 
 	// want default num of peers
-	defaultPeers := torrentFile.GetPeerList(0)
-	if (len(defaultPeers) / 6) != torrent.DEFAULT_NUMWANT {
+	defaultPeers, defaultPeers6 := torrentFile.GetPeerList(0)
+	if ((len(defaultPeers) / SIZE_OF_PEER4) + (len(defaultPeers6) / SIZE_OF_PEER6)) != torrent.DEFAULT_NUMWANT {
 		test.Errorf("Request default peers, received: %d \n",
-			(len(defaultPeers) / 6))
+			(len(defaultPeers)/SIZE_OF_PEER4)+(len(defaultPeers6)/SIZE_OF_PEER6))
 	}
 
 }
@@ -80,33 +89,39 @@ func TestNumWantSmall(test *testing.T) {
 		randomPeerIds[i] = make([]byte, 20)
 		rand.Read(randomPeerIds[i])
 
-		torrentFile.AddPeer(string(randomPeerIds[i]), "[127.0.0.1]:1337", "1337", "abcadefgawalthgrathorp")
+		// second half of list gets IPv6
+		if i > (len(randomPeerIds) / 2) {
+			torrentFile.AddPeer(string(randomPeerIds[i]), "[::1]:1337", "1337", "abcadefgawalthgrathorp")
+		} else {
+			torrentFile.AddPeer(string(randomPeerIds[i]), "[127.0.0.1]:1337", "1337", "abcadefgawalthgrathorp")
+		}
 	}
 
 	// want no peers
-	noPeers := torrentFile.GetPeerList(-1)
-	if len(noPeers) > 0 {
+	noPeers, noPeers6 := torrentFile.GetPeerList(-1)
+	if (len(noPeers) + len(noPeers6)) > 0 {
 		test.Errorf("Requested no peers, and received: %s \n", noPeers)
 		test.FailNow()
 	}
 
 	// want some subset of peers [should return requested number]
-	specific := torrentFile.GetPeerList(torrent.DEFAULT_NUMWANT / 3)
-	if (len(specific) / 6) != torrent.DEFAULT_NUMWANT/3 {
+	specific, specific6 := torrentFile.GetPeerList(torrent.DEFAULT_NUMWANT / 3)
+	if ((len(specific) / SIZE_OF_PEER4) + (len(specific6) / SIZE_OF_PEER6)) != torrent.DEFAULT_NUMWANT/3 {
 		test.Errorf("Request %d peers, and received %d \n", (torrent.DEFAULT_NUMWANT / 3),
-			len(specific))
+			(len(specific6)/SIZE_OF_PEER4)+(len(specific)/SIZE_OF_PEER6))
 		test.FailNow()
 	}
 
 	// want default num of peers [should return all available peers]
-	defaultPeers := torrentFile.GetPeerList(0)
-	if (len(defaultPeers) / 6) != torrent.DEFAULT_NUMWANT/2 {
+	defaultPeers, defaultPeers6 := torrentFile.GetPeerList(0)
+	if ((len(defaultPeers) / SIZE_OF_PEER4) + (len(defaultPeers6) / SIZE_OF_PEER6)) != torrent.DEFAULT_NUMWANT/2 {
 		test.Errorf("Request default peers, received: %d \n",
-			(len(defaultPeers) / 6))
+			((len(defaultPeers) / SIZE_OF_PEER4) + (len(defaultPeers6) / SIZE_OF_PEER6)))
 	}
 
 }
 
+// Tests that the torrent correctly reports it's current number of seeders / leechers.
 func TestPeerEnumeration(test *testing.T) {
 	torrent := MockTorrent()
 
@@ -137,58 +152,23 @@ func TestPeerEnumeration(test *testing.T) {
 	}
 }
 
-// Spawns [n] tasks to test high contention of multiple announces [reads writes]
-// Test fails if either task panics.
-func TestContention(test *testing.T) {
-	sigChan := make(chan int, 0)
-	noTasks := 256 // "concurrent requests / peers"
+// Various unit benchmarks
 
+// Benchmarks how quickly the tracker's `bencoder` can serialize a map.
+func BenchmarkResponseMapBencoder(bench *testing.B) {
+	bench.StopTimer()
 	torrent := MockTorrent()
-	for i := 0; i < noTasks; i++ {
-		go announceContender(test, sigChan, torrent)
+	responseMap := make(map[string]interface{})
+
+	responseMap["interval"] = 300
+	responseMap["min interval"] = 10
+
+	seeding, leeching := torrent.EnumeratePeers()
+	responseMap["complete"] = seeding
+	responseMap["incomplete"] = leeching
+
+	bench.StartTimer()
+	for i := 0; i < bench.N; i++ {
+		encodeResponseMap(responseMap)
 	}
-
-	// Wait until all coroutines have finished executing or panicked.
-testWaiter:
-	for {
-		select {
-		case _ = <-sigChan:
-			noTasks -= 1
-			if noTasks <= 0 {
-				break testWaiter
-			}
-		}
-	}
-}
-
-// Simulates various read/write ops on a torrent's map.
-// Can be used to simulate high contention on the mutext protected peerMap.
-func announceContender(test *testing.T, sig chan int, torrent *torrent.Torrent) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Contender recovered from panic; TEST HAS FAILED", r)
-			test.Fail()
-			sig <- 1
-		}
-	}()
-
-	// CONTEND!
-	peerId := make([]byte, 20)
-	rand.Read(peerId)
-
-	for i := 0; i < 500; i++ {
-
-		torrent.AddPeer(string(peerId), "127.0.0.1", "57345", "abcadefgajekclothrop")
-
-		_, _ = torrent.EnumeratePeers()
-		//fmt.Printf("use x,y %s, %s \n", x, y)
-
-		_ = torrent.GetPeerList(0)
-		//fmt.Printf("peers %s \n", peerList)
-
-		_ = torrent.UpdateStatsFor(string(peerId), "1024", "0", "0")
-	}
-
-	// quit
-	sig <- 0
 }
