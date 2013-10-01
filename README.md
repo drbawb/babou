@@ -92,6 +92,40 @@ Please note that `babou` presently needs some manual configuration of the source
 
 We are actively working towards creating dedicated configuration files.
 
+---
+
+
+Directory Structure
+===
+
+AKA `What do I need to deploy?`
+
+`babou` must be started from a working directory which contains:
+
+	working dir
+ 		|--/assets 			(static resources [css, images, js])
+ 		|--/app/views 			(`mustache` templates, partials)
+ 		|--/config/dev.json 	(unless specified otherwise by `-config-path`)
+
+
+`babou` should be installed from a working directory containing the above AND:
+	working dir
+		|--/db (`goose` databse config + migrations for dev + install)
+
+The rest of the directories contain source-code, and there is no reason to deploy
+them to production. `babou` is compiled into a statically-linked executable.
+It does not interpret or JIT any code at runtime with the exception of templates and
+the [not yet implemented] asset pipeline.
+
+For security purposes: I'd recommend that your `/app/* (/app/views/*)` and `/config/*` 
+directories not be publicly accessible.
+
+`/assets` should be served up by a server that is good with static assets. (for e.g: nginx) -- (note: babou doesn't need this if you have another web-server rewriting requests for you.)
+
+`/app` and `/config` only needs to be accessible by the `babou` process, `babou` will
+not service any requests to that route and your reverse proxies should return
+403 or 404 for that route.
+
 
 [logo]: http://fatalsyntax.com/babou_gh.png "babou logo"
 

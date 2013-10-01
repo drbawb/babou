@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -114,7 +114,7 @@ func parseConfig(settings *libBabou.AppSettings) error {
 	return nil
 }
 
-func parseFlags() *libBabou.AppSettings {
+func ReadFlags() *libBabou.AppSettings {
 	appSettings := &libBabou.AppSettings{}
 	var help, debug, webStack, trackStack, fullStack *bool
 	var webPort, trackPort *int

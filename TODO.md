@@ -8,27 +8,31 @@ for a list of issues and their status.
 
 This list is not in any sort of order and only serves as a very rough measure of progress.
 
+
 ---
 
 General
 
 ---
 
-* Multi-node stack. [COMPLETE: 50%. Site currently uses an in-db session cache. Slow, but safe across
-multiple nodes. Site could be load balanced as is. -- Tracker uses in-memory single-process cache; cannot be load
-balanced.] (General roadmap: store sessions entirely in-cookie [if feasible], and create a distributed cache and/or communication medium that the tracker and site can use to synchronize data across instances.)
+* Multi-node stack. [COMPLETE: 50%. Site currently uses an in-db session cache. Slow, but safe across multiple nodes. Site could be load balanced as is. -- Tracker uses in-memory single-process cache; cannot be load
+balanced.] 
 
 * General task scheduler
 
 * Site<->Tracker event pipeline. (Users updated, banned, deleted. Torrents deleted. etc.)
 	* This is needed to ensure integrity of the tracker cache.
+	* (See event-bridge)
 
 * Database migration tool. [COMPLETE: 100%. We are using Goose which is a migration tool written in Go.]
 (As a sidebar: I'd love to reuse the Goose configuration file for babou's database connectivity.)
 
-* `Getting Started` document. [COMPLETE: 0%]
-(A document that briefly describes Go, links to tutorials on installing a working Go toolchain, and describes
-how to use that toolchain to retrieve and compile `babou`.)
+* `Getting Started` document. [COMPLETE: ~100%]
+(See `INSTALL.md`, obviously needs to be updated as we go along.)
+
+* Implement `pushrax/chihaya` storage interface. [COMPLETE: 10%]
+	* See [https://github.com/drbawb/chihaya](github.com/drbawb/chihaya)
+
 
 
 Event Bridge
@@ -80,6 +84,8 @@ general improvement. -- However a working connection to PostgreSQL can be establ
 [COMPLETE: 0%; blocked on tracker collecting stats]
 (Some sample strategies are: seeding-to-leeching ratio, uploaded-to-downloaded ratio, seeding-to-leeching-over-time ratio, dont-care ratio [global freeleech], etc.)
 
+* Asset Pipeline to compile & minify JS + CSS resources. [COMPLETE: 0%]
+
 
 Tracker
 
@@ -98,12 +104,9 @@ plans to expand this to a distributed cache so that you can load-balance tracker
 * Store torrents in database. [COMPLETE: 60%; the metainfo (.torrent) file is saved to disk. -- This will expand
 to include file listings, tags, and other features that benefit the website's catalog.]
 
-* Attach active peers to torrents. [COMPLETE: 80%; peers are added, but never removed. only supports IPv4 at the
-moment.]
-	* Needs IPv6 support. IPv4 support should be pretty much functional, though.
+* Attach active peers to torrents. [COMPLETE: 100%] (Supports IPv6, synchronously removes peers from the underlying map if they are not seen in a set number of announce intervals.)
 
-* Create background jobs to maintain tracker health. [COMPLETE: 65%; Working on the peer reaper which removes
-peers that have not announced recently]
+* Create background jobs to maintain tracker health. [COMPLETE: 65%]
 	* We still need a job to remove deleted torrents and inactive torrents from the cache.
 	* We have a working peer reaper now that runs every 10 minutes through the whole torrent cache.
 	  There are a few problem items that need to be addressed.
@@ -112,10 +115,12 @@ peers that have not announced recently]
 	  The disadvantage would be high CPU usage of the server in general.
 		* I aim to fix this w/ a buffered channel as a work queue. This will be part of a general task scheduler.
 	* Second: the peer reaper needs to subscribe to my generalized task scheduler when its created.
-	* Third: when we move to distributed trackers there will be a lot of work to ensure that individual
-	  nodes do not step on each other's toes.
+	* Third: when we move to distributed trackers there will be a lot of work to ensure that individual nodes do not step on each other's toes.
 
 * Store ratio and bandwidth statistics for each user. [COMPLETE: 0%]
+
+
+---
 
 Far Futures
 
@@ -125,15 +130,15 @@ The following features are planned but not (currently) under active development:
 
 * Site Blog and possibly staff blogs / user blogs
 
-* Wiki
+* Wiki [for authors & artist pages, application instructions, etc.]
 
-* Forums
+* Forums [or some other "community" solution]
 
-* Static Pages that are easy to update
+* Static Pages that are easy to update. [tos, privacy policy, ???, etc.]
 
-* Swappable site themes
+* Swappable site themes. [COMPLETE: ~100%; using bootstrap 3 right now; you can plug in any bootstrap 3.0 theme's .css that overrides built-in classes and it should "work."]
 
-* IRC integration
+* IRC integration. [Talk to guys w/ `pushrax/chihaya` project? Maybe we can leverage or extend their storage backend to create a [Go] IRC-bot that can talk to all the backends they support!?]
 
 ---
 
