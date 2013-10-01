@@ -137,58 +137,23 @@ func TestPeerEnumeration(test *testing.T) {
 	}
 }
 
-// Spawns [n] tasks to test high contention of multiple announces [reads writes]
-// Test fails if either task panics.
-func TestContention(test *testing.T) {
-	sigChan := make(chan int, 0)
-	noTasks := 256 // "concurrent requests / peers"
+// Various unit benchmarks
 
+// Benchmarks how quickly the tracker's `bencoder` can serialize a map.
+func BenchmarkResponseMapBencoder(bench *testing.B) {
+	bench.StopTimer()
 	torrent := MockTorrent()
-	for i := 0; i < noTasks; i++ {
-		go announceContender(test, sigChan, torrent)
+	responseMap := make(map[string]interface{})
+
+	responseMap["interval"] = 300
+	responseMap["min interval"] = 10
+
+	seeding, leeching := torrent.EnumeratePeers()
+	responseMap["complete"] = seeding
+	responseMap["incomplete"] = leeching
+
+	bench.StartTimer()
+	for i := 0; i < bench.N; i++ {
+		encodeResponseMap(responseMap)
 	}
-
-	// Wait until all coroutines have finished executing or panicked.
-testWaiter:
-	for {
-		select {
-		case _ = <-sigChan:
-			noTasks -= 1
-			if noTasks <= 0 {
-				break testWaiter
-			}
-		}
-	}
-}
-
-// Simulates various read/write ops on a torrent's map.
-// Can be used to simulate high contention on the mutext protected peerMap.
-func announceContender(test *testing.T, sig chan int, torrent *torrent.Torrent) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Contender recovered from panic; TEST HAS FAILED", r)
-			test.Fail()
-			sig <- 1
-		}
-	}()
-
-	// CONTEND!
-	peerId := make([]byte, 20)
-	rand.Read(peerId)
-
-	for i := 0; i < 500; i++ {
-
-		torrent.AddPeer(string(peerId), "127.0.0.1", "57345", "abcadefgajekclothrop")
-
-		_, _ = torrent.EnumeratePeers()
-		//fmt.Printf("use x,y %s, %s \n", x, y)
-
-		_ = torrent.GetPeerList(0)
-		//fmt.Printf("peers %s \n", peerList)
-
-		_ = torrent.UpdateStatsFor(string(peerId), "1024", "0", "0")
-	}
-
-	// quit
-	sig <- 0
 }
