@@ -2,6 +2,7 @@ package models
 
 import (
 	sql "database/sql"
+	"github.com/chuckpreslar/codex"
 	db "github.com/drbawb/babou/lib/db"
 
 	"github.com/drbawb/babou/lib/torrent"
@@ -30,13 +31,18 @@ type Torrent struct {
 err := db.ExecuteFn(dba)*/
 
 func (t *Torrent) SelectId(id int) error {
-	selectTorrent := `SELECT 
-	torrent_id, name, info_hash, created_by, creation_date, encoding, info_bencoded
-	FROM "torrents"
-		WHERE "torrent_id" = $1`
+	torrents := codex.Table("torrents")
+	torrentsProjection := torrents.Project("torrent_id", "name", "info_hash", "created_by",
+		"creation_date", "encoding", "info_bencoded")
+	torrentsFilter, err := torrentsProjection.Where(
+		torrents("torrent_id").Eq(id)).ToSql()
+
+	if err != nil {
+		return err
+	}
 
 	dba := func(dbConn *sql.DB) error {
-		row := dbConn.QueryRow(selectTorrent, id)
+		row := dbConn.QueryRow(torrentsFilter)
 		err := row.Scan(&t.ID, &t.Name, &t.InfoHash, &t.CreatedBy, &t.CreationDate,
 			&t.Encoding, &t.EncodedInfo)
 
