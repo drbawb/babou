@@ -55,34 +55,32 @@ type Config struct {
 */
 
 func parseConfig(settings *libBabou.AppSettings) error {
-	JSON_CONFIG_PATH := "config/config.json"
-
 	// Open file and read to byte array
-	jsonConfig, err := os.Open(JSON_CONFIG_PATH)
-	defer jsonConfig.Close()
-
+	jsonConfig, err := os.Open(settings.ConfigPath)
 	if err != nil {
 		return errors.New(fmt.Sprintf("JSON Configuration not found at: %s",
-			JSON_CONFIG_PATH))
+			settings.ConfigPath))
 	}
+	defer jsonConfig.Close()
 
 	jsonConfigBytes, err := ioutil.ReadAll(jsonConfig)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error reading [%s]: %s",
-			JSON_CONFIG_PATH,
+			settings.ConfigPath,
 			err.Error()))
 	}
 
-	// Parse byte-array as JSON
+	// Parse file into configuration struct.
 	var parsedConfig Config
 
 	err = json.Unmarshal(jsonConfigBytes, &parsedConfig)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error decoding JSON [%s]: %s",
-			JSON_CONFIG_PATH,
+			settings.ConfigPath,
 			err.Error()))
 	}
 
+	// Start the web-server if it is configured.
 	if parsedConfig.WebServer != nil {
 		settings.WebHost = parsedConfig.WebServer.DomainName
 		settings.WebPort = parsedConfig.WebServer.Port
@@ -90,6 +88,7 @@ func parseConfig(settings *libBabou.AppSettings) error {
 		settings.WebStack = true
 	}
 
+	// Start the tracker if it is configured.
 	if parsedConfig.Tracker != nil {
 		settings.TrackerHost = parsedConfig.Tracker.DomainName
 		settings.TrackerPort = parsedConfig.Tracker.Port
@@ -97,6 +96,7 @@ func parseConfig(settings *libBabou.AppSettings) error {
 		settings.TrackerStack = true
 	}
 
+	// Open a connection pool for the database.
 	if parsedConfig.Database != nil {
 		settings.DbOpen = parsedConfig.Database.ConnectionParams
 	} else {
@@ -106,6 +106,8 @@ func parseConfig(settings *libBabou.AppSettings) error {
 	settings.FullStack = (settings.WebStack && settings.TrackerStack)
 
 	//TODO: Setup bridge from config file.
+	// Setup loopback event bridge and begin discovery process
+	// for configured neighbors.
 	settings.Bridge = &libBabou.TransportSettings{}
 	settings.Bridge.Transport = libBabou.LOCAL_TRANSPORT
 
@@ -114,9 +116,11 @@ func parseConfig(settings *libBabou.AppSettings) error {
 
 func parseFlags() *libBabou.AppSettings {
 	appSettings := &libBabou.AppSettings{}
-	var debug, webStack, trackStack, fullStack *bool
+	var help, debug, webStack, trackStack, fullStack *bool
 	var webPort, trackPort *int
+	var configPath *string
 
+	help = flag.Bool("help", false, "Prints usage instructions for `babou`.")
 	debug = flag.Bool("debug", false,
 		"Logs debug information to console.")
 
@@ -132,6 +136,7 @@ func parseFlags() *libBabou.AppSettings {
 	trackPort = flag.Int("track-port", -1,
 		"Sets the tracker's listening port number. -1 to use configuration file's port.")
 
+	configPath = flag.String("config-path", "config/dev.json", "Pathname to your JSON configuration file.")
 	flag.Parse()
 
 	appSettings.Debug = *debug
@@ -142,6 +147,13 @@ func parseFlags() *libBabou.AppSettings {
 
 	appSettings.WebPort = *webPort
 	appSettings.TrackerPort = *trackPort
+
+	appSettings.ConfigPath = *configPath
+
+	if *help {
+		flag.Usage()
+		os.Exit(0)
+	}
 
 	// If the user has configured their own stack options, do not use the full stack.
 	if appSettings.WebStack == true || appSettings.TrackerStack == true {
