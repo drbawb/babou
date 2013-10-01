@@ -3,17 +3,18 @@ package main
 
 import (
 	fmt "fmt"
+	os "os"
+	signal "os/signal"
+	syscall "syscall"
 
 	web "github.com/drbawb/babou/app" // The babou application: composed of a server and muxer.
 	tracker "github.com/drbawb/babou/tracker"
 
-	"github.com/drbawb/babou/bridge"
+	bridge "github.com/drbawb/babou/bridge"
+	config "github.com/drbawb/babou/lib/config"
+
 	libBabou "github.com/drbawb/babou/lib" // Core babou libraries
 	libDb "github.com/drbawb/babou/lib/db"
-
-	os "os"
-	signal "os/signal"
-	syscall "syscall"
 )
 
 var bridgeIO chan bool = make(chan bool)
@@ -23,18 +24,17 @@ func main() {
 	fmt.Println("babou fast like veyron.")
 
 	//Parse command line flags
-	appSettings := parseFlags()
+	appSettings := config.ReadFlags()
 
 	//Trap signals from the parent OS
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go trapSignals(c)
 
+	// Start event bridge
+	var appBridge *bridge.Bridge
 	webServerIO := make(chan int, 0)
 	trackerIO := make(chan int, 0)
-
-	// Start event bridge.
-	var appBridge *bridge.Bridge
 
 	switch appSettings.Bridge.Transport {
 	case libBabou.LOCAL_TRANSPORT:
@@ -44,29 +44,30 @@ func main() {
 		panic("Bridge type not impl. yet...")
 	}
 
+	// Connect to the database.
 	fmt.Printf("Opening database connection ... \n")
 	_, err := libDb.Open(appSettings)
 	if err != nil {
 		panic("database could not be opened: " + err.Error())
 	}
 
+	// Start instance of web-application [if applicable]
 	if appSettings.FullStack == true || appSettings.WebStack == true {
-		// Start web-server
 		fmt.Printf("Starting web-server \n")
 		server := web.NewServer(appSettings, appBridge, webServerIO)
-		// Receive SIGNALs from web server.
 
 		go server.Start()
 	}
 
+	// Start instance of tracker [if applicable]
 	if appSettings.FullStack == true || appSettings.TrackerStack == true {
-		// Start tracker
 		fmt.Printf("Starting tracker \n")
 		server := tracker.NewServer(appSettings, appBridge.Recv(), trackerIO)
 
 		go server.Start()
 	}
 
+	// Catch useless configurations.
 	if appSettings.FullStack == false &&
 		appSettings.TrackerStack == false &&
 		appSettings.WebStack == false {
@@ -74,7 +75,8 @@ func main() {
 		os.Exit(2)
 	}
 
-	// Block on server IOs
+	// Poll server events indefinitely
+	// TODO: Potential deadlock if either coroutine were to terminate.
 	for {
 		select {
 		case webMessage := <-webServerIO:
