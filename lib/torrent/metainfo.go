@@ -67,14 +67,6 @@ func ReadFile(file multipart.File) *Torrent {
 
 	fmt.Printf("info[] hash: %x \n", metainfo.EncodeInfo())
 	fmt.Printf("# of pieces (hashes): %d \n", len(metainfo.Info["pieces"].(string))/20)
-	if metainfo.Info["files"] != nil {
-		fileList := metainfo.Info["files"].([]interface{})
-		for _, file := range fileList {
-			_ = file.(map[string]interface{})
-		}
-	} else {
-		fmt.Printf("malformed torrent? \n")
-	}
 
 	return torrent
 }
