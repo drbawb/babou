@@ -12,8 +12,9 @@ type PeerReaper struct{}
 // Loops over a torrent's peers looking for peers which have not announced
 // since 2 * TRACKER_ANNOUNCE_INTERVAL.
 //
-// This may block access to the peer-map, but this call WILL NOT BLOCK.
-// Return of this function does not mean the work has finished.
+// The underlying task is called asynchronously and will block
+// access to the underlying list of peers while it runs.
+// TODO: Task timeout.
 func (pr *PeerReaper) ReapTorrent(target *torrent.Torrent) {
 	reapSince := 2 * lib.TRACKER_ANNOUNCE_INTERVAL
 
