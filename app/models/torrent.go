@@ -171,7 +171,7 @@ func (t *Torrent) Write() error {
 		t.CreatedBy,
 		t.CreationDate,
 		t.Encoding,
-		tryHex(t.EncodedInfo),
+		encodeBytesForPG(t.EncodedInfo),
 	).Into(
 		"name",
 		"info_hash",
@@ -198,7 +198,7 @@ func (t *Torrent) Write() error {
 		t.CreatedBy,
 		t.CreationDate,
 		t.Encoding,
-		tryHex(t.EncodedInfo),
+		encodeBytesForPG(t.EncodedInfo),
 	).Where(torrents("torrent_id").Eq(t.ID)).ToSql()
 
 	if err != nil {
@@ -256,7 +256,7 @@ func (t *Torrent) Write() error {
 //
 // TODO: Endianness is specified by PG spec; ensure encoding/hex complies.
 // (The "hex" format encodes binary data as 2 hexadecimal digits per byte, most significant nibble first.)
-func encodeInfoForPG(bytea []byte) string {
+func encodeBytesForPG(bytea []byte) string {
 	hexEscapePrefix := "\\x"
 	hexOutBuf := hex.EncodeToString(bytea)
 
