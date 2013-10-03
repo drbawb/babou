@@ -132,7 +132,7 @@ func (b *Bridge) netListen(network, addr string) {
 // Will block indefinitely if the send-buffer is filled and not being drained.
 //
 // name: name of a receiver you're listening on [so you will not recv this message]
-func (b *Bridge) Send(name string, msg *Message) {
+func (b *Bridge) Publish(name string, msg *Message) {
 	// TODO: Basic sanity checks; then forward to bridge for transport.
 	if msg != nil {
 		b.broadcast(name, msg)
@@ -144,13 +144,13 @@ func (b *Bridge) Send(name string, msg *Message) {
 // When the bridge has sucesfully placed your message
 // into the send buffer, a single integer will
 // be sent on the returned channel.
-func (b *Bridge) ASend(msg *Message) <-chan int {
+func (b *Bridge) APublish(msg *Message) <-chan int {
 	// send message to other transports
 	// TODO: dummy message in here.
 	retChan := make(chan int, 1)
 	go func(status chan int) {
-		b.Send("async", msg) // try to send message
-		status <- 1          // message sent OK
+		b.Pub("async", msg) // try to send message
+		status <- 1         // message sent OK
 	}(retChan)
 
 	return retChan
