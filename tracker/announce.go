@@ -1,6 +1,7 @@
 package tracker
 
 import (
+	libBridge "github.com/drbawb/babou/bridge"
 	lib "github.com/drbawb/babou/lib"
 	libTorrent "github.com/drbawb/babou/lib/torrent"
 	libWeb "github.com/drbawb/babou/lib/web"
@@ -77,6 +78,17 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 	go func() {
 		torrent.AddPeer(params.All["peer_id"], r.RemoteAddr, params.All["port"], params.All["secret"])
 		torrent.UpdateStatsFor(params.All["peer_id"], "0", "0", params.All["left"])
+
+		stats := &libBridge.TorrentStatMessage{}
+		stats.InfoHash = torrent.Info.EncodeInfoToString()
+		stats.Seeding, stats.Leeching = torrent.EnumeratePeers()
+
+		message := &libBridge.Message{}
+		message.Type = libBridge.TORRENT_STAT_TUPLE
+		message.Payload = stats
+
+		fmt.Printf("Tracker publishing stats: %v \n", stats.InfoHash)
+		s.eventBridge.Publish("tracker", message)
 	}()
 }
 
