@@ -60,11 +60,12 @@ func (ut *UnixTransport) processQueue() {
 
 			defer c.Close()
 
-			n, err := c.Write(encodeMsg(msg.Payload))
+			n, err := c.Write(encodeMsg(*msg.Payload))
 			if err != nil {
 				fmt.Printf("error sending message to %s because: %s", ut.socketAddr, err.Error())
 			} else {
 				fmt.Printf("%d bytes written to socket \n", n)
+				fmt.Printf("bytes were: %v \n", encodeMsg(*msg.Payload))
 			}
 		}
 	}
@@ -91,8 +92,7 @@ func (tcp *TCPTransport) processQueue() {
 			}
 
 			defer c.Close()
-
-			n, err := c.Write(encodeMsg(msg.Payload))
+			n, err := c.Write(encodeMsg(*msg.Payload))
 			if err != nil {
 				fmt.Printf("error sending message to %s because: %s", tcp.socketAddr, err.Error())
 			} else {

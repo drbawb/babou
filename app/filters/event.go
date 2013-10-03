@@ -70,9 +70,9 @@ func EventChain(serverBridge *bridge.Bridge) *EventContext {
 			case msg := <-messages:
 				switch msg.Type {
 				case bridge.TORRENT_STAT_TUPLE:
-					stats := msg.Payload.(*bridge.TorrentStatMessage)
-					fmt.Printf("[ec] Writing stats for %v \n", *stats)
-					context.memStats[stats.InfoHash] = stats
+					stats := msg.Payload.(bridge.TorrentStatMessage)
+					fmt.Printf("[ec] Writing stats for %v \n", stats)
+					context.memStats[stats.InfoHash] = &stats
 				default:
 					fmt.Printf(
 						"Event bridge has no handler for messages of type: %v \n",
