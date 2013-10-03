@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	bridge "github.com/drbawb/babou/bridge"
 	web "github.com/drbawb/babou/lib/web"
@@ -39,7 +38,7 @@ type EventContext struct {
 // This should be used for callers that are not time-sensitive OR for
 // callers that must take responsibility for delivery of a message.
 func (ec *EventContext) SendMessage(msg *bridge.Message) {
-	ec.bridge.Send(msg)
+	//ec.bridge.Send(msg)
 }
 
 // Sends a properly typed message over the bridge.
@@ -48,14 +47,6 @@ func (ec *EventContext) SendMessage(msg *bridge.Message) {
 // EVENT_TIMEOUT seconds.
 func (ec *EventContext) ASendMessage(msg *bridge.Message) {
 	// Start timeout.
-	timeout := time.After(time.Duration(EVENT_TIMEOUT) * time.Second)
-
-	select {
-	case _ = <-ec.bridge.ASend(nil):
-		fmt.Printf("message sent in EC filter \n")
-	case _ = <-timeout:
-		fmt.Printf("timeout reached sending EC; WARNING: send buffer may be full! \n")
-	}
 }
 
 // Returns an uninitialized AuthContext suitable for use in a context chain
