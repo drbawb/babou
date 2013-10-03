@@ -33,6 +33,9 @@ type Torrent struct {
 								has-one:"torrents" 
 								through:"torrent_id"`
 
+	Seeding  int
+	Leeching int
+
 	isInit bool
 }
 
