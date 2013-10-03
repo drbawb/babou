@@ -63,6 +63,7 @@ func (ut *UnixTransport) processQueue() {
 			c, err := net.Dial("unix", ut.socketAddr)
 			if err != nil {
 				fmt.Printf("Trouble calling peer[%s]: %s", ut.socketAddr, err.Error())
+				continue
 			}
 
 			defer c.Close()
@@ -92,6 +93,7 @@ func (tcp *TCPTransport) processQueue() {
 			c, err := net.Dial("tcp", tcp.socketAddr)
 			if err != nil {
 				fmt.Printf("Trouble calling peer[%s]: %s", tcp.socketAddr, err.Error())
+				continue
 			}
 
 			defer c.Close()
