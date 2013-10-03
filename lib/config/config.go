@@ -30,7 +30,7 @@ type BridgePeer struct {
 }
 
 type BridgeConfig struct {
-	LocalBridge BridgePeer    `json:"transport"`
+	LocalBridge BridgePeer    `json:"self"`
 	Peers       []*BridgePeer `json:"peers"`
 }
 
@@ -39,6 +39,7 @@ type Config struct {
 	Database  *DatabaseConfig `json:"db"`
 	WebServer *ServerConfig   `json:"site"`
 	Tracker   *ServerConfig   `json:"tracker"`
+	Events    *BridgeConfig   `json:"events"`
 }
 
 /*
@@ -109,7 +110,23 @@ func parseConfig(settings *libBabou.AppSettings) error {
 	// Setup loopback event bridge and begin discovery process
 	// for configured neighbors.
 	settings.Bridge = &libBabou.TransportSettings{}
-	settings.Bridge.Transport = libBabou.LOCAL_TRANSPORT
+	settings.Bridge.Transport = libBabou.TCP_TRANSPORT
+	settings.Bridge.Socket = parsedConfig.Events.LocalBridge.SocketAddress
+	settings.Bridge.Port = parsedConfig.Events.LocalBridge.Port
+
+	settings.BridgePeers = make(
+		[]*libBabou.TransportSettings, 0, len(parsedConfig.Events.Peers))
+
+	for _, peer := range parsedConfig.Events.Peers {
+		peerTransport := &libBabou.TransportSettings{
+			Socket:    peer.SocketAddress,
+			Port:      peer.Port,
+			Transport: libBabou.TCP_TRANSPORT,
+		}
+
+		settings.BridgePeers = append(
+			settings.BridgePeers, peerTransport)
+	}
 
 	return nil
 }

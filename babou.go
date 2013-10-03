@@ -40,8 +40,24 @@ func main() {
 	case libBabou.LOCAL_TRANSPORT:
 		fmt.Printf("Starting event-bridge \n")
 		appBridge = bridge.NewBridge(appSettings.Bridge)
+	case libBabou.TCP_TRANSPORT:
+		fmt.Printf("Event-bridge listening on TCP \n")
+		appBridge = bridge.NewBridge(appSettings.Bridge)
 	default:
 		panic("Bridge type not impl. yet...")
+	}
+
+	for _, peer := range appSettings.BridgePeers {
+		switch peer.Transport {
+		case libBabou.TCP_TRANSPORT:
+			fmt.Printf("Event-bridge listening on TCP \n")
+			tcpPeer := bridge.NewTCPTransport(
+				fmt.Sprintf("%s:%d", peer.Socket, peer.Port))
+
+			appBridge.AddTransport(tcpPeer)
+		default:
+			panic("Bridge type not impl. yet...")
+		}
 	}
 
 	// Connect to the database.
