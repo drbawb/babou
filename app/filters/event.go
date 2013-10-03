@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	EVENT_TIMEOUT int = 5
+	EVENT_TIMEOUT  int    = 5
+	EVENT_CTX_NAME string = "web-event-ctx"
 )
 
 type EventChainLink interface {
@@ -29,7 +30,8 @@ type EventController interface {
 type EventContext struct {
 	isInit bool
 
-	bridge *bridge.Bridge
+	bridge   *bridge.Bridge
+	memStats map[string]*bridge.TorrentStatMessage
 }
 
 // Sends a properly typed message over the bridge.
@@ -38,20 +40,47 @@ type EventContext struct {
 // This should be used for callers that are not time-sensitive OR for
 // callers that must take responsibility for delivery of a message.
 func (ec *EventContext) SendMessage(msg *bridge.Message) {
-	//ec.bridge.Send(msg)
+	ec.bridge.Publish(EVENT_CTX_NAME, msg)
 }
 
-// Sends a properly typed message over the bridge.
-//
-// This will send a message w/o blocking the caller for more than
-// EVENT_TIMEOUT seconds.
-func (ec *EventContext) ASendMessage(msg *bridge.Message) {
-	// Start timeout.
+func (ec *EventContext) ReadStats(infoHash string) *bridge.TorrentStatMessage {
+	fmt.Printf("[ec] fetching stats for: %s \n", infoHash)
+	return ec.memStats[infoHash]
 }
 
 // Returns an uninitialized AuthContext suitable for use in a context chain
 func EventChain(serverBridge *bridge.Bridge) *EventContext {
-	context := &EventContext{isInit: false, bridge: serverBridge}
+	context := &EventContext{
+		isInit:   false,
+		bridge:   serverBridge,
+		memStats: make(map[string]*bridge.TorrentStatMessage),
+	}
+
+	//TODO: factor out
+	// Listens for messages from the bridge and dispatches
+	// them to the model layer for persistence.
+	go func() {
+		messages := make(chan *bridge.Message)
+		context.bridge.Subscribe(EVENT_CTX_NAME, messages)
+
+		for {
+			select {
+			case msg := <-messages:
+				switch msg.Type {
+				case bridge.TORRENT_STAT_TUPLE:
+					stats := msg.Payload.(*bridge.TorrentStatMessage)
+					fmt.Printf("[ec] Writing stats for %v \n", *stats)
+					context.memStats[stats.InfoHash] = stats
+				default:
+					fmt.Printf(
+						"Event bridge has no handler for messages of type: %v \n",
+						msg.Type,
+					)
+				}
+			}
+		}
+
+	}()
 
 	return context
 }

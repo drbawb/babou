@@ -65,6 +65,7 @@ func LoadRoutes(s *Server) *mux.Router {
 	r.HandleFunc("/torrents",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
+			Chain(eventChain).
 			Execute(torrent, "index")).Methods("GET").Name("torrentIndex")
 
 	r.HandleFunc("/torrents/new",
