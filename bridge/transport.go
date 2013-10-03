@@ -2,7 +2,14 @@ package bridge
 
 import (
 	"fmt"
+
 	"net"
+)
+
+type TransportError int
+
+const (
+	TRANSPORT_NOT_AVAILABLE TransportError = iota
 )
 
 type Transport interface {
@@ -55,17 +62,14 @@ func (ut *UnixTransport) processQueue() {
 		case msg := <-ut.queue:
 			c, err := net.Dial("unix", ut.socketAddr)
 			if err != nil {
-				panic(err)
+				fmt.Printf("Trouble calling peer[%s]: %s", ut.socketAddr, err.Error())
+				continue
 			}
 
 			defer c.Close()
-
-			n, err := c.Write(encodeMsg(*msg.Payload))
+			_, err = c.Write(encodeMsg(*msg.Payload))
 			if err != nil {
-				fmt.Printf("error sending message to %s because: %s", ut.socketAddr, err.Error())
-			} else {
-				fmt.Printf("%d bytes written to socket \n", n)
-				fmt.Printf("bytes were: %v \n", encodeMsg(*msg.Payload))
+				fmt.Printf("Trouble sending payload to peer[%s]: %s", ut.socketAddr, err.Error())
 			}
 		}
 	}
@@ -88,15 +92,14 @@ func (tcp *TCPTransport) processQueue() {
 		case msg := <-tcp.queue:
 			c, err := net.Dial("tcp", tcp.socketAddr)
 			if err != nil {
-				panic(err)
+				fmt.Printf("Trouble calling peer[%s]: %s", tcp.socketAddr, err.Error())
+				continue
 			}
 
 			defer c.Close()
-			n, err := c.Write(encodeMsg(*msg.Payload))
+			_, err = c.Write(encodeMsg(*msg.Payload))
 			if err != nil {
-				fmt.Printf("error sending message to %s because: %s", tcp.socketAddr, err.Error())
-			} else {
-				fmt.Printf("%d bytes written to socket \n", n)
+				fmt.Printf("Trouble sending payload to peer[%s]: %s", tcp.socketAddr, err.Error())
 			}
 		}
 	}
