@@ -105,10 +105,11 @@ AKA `What do I need to deploy?`
 	working dir
  		|--/assets 			(static resources [css, images, js])
  		|--/app/views 			(`mustache` templates, partials)
- 		|--/config/dev.json 	(unless specified otherwise by `-config-path`)
+ 		|--/config/dev.json 		(unless specified otherwise by `-config-path`)
 
 
 `babou` should be installed from a working directory containing the above AND:
+	
 	working dir
 		|--/db (`goose` databse config + migrations for dev + install)
 
