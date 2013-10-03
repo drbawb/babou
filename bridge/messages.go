@@ -22,11 +22,21 @@ const (
 
 	DELETE_TORRENT
 	DISABLE_TORRENT
+
+	TORRENT_STAT_TUPLE
 )
 
 type Packet struct {
 	SubscriberName string
 	Payload        *Message
+}
+
+func init() {
+	gob.Register(Message{})
+	gob.Register(DeleteUserMessage{})
+	gob.Register(DeleteTorrentMessage{})
+	gob.Register(TorrentStatMessage{})
+
 }
 
 // message wrapper for quick decoding on other end.
@@ -44,9 +54,27 @@ type DeleteTorrentMessage struct {
 	Reason   string
 }
 
-func init() {
-	gob.Register(&Message{})
-	gob.Register(&DeleteUserMessage{})
+type TorrentStatMessage struct {
+	InfoHash string
+	Seeding  int
+	Leeching int
+}
+
+// Creates a torrent-stat tuple
+func TorrentStats(
+	infoHash string,
+	seeding,
+	leeching int) *Message {
+
+	payload := &TorrentStatMessage{
+		InfoHash: infoHash,
+		Seeding:  seeding,
+		Leeching: leeching,
+	}
+
+	wrapper := &Message{Type: TORRENT_STAT_TUPLE, Payload: payload}
+
+	return wrapper
 }
 
 // Instructs trackers to remove a user from their cache ASAP

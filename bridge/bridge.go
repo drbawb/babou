@@ -41,7 +41,10 @@ func NewBridge(settings *lib.TransportSettings) *Bridge {
 	case lib.UNIX_TRANSPORT:
 		go bridge.netListen("unix", settings.Socket)
 	case lib.TCP_TRANSPORT:
-		go bridge.netListen("tcp", settings.Socket)
+		tcpAddr := fmt.Sprintf("%s:%d", settings.Socket, settings.Port)
+
+		go bridge.netListen("tcp", tcpAddr)
+		bridge.AddTransport(bridge.NewLocalTransport()) // TODO: only in full-stack.
 	case lib.LOCAL_TRANSPORT:
 		bridge.AddTransport(bridge.NewLocalTransport())
 	default:
@@ -120,9 +123,10 @@ func (b *Bridge) netListen(network, addr string) {
 		// gob decode message and stuff it into foreign packet
 		packet := &Packet{}
 
+		msgBuf = msgBuf[0:n]
 		decodedMessage := decodeMsg(bytes.NewBuffer(msgBuf))
 		packet.SubscriberName = "foreign"
-		packet.Payload = decodedMessage
+		packet.Payload = &decodedMessage
 
 		b.inbox <- packet // send blocked receiver a message
 	}

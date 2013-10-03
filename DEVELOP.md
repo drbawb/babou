@@ -163,19 +163,25 @@ in the `events.peers` dictionary.
 
 The event bridge maintains two buffers, a send buffer and receive buffer.
 
-If a worker is non-responsive these buffers will exhaust their resources until eventually the
-application will reject incoming requests and refuse to update its cache.
+If a worker is non-responsive these buffers will exhaust their resources until 
+eventually the application will reject incoming requests and refuse to 
+update its cache.
 
 (TODO: Failure strategies to deal with unresponsive workers.)
 
+---
 
-The send-buffer will forward messages to all available pack members. The receive buffer will
-receive a message from other pack member(s); if the message is authentic it will be added to the receive
-buffer.
+The send-buffer will forward messages to all available pack members.
+Before sending: the bridge will wrap the message in a named packet.
+On the loopback side: the packet name is used to determine which goroutine
+issued a message. Otherwise: the packet name is a constant: `foreign`.
 
-The web-server and tracker use the send-buffer to issue messages to other trackers.
-Currently the trackers have exclusive holds on the receive buffer. -- In the future we may add
-a message router to direct messages to different receivers.
+The receive buffer will receive a message from other pack member(s); if the 
+message is authentic it will be forward to any event subscribers.
+
+If the message originated from the loopback side of the bridge: it's name
+will be checked against the active subscribers. If a subscriber matches 
+the packet the bridge will NOT forward the message to that subscriber.
 
 ---
 
@@ -183,6 +189,20 @@ The event bridge uses a binary encoding to serialize messages back and forth; th
 to update tracker's caches as website events occur. (For example: announce keys are changed,
 user accounts are disabled by ratio-watchers or moderator actions, etc.)
 
+---
+
+The event bridge is used to keep caches warm.
+The web-application prefers its local cache to hitting the persistence
+layer.
+
+In addition: the web-application may announce cache invalidations relevant
+to the tracker. -- For example: the web-app may need to evict a peer
+from active torrents. This may happen if the user updates their auth. token
+or if the user is banned, deleted, or otherwise made ineligible to download
+aforementioned torrent.
+
+Reference `/app/filters/event.go` for more information on how tracker messages
+are used to populate and update caches.
 
 ---
 
