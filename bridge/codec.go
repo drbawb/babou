@@ -7,8 +7,6 @@ import (
 )
 
 func encodeMsg(msg Message) []byte {
-	fmt.Printf("encoding message: %v", msg)
-
 	buf := bytes.NewBuffer(make([]byte, 0))
 	encoder := gob.NewEncoder(buf)
 
