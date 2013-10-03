@@ -28,11 +28,12 @@ type LocalTransport struct {
 // Forwards message to locally available transport.
 // Must be used on an existing bridge.
 func (b *Bridge) NewLocalTransport() *LocalTransport {
-	transport := &LocalTransport{queue: b.in} // Use bridge's "receiver" channel to send messages.
+	transport := &LocalTransport{queue: b.inbox} // Use bridge's "receiver" channel to send messages.
 
 	return transport
 }
 
+// Loop packet around to bridge's inbox.
 func (lt *LocalTransport) Send(msg *Packet) {
 	lt.queue <- msg
 }

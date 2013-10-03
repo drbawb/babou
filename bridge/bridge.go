@@ -13,7 +13,7 @@ import (
 type Bridge struct {
 	transports []Transport // other bridges to deliver messages to
 
-	in chan *Packet // channel of messages to be read from other transports
+	inbox chan *Packet // channel of messages to be read from other transports
 
 	subscribers map[string]chan<- *Message
 
@@ -30,7 +30,7 @@ const (
 func NewBridge(settings *lib.TransportSettings) *Bridge {
 	bridge := &Bridge{
 		transports:  make([]Transport, 0),
-		in:          make(chan *Packet, BRIDGE_RECV_BUFFER),
+		inbox:       make(chan *Packet, BRIDGE_RECV_BUFFER),
 		quit:        make(chan bool),
 		subscribers: make(map[string]chan<- *Message),
 	}
@@ -72,10 +72,11 @@ func (b *Bridge) broadcast(name string, msg *Message) {
 	}
 }
 
+// Drain our inbox as it fills up.
 func (b *Bridge) dispatch() {
 	for {
 		select {
-		case msg := <-b.in:
+		case msg := <-b.inbox:
 			for name, subscriber := range b.subscribers {
 				if name != msg.SubscriberName {
 					subscriber <- msg.Payload
@@ -124,7 +125,7 @@ func (b *Bridge) netListen(network, addr string) {
 		packet.SubscriberName = "foreign"
 		packet.Payload = decodedMessage
 
-		b.in <- packet // send blocked receiver a message
+		b.inbox <- packet // send blocked receiver a message
 	}
 }
 
@@ -149,8 +150,8 @@ func (b *Bridge) APublish(msg *Message) <-chan int {
 	// TODO: dummy message in here.
 	retChan := make(chan int, 1)
 	go func(status chan int) {
-		b.Pub("async", msg) // try to send message
-		status <- 1         // message sent OK
+		b.Publish("async", msg) // try to send message
+		status <- 1             // message sent OK
 	}(retChan)
 
 	return retChan
