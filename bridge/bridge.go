@@ -123,9 +123,10 @@ func (b *Bridge) netListen(network, addr string) {
 		// gob decode message and stuff it into foreign packet
 		packet := &Packet{}
 
+		msgBuf = msgBuf[0:n]
 		decodedMessage := decodeMsg(bytes.NewBuffer(msgBuf))
 		packet.SubscriberName = "foreign"
-		packet.Payload = decodedMessage
+		packet.Payload = &decodedMessage
 
 		b.inbox <- packet // send blocked receiver a message
 	}
