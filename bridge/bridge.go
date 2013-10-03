@@ -13,8 +13,8 @@ import (
 type Bridge struct {
 	transports []Transport // other bridges to deliver messages to
 
-	inbox chan *Packet // channel of messages to be read from other transports
-
+	inbox       chan *Packet // channel of messages to be read from other transports
+	outbox      chan *Packet
 	subscribers map[string]chan<- *Message
 
 	quit chan bool // send any value to gracefully shutdown the bridge.
@@ -31,6 +31,7 @@ func NewBridge(settings *lib.TransportSettings) *Bridge {
 	bridge := &Bridge{
 		transports:  make([]Transport, 0),
 		inbox:       make(chan *Packet, BRIDGE_RECV_BUFFER),
+		outbox:      make(chan *Packet, BRIDGE_SEND_BUFFER),
 		quit:        make(chan bool),
 		subscribers: make(map[string]chan<- *Message),
 	}
@@ -47,6 +48,7 @@ func NewBridge(settings *lib.TransportSettings) *Bridge {
 		fmt.Printf("you have selected an unimplemented bridge type. \n")
 	}
 
+	go bridge.broadcast()
 	go bridge.dispatch()
 
 	return bridge
@@ -57,18 +59,15 @@ func (b *Bridge) AddTransport(transport Transport) {
 	b.transports = append(b.transports, transport)
 }
 
-// Wrap message in a packet for transport
-func (b *Bridge) broadcast(name string, msg *Message) {
-	if len(b.transports) == 0 {
-		fmt.Printf("No transports avail. Event dropped: %v \n", msg)
-	}
-
-	mpack := &Packet{}
-	mpack.SubscriberName = name
-	mpack.Payload = msg
-
-	for _, tp := range b.transports {
-		tp.Send(mpack)
+// Drain our outbox as it fills up.
+func (b *Bridge) broadcast() {
+	for {
+		select {
+		case mpack := <-b.outbox:
+			for _, tp := range b.transports {
+				tp.Send(mpack)
+			}
+		}
 	}
 }
 
@@ -76,10 +75,10 @@ func (b *Bridge) broadcast(name string, msg *Message) {
 func (b *Bridge) dispatch() {
 	for {
 		select {
-		case msg := <-b.inbox:
+		case mpack := <-b.inbox:
 			for name, subscriber := range b.subscribers {
-				if name != msg.SubscriberName {
-					subscriber <- msg.Payload
+				if name != mpack.SubscriberName {
+					subscriber <- mpack.Payload
 				}
 			}
 		}
@@ -135,9 +134,15 @@ func (b *Bridge) netListen(network, addr string) {
 // name: name of a receiver you're listening on [so you will not recv this message]
 func (b *Bridge) Publish(name string, msg *Message) {
 	// TODO: Basic sanity checks; then forward to bridge for transport.
-	if msg != nil {
-		b.broadcast(name, msg)
+	if msg == nil {
+		return // bail out; won't carry nil message.
 	}
+
+	mpack := &Packet{}
+	mpack.SubscriberName = name
+	mpack.Payload = msg
+
+	b.outbox <- mpack // place packet in our queue of outgoing messages.
 }
 
 // Returns a channel immediately.
