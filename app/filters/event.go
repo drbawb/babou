@@ -49,6 +49,8 @@ func (ec *EventContext) ReadStats(infoHash string) *bridge.TorrentStatMessage {
 }
 
 // Returns an uninitialized AuthContext suitable for use in a context chain
+// TODO: Synchronized so long as this is the only subscriber writing
+// to the event context's internal structures.
 func EventChain(serverBridge *bridge.Bridge) *EventContext {
 	context := &EventContext{
 		isInit:   false,
