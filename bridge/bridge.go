@@ -13,8 +13,9 @@ import (
 type Bridge struct {
 	transports []Transport // other bridges to deliver messages to
 
-	in  chan *Message // channel of messages to be read from other transports
-	out chan *Message // channel of messages to be shared with other transports
+	in chan *Packet // channel of messages to be read from other transports
+
+	subscribers map[string]chan<- *Message
 
 	quit chan bool // send any value to gracefully shutdown the bridge.
 }
@@ -28,10 +29,10 @@ const (
 // All messages will be dropped to drain the buffer until transport(s) are available.
 func NewBridge(settings *lib.TransportSettings) *Bridge {
 	bridge := &Bridge{
-		transports: make([]Transport, 0),
-		in:         make(chan *Message, BRIDGE_RECV_BUFFER),
-		out:        make(chan *Message, BRIDGE_SEND_BUFFER),
-		quit:       make(chan bool),
+		transports:  make([]Transport, 0),
+		in:          make(chan *Packet, BRIDGE_RECV_BUFFER),
+		quit:        make(chan bool),
+		subscribers: make(map[string]chan<- *Message),
 	}
 
 	// Implement all transport types for the default bridge.
@@ -46,7 +47,7 @@ func NewBridge(settings *lib.TransportSettings) *Bridge {
 		fmt.Printf("you have selected an unimplemented bridge type. \n")
 	}
 
-	go bridge.broadcast()
+	go bridge.dispatch()
 
 	return bridge
 }
@@ -56,16 +57,29 @@ func (b *Bridge) AddTransport(transport Transport) {
 	b.transports = append(b.transports, transport)
 }
 
-func (b *Bridge) broadcast() {
+// Wrap message in a packet for transport
+func (b *Bridge) broadcast(name string, msg *Message) {
+	if len(b.transports) == 0 {
+		fmt.Printf("No transports avail. Event dropped: %v \n", msg)
+	}
+
+	mpack := &Packet{}
+	mpack.SubscriberName = name
+	mpack.Payload = msg
+
+	for _, tp := range b.transports {
+		tp.Send(mpack)
+	}
+}
+
+func (b *Bridge) dispatch() {
 	for {
 		select {
-		case msg := <-b.out:
-			if len(b.transports) == 0 {
-				fmt.Printf("No transports avail. Event dropped: %v \n", msg)
-			}
-
-			for _, tp := range b.transports {
-				tp.Send(msg)
+		case msg := <-b.in:
+			for name, subscriber := range b.subscribers {
+				if name != msg.SubscriberName {
+					subscriber <- msg.Payload
+				}
 			}
 		}
 	}
@@ -91,29 +105,37 @@ func (b *Bridge) netListen(network, addr string) {
 	for {
 		fd, err := l.Accept()
 		if err != nil {
-			fmt.Printf("error listening for pack: %s \n", err.Error())
+			fmt.Printf("error listening for packet: %s \n", err.Error())
 			break
 		}
 
 		msgBuf := make([]byte, 1024)
 		n, err := fd.Read(msgBuf[:])
 		if err != nil {
-			fmt.Printf("error reading file: %s \n", err.Error())
+			fmt.Printf("error reading socket: %s \n", err.Error())
 		}
 
 		fmt.Printf("read %d bytes from socket \n", n)
 
-		// gob decode it into a bridge-message
-		b.in <- decodeMsg(bytes.NewBuffer(msgBuf)) // send blocked receiver a message
+		// gob decode message and stuff it into foreign packet
+		packet := &Packet{}
+
+		decodedMessage := decodeMsg(bytes.NewBuffer(msgBuf))
+		packet.SubscriberName = "foreign"
+		packet.Payload = decodedMessage
+
+		b.in <- packet // send blocked receiver a message
 	}
 }
 
 // Sends a message on a channel.
 // Will block indefinitely if the send-buffer is filled and not being drained.
-func (b *Bridge) Send(msg *Message) {
+//
+// name: name of a receiver you're listening on [so you will not recv this message]
+func (b *Bridge) Send(name string, msg *Message) {
 	// TODO: Basic sanity checks; then forward to bridge for transport.
 	if msg != nil {
-		b.out <- msg
+		b.broadcast(name, msg)
 	}
 }
 
@@ -127,15 +149,17 @@ func (b *Bridge) ASend(msg *Message) <-chan int {
 	// TODO: dummy message in here.
 	retChan := make(chan int, 1)
 	go func(status chan int) {
-		b.Send(msg) // try to send message
-		status <- 1 // message sent OK
+		b.Send("async", msg) // try to send message
+		status <- 1          // message sent OK
 	}(retChan)
 
 	return retChan
 }
 
-func (b *Bridge) Recv() <-chan *Message {
-	return b.in
+// Provide a channel for us to send events too.
+// When a new event is published you will receive it.
+func (b *Bridge) Subscribe(name string, c chan<- *Message) {
+	b.subscribers[name] = c
 }
 
 func (b *Bridge) Close() chan bool {

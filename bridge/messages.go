@@ -24,6 +24,11 @@ const (
 	DISABLE_TORRENT
 )
 
+type Packet struct {
+	SubscriberName string
+	Payload        *Message
+}
+
 // message wrapper for quick decoding on other end.
 type Message struct {
 	Type    MessageType
