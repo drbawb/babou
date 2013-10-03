@@ -4,6 +4,7 @@ Babou
 Babou, the rogue ocelot.
 
 ![babou logo][logo]
+![travis build][travis]
 
 An open source, easy to deploy, lightning fast torrent tracker.
 In the style of TBDev, Gazelle (what.cd,waffles.fm), etc.
@@ -129,4 +130,5 @@ not service any requests to that route and your reverse proxies should return
 
 
 [logo]: http://fatalsyntax.com/babou_gh.png "babou logo"
+[travis]: https://travis-ci.org/drbawb/babou.png "travis build"
 
