@@ -62,7 +62,7 @@ func main() {
 	// Start instance of tracker [if applicable]
 	if appSettings.FullStack == true || appSettings.TrackerStack == true {
 		fmt.Printf("Starting tracker \n")
-		server := tracker.NewServer(appSettings, appBridge.Recv(), trackerIO)
+		server := tracker.NewServer(appSettings, appBridge, trackerIO)
 
 		go server.Start()
 	}

@@ -24,17 +24,17 @@ type Server struct {
 
 	peerReaper *tasks.PeerReaper
 
-	events <-chan *bridge.Message
+	eventBridge *bridge.Bridge
 }
 
 // Initializes a server using babou/lib settings and a communication channel.
-func NewServer(appSettings *libBabou.AppSettings, events <-chan *bridge.Message, serverIO chan int) *Server {
+func NewServer(appSettings *libBabou.AppSettings, eventBridge *bridge.Bridge, serverIO chan int) *Server {
 	newServer := &Server{torrentCache: make(map[string]*libTorrent.Torrent)}
 
 	newServer.Port = appSettings.TrackerPort
 	newServer.serverIO = serverIO
 	newServer.peerReaper = &tasks.PeerReaper{} //TODO: constructor.
-	newServer.events = events
+	newServer.eventBridge = eventBridge
 
 	return newServer
 }
@@ -60,8 +60,6 @@ func (s *Server) Start() {
 				for _, v := range s.torrentCache {
 					s.peerReaper.ReapTorrent(v)
 				}
-			case msg := <-s.events:
-				handleWebEvent(msg)
 			}
 		}
 
