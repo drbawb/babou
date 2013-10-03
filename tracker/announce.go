@@ -76,8 +76,15 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 	// Defer writes outside of response
 	// (Just in case we block on DB access or have to contend for the peer list's mutex)
 	go func() {
-		torrent.AddPeer(params.All["peer_id"], r.RemoteAddr, params.All["port"], params.All["secret"])
-		torrent.UpdateStatsFor(params.All["peer_id"], "0", "0", params.All["left"])
+		if params.All["event"] == "stopped" {
+			// TODO: remove peer method
+			torrent.WritePeers(func(peerMap map[string]*libTorrent.Peer) {
+				delete(peerMap, params.All["peer_id"])
+			})
+		} else {
+			torrent.AddPeer(params.All["peer_id"], r.RemoteAddr, params.All["port"], params.All["secret"])
+			torrent.UpdateStatsFor(params.All["peer_id"], "0", "0", params.All["left"])
+		}
 
 		stats := &libBridge.TorrentStatMessage{}
 		stats.InfoHash = torrent.Info.EncodeInfoToString()
@@ -87,8 +94,11 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 		message.Type = libBridge.TORRENT_STAT_TUPLE
 		message.Payload = stats
 
+		// TODO: Reaper needs to send this event
+		// when a peer is removed.
 		fmt.Printf("Tracker publishing stats: %v \n", stats.InfoHash)
 		s.eventBridge.Publish("tracker", message)
+
 	}()
 }
 
