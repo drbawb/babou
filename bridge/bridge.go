@@ -68,7 +68,7 @@ func (b *Bridge) broadcast() {
 		select {
 		case mpack := <-b.outbox:
 			for _, tp := range b.transports {
-				tp.Send(mpack)
+				go tp.Send(mpack)
 			}
 		}
 	}
