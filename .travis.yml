@@ -1,3 +1,6 @@
 language: go
 
 go: tip
+
+install:
+  - go get github.com/drbawb/babou
