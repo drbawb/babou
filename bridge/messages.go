@@ -31,6 +31,14 @@ type Packet struct {
 	Payload        *Message
 }
 
+func init() {
+	gob.Register(Message{})
+	gob.Register(DeleteUserMessage{})
+	gob.Register(DeleteTorrentMessage{})
+	gob.Register(TorrentStatMessage{})
+
+}
+
 // message wrapper for quick decoding on other end.
 type Message struct {
 	Type    MessageType
@@ -50,11 +58,6 @@ type TorrentStatMessage struct {
 	InfoHash string
 	Seeding  int
 	Leeching int
-}
-
-func init() {
-	gob.Register(&Message{})
-	gob.Register(&DeleteUserMessage{})
 }
 
 // Creates a torrent-stat tuple

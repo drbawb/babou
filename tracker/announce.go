@@ -82,11 +82,18 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 				delete(peerMap, params.All["peer_id"])
 			})
 		} else {
-			torrent.AddPeer(params.All["peer_id"], r.RemoteAddr, params.All["port"], params.All["secret"])
+			torrent.AddPeer(
+				params.All["peer_id"],
+				r.RemoteAddr,
+				params.All["port"],
+				params.All["secret"],
+			)
+
 			torrent.UpdateStatsFor(params.All["peer_id"], "0", "0", params.All["left"])
 		}
 
-		stats := &libBridge.TorrentStatMessage{}
+		// Send stats over event bridge.
+		stats := libBridge.TorrentStatMessage{}
 		stats.InfoHash = torrent.Info.EncodeInfoToString()
 		stats.Seeding, stats.Leeching = torrent.EnumeratePeers()
 
