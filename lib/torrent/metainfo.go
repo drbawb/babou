@@ -281,6 +281,28 @@ func (t *TorrentFile) EncodeInfo() []byte {
 	return hash.Sum(nil)
 }
 
+// Encode's the `info` dictionary into a SHA1 hash; used to uniquely identify a torrent.
+// Converts hash to a string [two chars per byte]
+func (t *TorrentFile) EncodeInfoToString() string {
+	//torrentDict := torrentMetainfo.(map[string]interface{})
+	infoBytes := make([]byte, 0) //TODO: intelligenty size buffer based on info
+
+	encoderBuffer := bytes.NewBuffer(infoBytes)
+	encoder := bencode.NewEncoder(encoderBuffer)
+
+	err := encoder.Encode(t.Info)
+	if err != nil {
+		fmt.Printf("error encoding torrent file: %s", err.Error())
+	}
+
+	hash := sha1.New()
+	io.Copy(hash, encoderBuffer)
+
+	b := hash.Sum(nil)
+
+	return hex.EncodeToString(b)
+}
+
 // Returns a bencoded version of the torrent's info dict.
 func (t *TorrentFile) BencodeInfoDict() ([]byte, error) {
 	infoBuffer := bytes.NewBuffer(make([]byte, 0))

@@ -50,6 +50,16 @@ func (tc *TorrentController) Index(params map[string]string) *web.Result {
 		return output
 	}
 
+	for _, t := range torrentList {
+		stats := tc.events.ReadStats(t.InfoHash)
+		if stats == nil {
+			continue
+		}
+
+		t.Seeding = stats.Seeding
+		t.Leeching = stats.Leeching
+	}
+
 	outData.TorrentList = torrentList
 
 	output.Body = []byte(web.RenderWith("bootstrap", "torrent", "index", outData, tc.flash))
