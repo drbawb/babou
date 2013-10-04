@@ -4,6 +4,7 @@ Babou
 Babou, the rogue ocelot.
 
 ![babou logo][logo]
+![travis build][travis]
 
 An open source, easy to deploy, lightning fast torrent tracker.
 In the style of TBDev, Gazelle (what.cd,waffles.fm), etc.
@@ -105,10 +106,11 @@ AKA `What do I need to deploy?`
 	working dir
  		|--/assets 			(static resources [css, images, js])
  		|--/app/views 			(`mustache` templates, partials)
- 		|--/config/dev.json 	(unless specified otherwise by `-config-path`)
+ 		|--/config/dev.json 		(unless specified otherwise by `-config-path`)
 
 
 `babou` should be installed from a working directory containing the above AND:
+	
 	working dir
 		|--/db (`goose` databse config + migrations for dev + install)
 
@@ -128,4 +130,5 @@ not service any requests to that route and your reverse proxies should return
 
 
 [logo]: http://fatalsyntax.com/babou_gh.png "babou logo"
+[travis]: https://travis-ci.org/drbawb/babou.png "travis build"
 
