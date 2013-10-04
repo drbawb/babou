@@ -2,7 +2,7 @@
 package controllers
 
 import (
-	errors "errors"
+	"errors"
 	"fmt"
 
 	filters "github.com/drbawb/babou/app/filters"
@@ -15,10 +15,8 @@ import (
 type HomeController struct {
 	safeInstance bool
 
-	context *filters.DevContext
-	auth    *filters.AuthContext
-	session *filters.SessionContext
-	flash   *filters.FlashContext
+	*App
+	auth *filters.AuthContext
 
 	actionMap map[string]web.Action
 }
@@ -28,7 +26,11 @@ type HomeController struct {
 //
 // Actions for this controller must be defined here.
 func (hc *HomeController) NewInstance() web.Controller {
-	newHc := &HomeController{safeInstance: true, actionMap: make(map[string]web.Action)}
+	newHc := &HomeController{
+		safeInstance: true,
+		actionMap:    make(map[string]web.Action),
+		App:          &App{},
+	}
 
 	//add your actions here.
 	newHc.actionMap["index"] = newHc.Index
@@ -56,7 +58,11 @@ func (hc *HomeController) homePage(params map[string]string) *web.Result {
 	output.Status = 200
 	outData := &struct{}{}
 
-	output.Body = []byte(web.RenderWith("bootstrap", "home", "index", outData, hc.flash))
+	output.Body = []byte(web.RenderWith(
+		"bootstrap",
+		"home",
+		"index",
+		outData, hc.Flash))
 	return output
 }
 
@@ -102,6 +108,8 @@ func NewHomeController() *HomeController {
 	return hc
 }
 
+// Implement Controller interface
+
 // Performs one of the actions mapped to this controller.
 // Returns 404 if the action is not found in the map.
 func (hc *HomeController) HandleRequest(action string) *web.Result {
@@ -110,10 +118,15 @@ func (hc *HomeController) HandleRequest(action string) *web.Result {
 	}
 
 	if hc.actionMap[action] != nil {
-		return hc.actionMap[action](hc.context.GetParams().All)
+		return hc.actionMap[action](hc.Dev.GetParams().All)
 	} else {
 		return &web.Result{Status: 404, Body: []byte("Not found")}
 	}
+}
+
+// Retruns true if this controller is ready to process a request.
+func (hc *HomeController) IsSafeInstance() bool {
+	return hc.safeInstance
 }
 
 // Process calls the application controller's default route processor.
@@ -126,61 +139,8 @@ func (hc *HomeController) Process(action string) (web.Controller, error) {
 // Tests that the current context-chain is suitable for this request.
 // For the HomeController: this tests the presence of the default chain
 // in addition to the presence of the Authorizaiton Chain.
-func (hc *HomeController) TestContext(chain []web.ChainableContext) error {
-	outFlag := false
-	for i := 0; i < len(chain); i++ {
-		_, ok := chain[i].(filters.AuthChainLink)
-		if ok {
-			outFlag = true
-			break
-		}
-	}
 
-	if err := testContext(chain); err != nil {
-		return errors.New("Default chain missing from login route")
-	}
-
-	if !outFlag {
-		return errors.New("Auth chain missing from login route.")
-	}
-
-	return nil
-}
-
-// Set contexts
-
-// Sets the ParameterContext which contains GET/POST data.
-func (hc *HomeController) SetContext(context *filters.DevContext) error {
-	if context == nil {
-		return errors.New("No context was supplied to this controller!")
-	}
-
-	hc.context = context
-	return nil
-}
-
-// Sets the SessionContext which provides session storage for this request.
-func (hc *HomeController) SetSessionContext(context *filters.SessionContext) error {
-	if context == nil {
-		return errors.New("No SessionContext was supplied to this controller!")
-	}
-
-	hc.session = context
-
-	return nil
-}
-
-// Sets the FlashContext which will display a message at the earliest opportunity.
-// (Usually on the next controller/action that is FlashContext aware.)
-func (hc *HomeController) SetFlashContext(context *filters.FlashContext) error {
-	if context == nil {
-		return errors.New("No FlashContext was supplied to this controller!")
-	}
-
-	hc.flash = context
-
-	return nil
-}
+// Setup contexts
 
 // Sets the AuthContext which allows this controller to test permissions
 // for the currently logged in user.
@@ -189,7 +149,17 @@ func (hc *HomeController) SetAuthContext(context *filters.AuthContext) error {
 	return nil
 }
 
-// Retruns true if this controller is ready to process a request.
-func (hc *HomeController) IsSafeInstance() bool {
-	return hc.safeInstance
+// Calls default context test and then checks for the auth chain.
+func (hc *HomeController) TestContext(chain []web.ChainableContext) error {
+	if err := hc.App.TestContext(chain); err != nil {
+		return err
+	}
+
+	for i := 0; i < len(chain); i++ {
+		if _, ok := chain[i].(filters.AuthChainLink); ok {
+			return nil
+		}
+	}
+
+	return errors.New("Could not build HomeController, no auth chain for route.")
 }
