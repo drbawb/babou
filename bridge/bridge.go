@@ -8,14 +8,21 @@ import (
 	"github.com/drbawb/babou/lib"
 )
 
+type pendingSubscriber struct {
+	name    string
+	msgChan chan<- *Message
+}
+
 // Represents the programs bridge to send messages to the other pack members.
 // The default route will discard all messages sent through the bridge.
 type Bridge struct {
 	transports []Transport // other bridges to deliver messages to
 
-	inbox       chan *Packet // channel of messages to be read from other transports
-	outbox      chan *Packet
-	subscribers map[string]chan<- *Message
+	inbox  chan *Packet // channel of messages to be read from other transports
+	outbox chan *Packet // channel of messages to be sent to other transports
+
+	subscribers        map[string]chan<- *Message // list of subscribers (should only be read from channel)
+	pendingSubscribers chan *pendingSubscriber    // channel of subscribers waiting to be added to list
 
 	quit chan bool // send any value to gracefully shutdown the bridge.
 }
@@ -29,11 +36,12 @@ const (
 // All messages will be dropped to drain the buffer until transport(s) are available.
 func NewBridge(settings *lib.TransportSettings) *Bridge {
 	bridge := &Bridge{
-		transports:  make([]Transport, 0),
-		inbox:       make(chan *Packet, BRIDGE_RECV_BUFFER),
-		outbox:      make(chan *Packet, BRIDGE_SEND_BUFFER),
-		quit:        make(chan bool),
-		subscribers: make(map[string]chan<- *Message),
+		transports:         make([]Transport, 0),
+		inbox:              make(chan *Packet, BRIDGE_RECV_BUFFER),
+		outbox:             make(chan *Packet, BRIDGE_SEND_BUFFER),
+		pendingSubscribers: make(chan *pendingSubscriber),
+		quit:               make(chan bool),
+		subscribers:        make(map[string]chan<- *Message),
 	}
 
 	// Implement all transport types for the default bridge.
@@ -51,7 +59,6 @@ func NewBridge(settings *lib.TransportSettings) *Bridge {
 		fmt.Printf("you have selected an unimplemented bridge type. \n")
 	}
 
-	go bridge.broadcast()
 	go bridge.dispatch()
 
 	return bridge
@@ -62,27 +69,25 @@ func (b *Bridge) AddTransport(transport Transport) {
 	b.transports = append(b.transports, transport)
 }
 
-// Drain our outbox as it fills up.
-func (b *Bridge) broadcast() {
-	for {
-		select {
-		case mpack := <-b.outbox:
-			for _, tp := range b.transports {
-				go tp.Send(mpack)
-			}
-		}
-	}
-}
-
-// Drain our inbox as it fills up.
+// The dispatcher routes messages as our inbox and outbox queues
+// fill up.
+//
+// In addition it serializes access to the subscriber map as
+// local peers subscribe to the event bridge.
 func (b *Bridge) dispatch() {
 	for {
 		select {
+		case sub := <-b.pendingSubscribers:
+			b.subscribers[sub.name] = sub.msgChan
 		case mpack := <-b.inbox:
 			for name, subscriber := range b.subscribers {
 				if name != mpack.SubscriberName {
 					subscriber <- mpack.Payload
 				}
+			}
+		case mpack := <-b.outbox:
+			for _, tp := range b.transports {
+				go tp.Send(mpack)
 			}
 		}
 	}
@@ -169,7 +174,11 @@ func (b *Bridge) APublish(msg *Message) <-chan int {
 // Provide a channel for us to send events too.
 // When a new event is published you will receive it.
 func (b *Bridge) Subscribe(name string, c chan<- *Message) {
-	b.subscribers[name] = c
+	ps := &pendingSubscriber{}
+	ps.msgChan = c
+	ps.name = name
+
+	b.pendingSubscribers <- ps
 }
 
 func (b *Bridge) Close() chan bool {
