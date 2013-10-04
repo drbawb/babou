@@ -20,10 +20,8 @@ const (
 type LoginController struct {
 	safeInstance bool //`true` if this instance can service HTTP requests, false otherwise.
 
-	context *filters.DevContext
-	session *filters.SessionContext
-	flash   *filters.FlashContext
-	auth    *filters.AuthContext
+	*App
+	auth *filters.AuthContext
 
 	actionMap map[string]web.Action
 }
@@ -33,7 +31,11 @@ type LoginController struct {
 //
 // Actions for this controller must be defined here.
 func (lc *LoginController) NewInstance() web.Controller {
-	newLc := &LoginController{safeInstance: true, actionMap: make(map[string]web.Action)}
+	newLc := &LoginController{
+		safeInstance: true,
+		actionMap:    make(map[string]web.Action),
+		App:          &App{},
+	}
 
 	//login page.
 	newLc.actionMap["index"] = newLc.Index
@@ -54,7 +56,7 @@ func (lc *LoginController) Index(params map[string]string) *web.Result {
 	output.Status = 200
 	outData := &web.ViewData{Context: &struct{}{}}
 
-	output.Body = []byte(web.RenderWith("bootstrap", "login", "index", outData, lc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "login", "index", outData, lc.Flash))
 
 	return output
 }
@@ -71,7 +73,7 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 	user := &models.User{}
 	err := user.SelectUsername(params["username"])
 	if err != nil {
-		lc.flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
+		lc.Flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
 		output.Status = 302
 
 		redirectPath.NamedRoute = "loginIndex"
@@ -84,7 +86,7 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 	err = user.CheckHash(params["password"])
 	if err != nil {
 		fmt.Printf("error logging you in.")
-		lc.flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
+		lc.Flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
 		output.Status = 302
 
 		redirectPath.NamedRoute = "loginIndex"
@@ -93,7 +95,7 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 		return output
 	}
 
-	session, _ := lc.session.GetSession()
+	session, _ := lc.App.Session.GetSession()
 
 	session.Values["user_id"] = user.UserId
 
@@ -120,7 +122,7 @@ func (lc *LoginController) Logout(params map[string]string) *web.Result {
 	err := lc.auth.DeleteCurrentSession()
 	if err != nil {
 		//lib.Println("error logging user out: %v \n", err.Error())
-		lc.flash.AddFlash(fmt.Sprintf("Error logging you out: %s", err.Error()))
+		lc.Flash.AddFlash(fmt.Sprintf("Error logging you out: %s", err.Error()))
 		output.Status = 302
 
 		output.Redirect = redirectPath
@@ -142,7 +144,7 @@ func (lc *LoginController) New(params map[string]string) *web.Result {
 	output.Status = 200
 	outData := &web.ViewData{Context: &struct{}{}} // render the registration form.
 
-	output.Body = []byte(web.RenderWith("bootstrap", "login", "new", outData, lc.flash))
+	output.Body = []byte(web.RenderWith("bootstrap", "login", "new", outData, lc.Flash))
 
 	return output
 }
@@ -154,7 +156,7 @@ func (lc *LoginController) Create(params map[string]string) *web.Result {
 	// redirect to login#New() w/ flash message saying passwords don't match.
 	if params["password"] != params["confirm-password"] {
 		fmt.Printf("redirecting to new page; password mismatch")
-		lc.flash.AddFlash("the password and confirmation you entered do not match. Please double-check your supplied passwords.")
+		lc.Flash.AddFlash("the password and confirmation you entered do not match. Please double-check your supplied passwords.")
 		redirectPath := &web.RedirectPath{
 			NamedRoute: "loginNew", //redirect to login page.
 		}
@@ -173,53 +175,17 @@ func (lc *LoginController) Create(params map[string]string) *web.Result {
 
 	// Redirect back to registration page if there was an error creating account.
 	if status == models.USERNAME_TAKEN {
-		lc.flash.AddFlash("The username you chose was already taken")
+		lc.Flash.AddFlash("The username you chose was already taken")
 		redirectPath.NamedRoute = "loginNew"
 	} else if status != 0 {
-		lc.flash.AddFlash("There was an error validating your new user account; please try again or contact our administrative staff.")
+		lc.Flash.AddFlash("There was an error validating your new user account; please try again or contact our administrative staff.")
 		redirectPath.NamedRoute = "loginNew"
 	} else {
 		//TODO: show message if account activation is required.
-		lc.flash.AddFlash("Your account was created sucesfully. You may now login.")
+		lc.Flash.AddFlash("Your account was created sucesfully. You may now login.")
 	}
 
 	return &web.Result{Status: 302, Body: nil, Redirect: redirectPath}
-}
-
-// Sets up contexts.
-
-func (lc *LoginController) SetFlashContext(fc *filters.FlashContext) error {
-	if fc == nil || !lc.safeInstance {
-		return errors.New("Login controller or flash context not ready for request.")
-	}
-
-	lc.flash = fc
-
-	return nil
-}
-
-func (lc *LoginController) SetSessionContext(sc *filters.SessionContext) error {
-	lc.session = sc
-	return nil
-}
-
-// Sets the login controller's context which includes POST/GET vars.
-func (lc *LoginController) SetContext(context *filters.DevContext) error {
-	if lc.safeInstance {
-		lc.context = context
-		return nil
-	}
-
-	return errors.New("This instance of LoginController cannot service requests.")
-}
-
-func (lc *LoginController) SetAuthContext(context *filters.AuthContext) error {
-	if lc.safeInstance {
-		lc.auth = context
-		return nil
-	}
-
-	return errors.New("This instance of LoginController cannot service requests.")
 }
 
 // Returns a LoginController instance that is not safe across requests.
@@ -239,7 +205,7 @@ func (lc *LoginController) HandleRequest(action string) *web.Result {
 	}
 
 	if lc.actionMap[action] != nil {
-		return lc.actionMap[action](lc.context.GetParams().All)
+		return lc.actionMap[action](lc.Dev.GetParams().All)
 	} else {
 		return &web.Result{Status: 404, Body: []byte("Not found")}
 	}
@@ -253,9 +219,22 @@ func (lc *LoginController) Process(action string) (web.Controller, error) {
 	return process(lc, action)
 }
 
+// Sets up contexts.
+
+func (lc *LoginController) SetAuthContext(context *filters.AuthContext) error {
+	if lc.safeInstance {
+		lc.auth = context
+		return nil
+	}
+
+	return errors.New("This instance of LoginController cannot service requests.")
+}
+
 // Tests that the current chain is sufficient for this route.
 // This route requires the default chain as well as the authorization context.
 func (lc *LoginController) TestContext(chain []web.ChainableContext) error {
+	lc.App.TestContext(chain)
+
 	outFlag := false
 	for i := 0; i < len(chain); i++ {
 		_, ok := chain[i].(filters.AuthChainLink)
