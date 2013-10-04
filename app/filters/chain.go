@@ -12,7 +12,6 @@ package filters
 import (
 	"net/http"
 
-	lib "github.com/drbawb/babou/lib"
 	web "github.com/drbawb/babou/lib/web"
 
 	"fmt"
@@ -85,7 +84,6 @@ func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc
 		//Generate a controller for the route
 		controller, err := route.Process(action)
 		if err != nil {
-			lib.Println("Could not open controller with first context")
 			response.Write([]byte("server error."))
 		}
 

@@ -7,6 +7,48 @@ import (
 	web "github.com/drbawb/babou/lib/web"
 )
 
+// An embeddable controller which implements the default context.
+// This controller is capable of handling:
+// (DevContext), (SessionContext), (FlashContext)
+type App struct {
+	Dev     *filters.DevContext
+	Session *filters.SessionContext
+	Flash   *filters.FlashContext
+}
+
+// Sets the ParameterContext which contains GET/POST data.
+func (ac *App) SetContext(context *filters.DevContext) error {
+	if context == nil {
+		return errors.New("No context was supplied to this controller!")
+	}
+
+	ac.Dev = context
+	return nil
+}
+
+// Sets the SessionContext which provides session storage for this request.
+func (ac *App) SetSessionContext(context *filters.SessionContext) error {
+	if context == nil {
+		return errors.New("No SessionContext was supplied to this controller!")
+	}
+
+	ac.Session = context
+
+	return nil
+}
+
+// Sets the FlashContext which will display a message at the earliest opportunity.
+// (Usually on the next controller/action that is FlashContext aware.)
+func (ac *App) SetFlashContext(context *filters.FlashContext) error {
+	if context == nil {
+		return errors.New("No FlashContext was supplied to this controller!")
+	}
+
+	ac.Flash = context
+
+	return nil
+}
+
 // A generic routine that will implement `Process` for any `Route` interface
 func process(route web.Route, action string) (web.Controller, error) {
 	if !route.IsSafeInstance() {
@@ -16,6 +58,10 @@ func process(route web.Route, action string) (web.Controller, error) {
 	}
 
 	return nil, errors.New("This controller is not equipped to service public facing requests")
+}
+
+func (ac *App) TestContext(chain []web.ChainableContext) error {
+	return testContext(chain)
 }
 
 // A generic routine that will test for the 'default' chain which

@@ -26,7 +26,8 @@ func LoadRoutes(s *Server) *mux.Router {
 	r.HandleFunc("/",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(home, "index")).Name("homeIndex")
+			Execute(home, "index")).
+		Name("homeIndex")
 
 	// Displays a login form.
 	r.HandleFunc("/login",
