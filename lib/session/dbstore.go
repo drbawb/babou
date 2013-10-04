@@ -12,7 +12,6 @@ import (
 	http "net/http"
 
 	sql "database/sql"
-	lib "github.com/drbawb/babou/lib"
 	dbLib "github.com/drbawb/babou/lib/db"
 
 	base32 "encoding/base32"
@@ -95,7 +94,6 @@ func (db *DatabaseStore) Save(r *http.Request, w http.ResponseWriter, session *s
 func (db *DatabaseStore) load(session *sessions.Session) error {
 	fn := func(dbConn *sql.DB) error {
 		// Write record to sessions table.
-		lib.Printf("Loading session id [%s] from database.\n", session.ID)
 		row := dbConn.QueryRow("SELECT http_session_id, key, data FROM \""+SESSIONS_TABLE+"\" WHERE key = $1", session.ID)
 
 		var id int
@@ -118,7 +116,6 @@ func (db *DatabaseStore) load(session *sessions.Session) error {
 // save writes encoded session.Values to a database record.
 // writes to http_sessions table by default.
 func (db *DatabaseStore) save(session *sessions.Session) error {
-	lib.Printf("Saving session id [%s] to database.\n", session.ID)
 	encoded, err := securecookie.EncodeMulti(session.Name(), session.Values,
 		db.Codecs...)
 
