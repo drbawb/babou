@@ -53,7 +53,7 @@ func (sc *SessionContext) CloseContext() {
 // Tests that the context is being applied to a route which is SessionAware.
 //
 // This method can be used to ensure that the type-dependencies are satisfied at runtime.
-func (sc *SessionContext) TestContext(route web.Route, chain []web.ChainableContext) error {
+func (sc *SessionContext) TestContext(route web.Controller, chain []web.ChainableContext) error {
 	// Controller must be session-aware.
 	_, ok := route.(SessionAware)
 	if !ok {

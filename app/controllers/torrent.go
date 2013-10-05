@@ -17,8 +17,6 @@ import (
 )
 
 type TorrentController struct {
-	safeInstance bool //`true` if this instance can service HTTP requests, false otherwise.
-
 	*App
 	auth   *filters.AuthContext
 	events *filters.EventContext
@@ -28,18 +26,13 @@ type TorrentController struct {
 
 // Returns a routable instance of TorrentController
 func NewTorrentController() *TorrentController {
-	tc := &TorrentController{
-		safeInstance: false,
-	}
-
-	return tc
+	return &TorrentController{}
 }
 
-func (tc *TorrentController) NewInstance() web.Controller {
+func (tc *TorrentController) Dispatch(action string) (web.Controller, web.Action) {
 	newTc := &TorrentController{
-		safeInstance: true,
-		actionMap:    make(map[string]web.Action),
-		App:          &App{},
+		actionMap: make(map[string]web.Action),
+		App:       &App{},
 	}
 
 	//add your actions here.
@@ -52,10 +45,10 @@ func (tc *TorrentController) NewInstance() web.Controller {
 
 	newTc.actionMap["delete"] = newTc.Delete
 
-	return newTc
+	return newTc, newTc.actionMap[action]
 }
 
-func (tc *TorrentController) Index(params map[string]string) *web.Result {
+func (tc *TorrentController) Index() *web.Result {
 	// Private page.
 	redirect, user := tc.RedirectOnAuthFail()
 	if user == nil {
@@ -95,7 +88,7 @@ func (tc *TorrentController) Index(params map[string]string) *web.Result {
 }
 
 // Displays a form where a user can upload a new torrent.
-func (tc *TorrentController) New(params map[string]string) *web.Result {
+func (tc *TorrentController) New() *web.Result {
 	//TODO: permission check; for now any authenticated user can add torrents.
 	redirect, user := tc.RedirectOnAuthFail()
 	if user == nil {
@@ -117,7 +110,7 @@ func (tc *TorrentController) New(params map[string]string) *web.Result {
 	return output
 }
 
-func (tc *TorrentController) Create(params map[string]string) *web.Result {
+func (tc *TorrentController) Create() *web.Result {
 	//TODO: permission check; for now any authenticated user can add torrents.
 	redirect, user := tc.RedirectOnAuthFail()
 	if user == nil {
@@ -130,7 +123,7 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 		Username: user.Username,
 	}
 
-	formFiles := tc.Dev.GetParams().Files
+	formFiles := tc.Dev.Params.Files
 	if formFiles["metainfo"] == nil {
 		tc.Flash.AddFlash("File upload appears to be missing.")
 	} else if len(formFiles["metainfo"]) <= 0 || len(formFiles["metainfo"]) > 1 {
@@ -158,9 +151,9 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 		}
 
 		attributes := &models.Attribute{}
-		attributes.AlbumName = params["albumName"]
+		attributes.AlbumName = tc.Dev.Params.All["albumName"]
 		attributes.ReleaseYear = time.Now()
-		attributes.ArtistName = strings.Split(params["artistName"], ",")
+		attributes.ArtistName = strings.Split(tc.Dev.Params.All["artistName"], ",")
 		fmt.Printf("num artists: %d \n", len(attributes.ArtistName))
 
 		torrentRecord.SetAttributes(attributes)
@@ -182,7 +175,7 @@ func (tc *TorrentController) Create(params map[string]string) *web.Result {
 	return output
 }
 
-func (tc *TorrentController) Download(params map[string]string) *web.Result {
+func (tc *TorrentController) Download() *web.Result {
 	redirect, user := tc.RedirectOnAuthFail()
 	if user == nil {
 		return redirect
@@ -195,7 +188,7 @@ func (tc *TorrentController) Download(params map[string]string) *web.Result {
 	record := &models.Torrent{}
 
 	var torrentId int64
-	torrentId, err := strconv.ParseInt(params["torrentId"], 10, 32)
+	torrentId, err := strconv.ParseInt(tc.Dev.Params.All["torrentId"], 10, 32)
 
 	if err != nil {
 		output.Body = []byte("invalid torrent id.")
@@ -228,7 +221,7 @@ func (tc *TorrentController) Download(params map[string]string) *web.Result {
 	return output
 }
 
-func (tc *TorrentController) Delete(params map[string]string) *web.Result {
+func (tc *TorrentController) Delete() *web.Result {
 	redirect, user := tc.RedirectOnAuthFail()
 	if user == nil {
 		return redirect
@@ -276,43 +269,17 @@ func (tc *TorrentController) RedirectOnUploadFail() *web.Result {
 	return result
 }
 
-// Dispatches routes through this controller's actionMap and returns a result.
-func (tc *TorrentController) HandleRequest(action string) *web.Result {
-	if !tc.safeInstance {
-		return &web.Result{Status: 500, Body: []byte("Server could not route your request.")}
-	}
-
-	if tc.actionMap[action] != nil {
-		return tc.actionMap[action](tc.Dev.GetParams().All)
-	} else {
-		return &web.Result{Status: 404, Body: []byte("Not found")}
-	}
-}
-
-// Prepares a public-facing instance of this route that should be used for a single request.
-func (tc *TorrentController) Process(action string) (web.Controller, error) {
-	//default route processor.
-	return process(tc, action)
-}
-
 // Setup contexts
 
 func (tc *TorrentController) SetAuthContext(context *filters.AuthContext) error {
-	if tc.safeInstance {
-		tc.auth = context
-		return nil
-	}
-
-	return errors.New("This instance of TorrentController cannot service requests.")
+	tc.auth = context
+	return nil
 }
 
 func (tc *TorrentController) SetEventContext(context *filters.EventContext) error {
-	if tc.safeInstance {
-		tc.events = context
-		return nil
-	}
+	tc.events = context
 
-	return errors.New("This instance of TorrentController cannot service requests.")
+	return nil
 }
 
 // Tests that the current chain is sufficient for this route.
@@ -350,8 +317,4 @@ func (tc *TorrentController) TestContext(chain []web.ChainableContext) error {
 	}
 
 	return nil
-}
-
-func (tc *TorrentController) IsSafeInstance() bool {
-	return tc.safeInstance
 }

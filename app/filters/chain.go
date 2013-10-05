@@ -53,69 +53,50 @@ func (cc *contextChain) Chain(context ...web.ChainableContext) *contextChain {
 	return cc
 }
 
-// Resolves this chain against a [routable] controller#action pairing.
-// A routable controller is one that can return a clean instance of itself.
-// (Thus you can consider a route as a controller factory.)
-//
-// Resolving a chain will either panic (if the chain cannot be built)
-// or it will return a HandlerFunc() which can served by a middleware.
-func (cc *contextChain) Resolve(route web.Route, action string) http.HandlerFunc {
-	panicMessages := make([]string, 0)
-
-	if route == nil {
-		panicMessages = append(panicMessages, "A context chain was executed on a nullroute. Babou is not happy.\n")
-	}
-
-	for i := 0; i < len(cc.list); i++ {
-		if err := cc.list[i].TestContext(route, cc.list); err != nil {
-			panicMessages = append(panicMessages, err.Error())
-		}
-	}
-
-	if err := route.TestContext(cc.list); err != nil {
-		panicMessages = append(panicMessages, err.Error())
-	}
-
-	if len(panicMessages) > 0 {
-		// Panic if this chain does not pass runtime-type checks.
-		panic(panicMessages)
-	}
-
-	// Will create an HttpHandler that encapsulates the chain's current state.
+func (cc *contextChain) Resolve(route web.Controller, action string) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		//Generate a controller for the route
-		controller, err := route.Process(action)
-		if err != nil {
-			response.Write([]byte("server error."))
-		}
+		if v, ok := route.(web.Controller); ok {
+			responder, dispatchedAction := v.Dispatch(action)
 
-		currentChain := make([]web.ChainableContext, len(cc.list))
+			// Create fresh chainlink.
+			currentChain := make([]web.ChainableContext, len(cc.list))
+			for i := 0; i < len(cc.list); i++ {
+				currentChain[i] = cc.list[i].NewInstance() // clean filters.
 
-		for i := 0; i < len(cc.list); i++ {
-			currentChain[i] = cc.list[i].NewInstance()
-
-			currentChain[i].ApplyContext(controller, response, request, currentChain)
-		}
-
-		result := controller.HandleRequest(action)
-
-		for i := 0; i < len(cc.list); i++ {
-			currentChain[i].CloseContext()
-		}
-
-		if result.Status >= 300 && result.Status <= 399 {
-			handleRedirect(result.Redirect, response, request)
-		} else if result.Status == 404 {
-			http.NotFound(response, request)
-		} else if result.Status == 500 {
-			http.Error(response, string(result.Body), 500)
-		} else {
-			// Assume 200
-			if result.IsFile && result.Filename != "" {
-				response.Header().Add("content-disposition", fmt.Sprintf(`attachment; filename="%s"`, result.Filename))
+				// applies context, with req/resp, to the fresh controller.
+				currentChain[i].ApplyContext(responder, response, request, currentChain)
 			}
-			response.Write(result.Body)
+
+			// Dispatch action
+			result := dispatchedAction() // call when ready
+
+			// Have chains clean up.
+			for i := 0; i < len(cc.list); i++ {
+				currentChain[i].CloseContext()
+			}
+
+			// Have middleware deal with current result.
+			handleResult(result, response, request)
+		} else {
+			response.Write([]byte("ng resolver requires a dispatcher"))
 		}
+
+	}
+}
+
+func handleResult(result *web.Result, response http.ResponseWriter, request *http.Request) {
+	if result.Status >= 300 && result.Status <= 399 {
+		handleRedirect(result.Redirect, response, request)
+	} else if result.Status == 404 {
+		http.NotFound(response, request)
+	} else if result.Status == 500 {
+		http.Error(response, string(result.Body), 500)
+	} else {
+		// Assume 200
+		if result.IsFile && result.Filename != "" {
+			response.Header().Add("content-disposition", fmt.Sprintf(`attachment; filename="%s"`, result.Filename))
+		}
+		response.Write(result.Body)
 	}
 }
 

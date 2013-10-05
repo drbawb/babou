@@ -140,7 +140,7 @@ func (ac *AuthContext) CloseContext() {}
 // This context requires a chain with a SessionChainLink as well as an AuthorizableController route.
 //
 // This method can be used to ensure that those dependencies are satisfied at runtime.
-func (ac *AuthContext) TestContext(route web.Route, chain []web.ChainableContext) error {
+func (ac *AuthContext) TestContext(route web.Controller, chain []web.ChainableContext) error {
 	//requires AuthorizableController and SessionChain
 	hasSession := false
 
