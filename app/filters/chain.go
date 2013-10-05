@@ -53,11 +53,13 @@ func (cc *contextChain) Chain(context ...web.ChainableContext) *contextChain {
 	return cc
 }
 
-// Executes the request through the context chain on a route#action pairing.
-// `panics` if #TestContext() of any context in the chain fails for the given route.
-//	  Note that this method wraps the chain with a DevContext; so calling this method
-//    will ensure that the `ParamterizedChain` interface is fulfilled for all other chainlinks.
-func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc {
+// Resolves this chain against a [routable] controller#action pairing.
+// A routable controller is one that can return a clean instance of itself.
+// (Thus you can consider a route as a controller factory.)
+//
+// Resolving a chain will either panic (if the chain cannot be built)
+// or it will return a HandlerFunc() which can served by a middleware.
+func (cc *contextChain) Resolve(route web.Route, action string) http.HandlerFunc {
 	panicMessages := make([]string, 0)
 
 	if route == nil {

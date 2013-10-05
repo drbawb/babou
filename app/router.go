@@ -26,28 +26,28 @@ func LoadRoutes(s *Server) *mux.Router {
 	r.HandleFunc("/",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(home, "index")).
+			Resolve(home, "index")).
 		Name("homeIndex")
 
 	// Displays a login form.
 	r.HandleFunc("/login",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(login, "index")).
+			Resolve(login, "index")).
 		Methods("GET").
 		Name("loginIndex")
 
 	r.HandleFunc("/login",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(login, "session")).
+			Resolve(login, "session")).
 		Methods("POST").
 		Name("loginSession")
 
 	r.HandleFunc("/logout",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(login, "logout")).
+			Resolve(login, "logout")).
 		Methods("GET").
 		Name("loginDelete")
 
@@ -55,34 +55,44 @@ func LoadRoutes(s *Server) *mux.Router {
 	r.HandleFunc("/register",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(login, "new")).Methods("GET").Name("loginNew")
+			Resolve(login, "new")).
+		Methods("GET").
+		Name("loginNew")
 	// Handles a new user's registration request.
 	r.HandleFunc("/register",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(login, "create")).Methods("POST").Name("loginCreate")
+			Resolve(login, "create")).
+		Methods("POST").
+		Name("loginCreate")
 
 	// Handle torrent routes:
 	r.HandleFunc("/torrents",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
 			Chain(eventChain).
-			Execute(torrent, "index")).Methods("GET").Name("torrentIndex")
+			Resolve(torrent, "index")).
+		Methods("GET").
+		Name("torrentIndex")
 
 	r.HandleFunc("/torrents/new",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(torrent, "new")).Methods("GET").Name("torrentNew")
+			Resolve(torrent, "new")).
+		Methods("GET").
+		Name("torrentNew")
 
 	r.HandleFunc("/torrents/create",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(torrent, "create")).Methods("POST").Name("torrentCreate")
+			Resolve(torrent, "create")).
+		Methods("POST").
+		Name("torrentCreate")
 
 	r.HandleFunc("/torrents/download/{torrentId}",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
-			Execute(torrent, "download")).
+			Resolve(torrent, "download")).
 		Methods("GET").
 		Name("torrentDownload")
 
@@ -90,7 +100,7 @@ func LoadRoutes(s *Server) *mux.Router {
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain()).
 			Chain(eventChain).
-			Execute(torrent, "delete")).
+			Resolve(torrent, "delete")).
 		Methods("GET").
 		Name("torrentDelete")
 
