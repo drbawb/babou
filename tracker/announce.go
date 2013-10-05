@@ -18,9 +18,10 @@ import (
 	"net/http"
 )
 
-type PredefinedResponse int
-
+// This block defines several preset responses for common failures.
 var failureResponses map[PredefinedResponse]([]byte)
+
+type PredefinedResponse int
 
 const (
 	RESP_USER_NOT_FOUND PredefinedResponse = iota
@@ -30,7 +31,6 @@ const (
 func init() {
 	failureResponses = make(map[PredefinedResponse]([]byte))
 
-	// Encode user not found
 	var bytesBuf *bytes.Buffer
 
 	bytesBuf = bytes.NewBuffer(make([]byte, 0))
