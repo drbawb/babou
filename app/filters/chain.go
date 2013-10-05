@@ -54,6 +54,27 @@ func (cc *contextChain) Chain(context ...web.ChainableContext) *contextChain {
 }
 
 func (cc *contextChain) Resolve(route web.Controller, action string) http.HandlerFunc {
+	panicMessages := make([]string, 0)
+
+	if route == nil {
+		panicMessages = append(panicMessages, "A context chain was executed on a nullroute. Babou is not happy.\n")
+	}
+
+	for i := 0; i < len(cc.list); i++ {
+		if err := cc.list[i].TestContext(route, cc.list); err != nil {
+			panicMessages = append(panicMessages, err.Error())
+		}
+	}
+
+	if err := route.TestContext(cc.list); err != nil {
+		panicMessages = append(panicMessages, err.Error())
+	}
+
+	if len(panicMessages) > 0 {
+		// Panic if this chain does not pass runtime-type checks.
+		panic(panicMessages)
+	}
+
 	return func(response http.ResponseWriter, request *http.Request) {
 		if v, ok := route.(web.Controller); ok {
 			responder, dispatchedAction := v.Dispatch(action)
