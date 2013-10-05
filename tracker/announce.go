@@ -13,10 +13,37 @@ import (
 	"encoding/hex"
 
 	"bytes"
-	"fmt"
+	//"fmt"
 	"io"
 	"net/http"
 )
+
+type PredefinedResponse int
+
+var failureResponses map[PredefinedResponse]([]byte)
+
+const (
+	RESP_USER_NOT_FOUND PredefinedResponse = iota
+	RESP_TORRENT_NOT_FOUND
+)
+
+func init() {
+	failureResponses = make(map[PredefinedResponse]([]byte))
+
+	// Encode user not found
+	var bytesBuf *bytes.Buffer
+
+	bytesBuf = bytes.NewBuffer(make([]byte, 0))
+	unf := map[string]interface{}{"failure reason": "user could not be found."}
+	io.Copy(bytesBuf, encodeResponseMap(unf))
+	failureResponses[RESP_USER_NOT_FOUND] = bytesBuf.Bytes()
+
+	bytesBuf = bytes.NewBuffer(make([]byte, 0))
+	tnf := map[string]interface{}{"failure reason": "torrent could not be found."}
+	io.Copy(bytesBuf, encodeResponseMap(tnf))
+	failureResponses[RESP_TORRENT_NOT_FOUND] = bytesBuf.Bytes()
+
+}
 
 // Handles an announce from a client
 // Some TODOs:
@@ -30,36 +57,26 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 	responseMap := make(map[string]interface{})
 
 	hexHash := hex.EncodeToString([]byte(params.All["info_hash"]))
-	fmt.Printf("params.All encoded hash: %s \n", hexHash)
+
 	torrent, ok := s.torrentExists(hexHash)
-	fmt.Printf("\n---\nparams: %v \n---\n", params.All)
 
 	user := &models.User{}
 	if err := user.SelectSecret(params.All["secret"]); err != nil {
-		fmt.Printf("Tracker could not find user by secret\n Error: %s\n Secret: %s \n", err.Error(), params.All["secret"])
-
-		responseMap["failure reason"] = "user could not be found. please redownload the torrent."
-		io.Copy(w, encodeResponseMap(responseMap))
+		w.Write(failureResponses[RESP_USER_NOT_FOUND])
 
 		return
 	}
 
 	if !libTorrent.CheckHmac(params.All["secret"], params.All["hash"]) {
-		fmt.Printf("Tracker did not issue this user-secret, or the shared-secret has rotated since this profile was created.")
-
-		responseMap["failure reason"] = "your user secret is out-of-date, please update it from your profile and redownload the torrent."
-		io.Copy(w, encodeResponseMap(responseMap))
+		w.Write(failureResponses[RESP_USER_NOT_FOUND])
 
 		return
 	}
 
 	// TODO: tracker request log.
-	fmt.Printf("Incoming request (user OK) \n---\n %v \n---\n", params)
 
 	if !ok {
-		responseMap["failure reason"] = "tracker could not find requested torrent"
-		io.Copy(w, encodeResponseMap(responseMap))
-
+		w.Write(failureResponses[RESP_TORRENT_NOT_FOUND])
 		return
 	}
 
@@ -103,7 +120,7 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 
 		// TODO: Reaper needs to send this event
 		// when a peer is removed.
-		fmt.Printf("Tracker publishing stats: %v \n", stats.InfoHash)
+
 		s.eventBridge.Publish("tracker", message)
 
 	}()
@@ -113,10 +130,7 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 func encodeResponseMap(responseMap map[string]interface{}) io.Reader {
 	responseBuf := bytes.NewBuffer(make([]byte, 0))
 	encoder := bencode.NewEncoder(responseBuf)
-
-	if err := encoder.Encode(responseMap); err != nil {
-		fmt.Printf("Error encoding response: %s \n", err.Error())
-	}
+	_ = encoder.Encode(responseMap)
 
 	return responseBuf
 }
@@ -132,10 +146,9 @@ func (s *Server) torrentExists(infoHash string) (*libTorrent.Torrent, bool) {
 		//cache miss
 		dbTorrent := &models.Torrent{}
 		if err := dbTorrent.SelectHash(infoHash); err != nil {
-			fmt.Printf("error retrieving torrent by hash: %s \n", infoHash)
 			return nil, false
 		} else {
-			fmt.Printf("found torrent by hash")
+
 			prepareTorrent, err := dbTorrent.LoadTorrent()
 			if err != nil {
 				return nil, false
@@ -147,11 +160,10 @@ func (s *Server) torrentExists(infoHash string) (*libTorrent.Torrent, bool) {
 			return s.torrentCache[infoHash], true
 		}
 
-		fmt.Printf("missed and didn't find torrent in db.")
 		return nil, false
 	} else {
 		//cache hit.
-		fmt.Printf("cache hit for hash \n")
+
 		return torrent, true
 	}
 }
