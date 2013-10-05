@@ -16,6 +16,24 @@ type App struct {
 	Flash   *filters.FlashContext
 }
 
+// Default dispatcher
+// This will be called unless your controller provides its
+// own impl. of a dispatcher.
+//
+// Other controllers have no obligation to call or delegate
+// this dispatcher; it simply provides a default route.
+func (ac *App) Dispatch(action string) (web.Controller, web.Action) {
+	newApp := &App{}
+
+	return newApp, func() *web.Result {
+		res := &web.Result{}
+		res.Body = []byte("your controller needs to provide it's own `Dispatch()` method!")
+		res.Status = 200
+
+		return res
+	}
+}
+
 // Sets the ParameterContext which contains GET/POST data.
 func (ac *App) SetContext(context *filters.DevContext) error {
 	if context == nil {
