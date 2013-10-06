@@ -106,7 +106,7 @@ func (fc *FlashContext) GetViewHelpers() []interface{} {
 // FlashContext requires a chain with a SessionChainLink as well as a FlashableController route.
 //
 // This method can be called to ensure that both those requirements are satisfied for a given route and context chain.
-func (fc *FlashContext) TestContext(route web.Route, chain []web.ChainableContext) error {
+func (fc *FlashContext) TestContext(route web.Controller, chain []web.ChainableContext) error {
 	hasSession := false
 
 	_, ok := route.(FlashableController)

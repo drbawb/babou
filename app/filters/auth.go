@@ -25,7 +25,8 @@ type AuthorizableController interface {
 
 // An implementation of SessionContext that uses it to provide helper methods for authorizing a user.
 type AuthContext struct {
-	isInit bool
+	isInit   bool
+	required bool
 
 	request  *http.Request
 	response http.ResponseWriter
@@ -34,8 +35,12 @@ type AuthContext struct {
 }
 
 // Returns an uninitialized AuthContext suitable for use in a context chain
-func AuthChain() *AuthContext {
-	context := &AuthContext{isInit: false}
+//
+// `required: true` will require that a current sesion meet some criteria
+// otherwise this chain will stop the response during the AFTER-ATTACH resolution
+/// phase
+func AuthChain(required bool) *AuthContext {
+	context := &AuthContext{isInit: false, required: required}
 
 	return context
 }
@@ -134,13 +139,33 @@ func (ac *AuthContext) Can(permission string) bool {
 	// hah, i dont care riiight now.
 }
 
+// Requires authentication based on request/response
+// This requires authentication without involving your controller.
+//
+// Useful for protecting groups of routes.
+//
+// The AuthContext will only call this if it is initialized with
+// `AuthContext.required = true`
+func (ac *AuthContext) AfterAttach(w http.ResponseWriter, r *http.Request) error {
+	if !ac.required {
+		return nil
+	}
+
+	user, err := ac.CurrentUser()
+	if err != nil || user == nil {
+		return errors.New("TODO: UNAUTHORIZED ACCESS FOR CHAIN.")
+	} else {
+		return nil
+	}
+}
+
 // No-op
 func (ac *AuthContext) CloseContext() {}
 
 // This context requires a chain with a SessionChainLink as well as an AuthorizableController route.
 //
 // This method can be used to ensure that those dependencies are satisfied at runtime.
-func (ac *AuthContext) TestContext(route web.Route, chain []web.ChainableContext) error {
+func (ac *AuthContext) TestContext(route web.Controller, chain []web.ChainableContext) error {
 	//requires AuthorizableController and SessionChain
 	hasSession := false
 
@@ -165,7 +190,7 @@ func (ac *AuthContext) TestContext(route web.Route, chain []web.ChainableContext
 
 // Returns a clean instance of AuthContext that can be used safely for a single request.
 func (ac *AuthContext) NewInstance() web.ChainableContext {
-	newAc := &AuthContext{isInit: false}
+	newAc := &AuthContext{isInit: false, required: ac.required}
 
 	return newAc
 }

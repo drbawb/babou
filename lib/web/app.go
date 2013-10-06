@@ -18,14 +18,35 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// A dispatcher returns a request-facing version of itself and
+// action which is considered safe to infoke ONLY IF the context
+// satisfies the dispatcher with no errors.
+type Controller interface {
+	Dispatch(string) (Controller, Action)
+	TestContext([]ChainableContext) error
+}
+
 // Contexts which can be chained together
 // ApplyContext will actually attach the context to a specific controller
 // TestContext can be used to determine if a route supports a given context.
 type ChainableContext interface {
-	NewInstance() ChainableContext                                                   // returns a clean instance that is safe for a single request/response
-	TestContext(Route, []ChainableContext) error                                     // Allows a context to test if a route is properly configured before any requests are serviced.
+	NewInstance() ChainableContext // returns a clean instance that is safe for a single request/response
+
+	// Resolve
+	TestContext(Controller, []ChainableContext) error // Allows a context to test if a route is properly configured before any requests are serviced.
+
+	// Attach
 	ApplyContext(Controller, http.ResponseWriter, *http.Request, []ChainableContext) // Delegate down the chain until somebody answers the request.
+
+	// After
 	CloseContext()
+}
+
+// Contexts which provide a callback for the
+// "AFTER-ATTACH" phase of route resolution.
+type AfterPhaseContext interface {
+	ChainableContext
+	AfterAttach(http.ResponseWriter, *http.Request) error
 }
 
 // Contexts which have view helpers associated with them
@@ -35,25 +56,9 @@ type ViewableContext interface {
 	GetViewHelpers() []interface{}
 }
 
-// A controller handles a request for a given action.
-// Such controller must be willing to accept GET/POST parameters from an HTTP request.
-// These parameters are passed in the form of a Context object.
-type Controller interface {
-	HandleRequest(string) *Result
-}
-
-// A route is part of a controller that is capable
-// of managing instances for a request life-cycle.
-type Route interface {
-	Process(string) (Controller, error) // creates and returns a controller for a route.
-	TestContext([]ChainableContext) error
-	NewInstance() Controller
-	IsSafeInstance() bool // Can this handle requests?
-}
-
 // An action takes a map of request-parameters from the middleware
 // or router and turns it into a servicable HTTP result.
-type Action func(map[string]string) *Result
+type Action func() *Result
 
 // Represents an HTTP response from a `Controller`
 // The middleware or router is responsible for using
@@ -140,5 +145,3 @@ func RetrieveAllParams(request *http.Request) *Param {
 
 	return param
 }
-
-// ordinary post-data

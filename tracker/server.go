@@ -4,7 +4,7 @@
 package tracker
 
 import (
-	"github.com/drbawb/babou/bridge"
+	bridge "github.com/drbawb/babou/bridge"
 	libBabou "github.com/drbawb/babou/lib"
 	libTorrent "github.com/drbawb/babou/lib/torrent"
 	tasks "github.com/drbawb/babou/tracker/tasks"
@@ -21,15 +21,16 @@ type Server struct {
 
 	serverIO     chan int
 	torrentCache map[string]*libTorrent.Torrent
-
-	peerReaper *tasks.PeerReaper
+	peerReaper   *tasks.PeerReaper
 
 	eventBridge *bridge.Bridge
 }
 
 // Initializes a server using babou/lib settings and a communication channel.
 func NewServer(appSettings *libBabou.AppSettings, eventBridge *bridge.Bridge, serverIO chan int) *Server {
-	newServer := &Server{torrentCache: make(map[string]*libTorrent.Torrent)}
+	newServer := &Server{
+		torrentCache: make(map[string]*libTorrent.Torrent),
+	}
 
 	newServer.Port = appSettings.TrackerPort
 	newServer.serverIO = serverIO

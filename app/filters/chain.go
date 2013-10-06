@@ -53,11 +53,7 @@ func (cc *contextChain) Chain(context ...web.ChainableContext) *contextChain {
 	return cc
 }
 
-// Executes the request through the context chain on a route#action pairing.
-// `panics` if #TestContext() of any context in the chain fails for the given route.
-//	  Note that this method wraps the chain with a DevContext; so calling this method
-//    will ensure that the `ParamterizedChain` interface is fulfilled for all other chainlinks.
-func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc {
+func (cc *contextChain) Resolve(route web.Controller, action string) http.HandlerFunc {
 	panicMessages := make([]string, 0)
 
 	if route == nil {
@@ -79,41 +75,67 @@ func (cc *contextChain) Execute(route web.Route, action string) http.HandlerFunc
 		panic(panicMessages)
 	}
 
-	// Will create an HttpHandler that encapsulates the chain's current state.
 	return func(response http.ResponseWriter, request *http.Request) {
-		//Generate a controller for the route
-		controller, err := route.Process(action)
-		if err != nil {
-			response.Write([]byte("server error."))
-		}
+		if v, ok := route.(web.Controller); ok {
+			responder, dispatchedAction := v.Dispatch(action)
 
-		currentChain := make([]web.ChainableContext, len(cc.list))
+			// Create fresh chainlink.
+			currentChain := make([]web.ChainableContext, len(cc.list))
+			for i := 0; i < len(cc.list); i++ {
+				currentChain[i] = cc.list[i].NewInstance() // clean filters.
 
-		for i := 0; i < len(cc.list); i++ {
-			currentChain[i] = cc.list[i].NewInstance()
-
-			currentChain[i].ApplyContext(controller, response, request, currentChain)
-		}
-
-		result := controller.HandleRequest(action)
-
-		for i := 0; i < len(cc.list); i++ {
-			currentChain[i].CloseContext()
-		}
-
-		if result.Status >= 300 && result.Status <= 399 {
-			handleRedirect(result.Redirect, response, request)
-		} else if result.Status == 404 {
-			http.NotFound(response, request)
-		} else if result.Status == 500 {
-			http.Error(response, string(result.Body), 500)
-		} else {
-			// Assume 200
-			if result.IsFile && result.Filename != "" {
-				response.Header().Add("content-disposition", fmt.Sprintf(`attachment; filename="%s"`, result.Filename))
+				// applies context, with req/resp, to the fresh controller.
+				currentChain[i].ApplyContext(responder, response, request, currentChain)
 			}
-			response.Write(result.Body)
+
+			// AFTER-ATTACH resolution phase
+			//
+			// TODO: Could avoid reflection penalty here during resolution phase.
+			// ---
+			// Sort chains into "buckets" typed by their phase and do a linear
+			// scan through those typed buckets here.
+			for i := 0; i < len(currentChain); i++ {
+				if v, ok := currentChain[i].(web.AfterPhaseContext); ok {
+					err := v.AfterAttach(response, request)
+					if err != nil {
+						// allow after-attach to stop request/response
+						response.Write([]byte(err.Error()))
+						return
+					}
+				}
+			}
+
+			// Dispatch will resolve to the controller's `Dispatch()` method.
+			// NOTE: this might dispatch to an embedded controller.
+			result := dispatchedAction() // call when ready
+
+			// Have chains clean up.
+			for i := 0; i < len(cc.list); i++ {
+				currentChain[i].CloseContext()
+			}
+
+			// Have middleware deal with current result.
+			handleResult(result, response, request)
+		} else {
+			response.Write([]byte("ng resolver requires a dispatcher"))
 		}
+
+	}
+}
+
+func handleResult(result *web.Result, response http.ResponseWriter, request *http.Request) {
+	if result.Status >= 300 && result.Status <= 399 {
+		handleRedirect(result.Redirect, response, request)
+	} else if result.Status == 404 {
+		http.NotFound(response, request)
+	} else if result.Status == 500 {
+		http.Error(response, string(result.Body), 500)
+	} else {
+		// Assume 200
+		if result.IsFile && result.Filename != "" {
+			response.Header().Add("content-disposition", fmt.Sprintf(`attachment; filename="%s"`, result.Filename))
+		}
+		response.Write(result.Body)
 	}
 }
 

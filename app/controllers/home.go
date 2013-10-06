@@ -13,8 +13,6 @@ import (
 // Maps an action to results or returns 404 otherwise.
 
 type HomeController struct {
-	safeInstance bool
-
 	*App
 	auth *filters.AuthContext
 
@@ -25,34 +23,33 @@ type HomeController struct {
 // This instance is ready to route requests.
 //
 // Actions for this controller must be defined here.
-func (hc *HomeController) NewInstance() web.Controller {
+func (hc *HomeController) Dispatch(action string) (web.Controller, web.Action) {
 	newHc := &HomeController{
-		safeInstance: true,
-		actionMap:    make(map[string]web.Action),
-		App:          &App{},
+		actionMap: make(map[string]web.Action),
+		App:       &App{},
 	}
 
 	//add your actions here.
 	newHc.actionMap["index"] = newHc.Index
 
-	return newHc
+	return newHc, newHc.actionMap[action]
 }
 
 // Controller actions and logic.
 
 // Will display a public welcome page if the user is not logged in
 // Otherwise it will redirect the user to the /news page.
-func (hc *HomeController) Index(params map[string]string) *web.Result {
+func (hc *HomeController) Index() *web.Result {
 	if hc.auth.Can("homeIndex") {
-		return hc.blog(params)
+		return hc.blog()
 	} else {
-		return hc.homePage(params)
+		return hc.homePage()
 	}
 }
 
 // Public route - rendered as a public index if the user
 // is not logged in or is not authenticated.
-func (hc *HomeController) homePage(params map[string]string) *web.Result {
+func (hc *HomeController) homePage() *web.Result {
 	output := &web.Result{}
 
 	output.Status = 200
@@ -68,7 +65,7 @@ func (hc *HomeController) homePage(params map[string]string) *web.Result {
 
 // Private route - rendered instead of public index if the user
 // is properly authenticated.
-func (hc *HomeController) blog(params map[string]string) *web.Result {
+func (hc *HomeController) blog() *web.Result {
 	output := &web.Result{}
 
 	output.Status = 200
@@ -103,38 +100,10 @@ func (hc *HomeController) blog(params map[string]string) *web.Result {
 // Returns a HomeController instance that is not safe across requests.
 // This is useful for routing as well as context-testing.
 func NewHomeController() *HomeController {
-	hc := &HomeController{safeInstance: false}
-
-	return hc
+	return &HomeController{}
 }
 
 // Implement Controller interface
-
-// Performs one of the actions mapped to this controller.
-// Returns 404 if the action is not found in the map.
-func (hc *HomeController) HandleRequest(action string) *web.Result {
-	if !hc.safeInstance {
-		return &web.Result{Status: 500, Body: []byte("The HomeController cannot service requests from users.")}
-	}
-
-	if hc.actionMap[action] != nil {
-		return hc.actionMap[action](hc.Dev.GetParams().All)
-	} else {
-		return &web.Result{Status: 404, Body: []byte("Not found")}
-	}
-}
-
-// Retruns true if this controller is ready to process a request.
-func (hc *HomeController) IsSafeInstance() bool {
-	return hc.safeInstance
-}
-
-// Process calls the application controller's default route processor.
-// This will return a fresh instance of this controller that will be used
-// for a single request-response lifecycle.
-func (hc *HomeController) Process(action string) (web.Controller, error) {
-	return process(hc, action)
-}
 
 // Tests that the current context-chain is suitable for this request.
 // For the HomeController: this tests the presence of the default chain

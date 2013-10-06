@@ -18,6 +18,21 @@ const DEBUG_RELOAD = false
 // from the HTTP server and direct them to an appropriate controller
 var Router *mux.Router = nil
 
+// A renderer maps actions to executable views.
+type Renderer interface {
+	RenderWith(string, string, string, ...interface{}) string
+}
+
+type MustacheRenderer struct {
+	viewsRoot string
+}
+
+func NewMustacheRenderer(viewsPath string) *MustacheRenderer {
+	mr := &MustacheRenderer{viewsRoot: viewsPath}
+
+	return mr
+}
+
 // A context that will be passed to the underlying html template.
 // Yield is a function that will be replaced by the renderer. It will call
 // your requested template and automatically pass it the supplied `Context`
@@ -95,9 +110,23 @@ func RenderIn(templateName, controllerName, actionName string, viewData *ViewDat
 }
 
 //DEV: using some caching to hopefully cut down file i/o
+
 func RenderWith(templateName, controllerName, actionName string, filterHelpers ...interface{}) string {
-	layoutFile := fmt.Sprintf("app/views/%s.template", templateName)
-	filename := fmt.Sprintf("app/views/%s/%s.template", controllerName, actionName)
+	return renderWith("app/views", templateName, controllerName, actionName, filterHelpers...)
+}
+
+func (mu *MustacheRenderer) RenderWith(
+	templateName,
+	controllerName,
+	actionName string,
+	filterHelpers ...interface{}) string {
+
+	return renderWith(mu.viewsRoot, templateName, controllerName, actionName, filterHelpers...)
+}
+
+func renderWith(viewsRoot, templateName, controllerName, actionName string, filterHelpers ...interface{}) string {
+	layoutFile := fmt.Sprintf("%s/%s.template", viewsRoot, templateName)
+	filename := fmt.Sprintf("%s/%s/%s.template", viewsRoot, controllerName, actionName)
 
 	//placeholder for dev.
 

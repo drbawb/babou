@@ -43,7 +43,7 @@ func ParameterChain() *DevContext {
 func (dc *DevContext) CloseContext() {}
 
 // The parameter context requires that a route implements ParamterizedController
-func (dc *DevContext) TestContext(route web.Route, chain []web.ChainableContext) error {
+func (dc *DevContext) TestContext(route web.Controller, chain []web.ChainableContext) error {
 	_, ok := route.(ParameterizedController)
 	if !ok {
 		return errors.New(fmt.Sprintf("Route :: %T :: does not support the paramter context", route))

@@ -88,7 +88,7 @@ func EventChain(serverBridge *bridge.Bridge) *EventContext {
 }
 
 // Just need a supported controller and a link to the event bridge
-func (ec *EventContext) TestContext(route web.Route, chain []web.ChainableContext) error {
+func (ec *EventContext) TestContext(route web.Controller, chain []web.ChainableContext) error {
 	_, ok := route.(EventController)
 	if !ok {
 		return errors.New(fmt.Sprintf("The route %v does not support the event context!", route))
