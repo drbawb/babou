@@ -7,12 +7,11 @@
 </div>
 {{/Flash}}
 
-<div class="alert alert-warning" style="word-wrap:break-word;">
-	<!-- TODO: Shows up until the user dismisses it permanently. -->
+<div class="col-md-9 alert alert-warning" style="word-wrap:break-word;">
 	<p>
 	When creating your new torrent please set the tracker to <br />
 	<div class="form-group">
-		<input type="email" class="form-control" id="exampleInputEmail1" value="{{AnnounceURL}}">
+		<input type="text" class="form-control" id="announce-url" value="{{AnnounceURL}}">
 	</div>
 	</p>
 

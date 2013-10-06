@@ -1,4 +1,4 @@
-package controllers
+package admin
 
 import (
 	errors "errors"
@@ -14,6 +14,9 @@ type App struct {
 	Dev     *filters.DevContext
 	Session *filters.SessionContext
 	Flash   *filters.FlashContext
+	Auth    *filters.AuthContext
+
+	Out web.Renderer
 }
 
 // Default dispatcher
@@ -35,12 +38,15 @@ func (ac *App) Dispatch(action string) (web.Controller, web.Action) {
 }
 
 // Sets the ParameterContext which contains GET/POST data.
+// Also sets up the template rendering for this application.
 func (ac *App) SetContext(context *filters.DevContext) error {
 	if context == nil {
 		return errors.New("No context was supplied to this controller!")
 	}
 
+	ac.Out = web.NewMustacheRenderer("app/admin/views")
 	ac.Dev = context
+
 	return nil
 }
 
@@ -63,6 +69,16 @@ func (ac *App) SetFlashContext(context *filters.FlashContext) error {
 	}
 
 	ac.Flash = context
+
+	return nil
+}
+
+func (ac *App) SetAuthContext(context *filters.AuthContext) error {
+	if context == nil {
+		return errors.New("No AuthContext was supplied to this controller!")
+	}
+
+	ac.Auth = context
 
 	return nil
 }

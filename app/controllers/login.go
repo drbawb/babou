@@ -26,11 +26,11 @@ type LoginController struct {
 	actionMap map[string]web.Action
 }
 
-// Creates an instance of this controller with action routes.
-// This instance is ready to route requests.
+// Dispatch() makes this controller implement a dispatcher.
 //
-// Actions for this controller must be defined here.
-func (lc *LoginController) NewInstance() web.Controller {
+// The dispatcher instantiates a request-facing instance of this
+// controller and returns its action or nil if the action is not found.
+func (lc *LoginController) Dispatch(action string) (web.Controller, web.Action) {
 	newLc := &LoginController{
 		safeInstance: true,
 		actionMap:    make(map[string]web.Action),
@@ -39,18 +39,20 @@ func (lc *LoginController) NewInstance() web.Controller {
 
 	//login page.
 	newLc.actionMap["index"] = newLc.Index
+
 	//registration
 	newLc.actionMap["create"] = newLc.Create
 	newLc.actionMap["new"] = newLc.New
+
 	//session
 	newLc.actionMap["session"] = newLc.Session
 	newLc.actionMap["logout"] = newLc.Logout
 
-	return newLc
+	return newLc, newLc.actionMap[action]
 }
 
 // Displays the login page.
-func (lc *LoginController) Index(params map[string]string) *web.Result {
+func (lc *LoginController) Index() *web.Result {
 	output := &web.Result{}
 
 	output.Status = 200
@@ -62,7 +64,7 @@ func (lc *LoginController) Index(params map[string]string) *web.Result {
 }
 
 // Creates a new session after a user attempts a login.
-func (lc *LoginController) Session(params map[string]string) *web.Result {
+func (lc *LoginController) Session() *web.Result {
 	output := &web.Result{}
 	// otherwise redirect those bitches to loginPage with an error.
 	redirectPath := &web.RedirectPath{
@@ -71,7 +73,7 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 
 	// check credentials and get user.
 	user := &models.User{}
-	err := user.SelectUsername(params["username"])
+	err := user.SelectUsername(lc.Dev.Params.All["username"])
 	if err != nil {
 		lc.Flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
 		output.Status = 302
@@ -83,7 +85,7 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 		return output
 	}
 
-	err = user.CheckHash(params["password"])
+	err = user.CheckHash(lc.Dev.Params.All["password"])
 	if err != nil {
 		fmt.Printf("error logging you in.")
 		lc.Flash.AddFlash(fmt.Sprintf("Error logging you in: %s", err.Error()))
@@ -109,7 +111,7 @@ func (lc *LoginController) Session(params map[string]string) *web.Result {
 
 // Removes a users session from the database. Removes their session cookie.
 // Then redirects them to the homepage. (Which should now show the welcome banner.)
-func (lc *LoginController) Logout(params map[string]string) *web.Result {
+func (lc *LoginController) Logout() *web.Result {
 	output := &web.Result{}
 	// otherwise redirect those bitches to loginPage with an error.
 	redirectPath := &web.RedirectPath{
@@ -138,7 +140,7 @@ func (lc *LoginController) Logout(params map[string]string) *web.Result {
 }
 
 // Displays the registration form.
-func (lc *LoginController) New(params map[string]string) *web.Result {
+func (lc *LoginController) New() *web.Result {
 	output := &web.Result{}
 
 	output.Status = 200
@@ -150,11 +152,11 @@ func (lc *LoginController) New(params map[string]string) *web.Result {
 }
 
 // Handles the results from the registration form submission.
-func (lc *LoginController) Create(params map[string]string) *web.Result {
+func (lc *LoginController) Create() *web.Result {
 
-	username, password := params["username"], params["password"]
+	username, password := lc.Dev.Params.All["username"], lc.Dev.Params.All["password"]
 	// redirect to login#New() w/ flash message saying passwords don't match.
-	if params["password"] != params["confirm-password"] {
+	if lc.Dev.Params.All["password"] != lc.Dev.Params.All["confirm-password"] {
 		fmt.Printf("redirecting to new page; password mismatch")
 		lc.Flash.AddFlash("the password and confirmation you entered do not match. Please double-check your supplied passwords.")
 		redirectPath := &web.RedirectPath{
@@ -197,30 +199,7 @@ func NewLoginController() *LoginController {
 	return lc
 }
 
-// Performs one of the actions mapped to this controller.
-// Returns 404 if the action is not found in the map.
-func (lc *LoginController) HandleRequest(action string) *web.Result {
-	if !lc.safeInstance {
-		return &web.Result{Status: 500, Body: []byte("Server could not route your request.")}
-	}
-
-	if lc.actionMap[action] != nil {
-		return lc.actionMap[action](lc.Dev.GetParams().All)
-	} else {
-		return &web.Result{Status: 404, Body: []byte("Not found")}
-	}
-}
-
-// Process calls the application controller's default route processor.
-// This will return a fresh instance of this controller that will be used
-// for a single request-response lifecycle.
-func (lc *LoginController) Process(action string) (web.Controller, error) {
-	//default route processor.
-	return process(lc, action)
-}
-
 // Sets up contexts.
-
 func (lc *LoginController) SetAuthContext(context *filters.AuthContext) error {
 	if lc.safeInstance {
 		lc.auth = context
@@ -253,9 +232,4 @@ func (lc *LoginController) TestContext(chain []web.ChainableContext) error {
 	}
 
 	return nil
-}
-
-// Returns true if this controller is ready to process a request.
-func (lc *LoginController) IsSafeInstance() bool {
-	return lc.safeInstance
 }
