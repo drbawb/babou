@@ -1,14 +1,15 @@
 package app
 
 import (
-	http "net/http"
+	admin "github.com/drbawb/babou/app/admin"
 
 	controllers "github.com/drbawb/babou/app/controllers"
 	filters "github.com/drbawb/babou/app/filters"
-
 	web "github.com/drbawb/babou/lib/web"
 
 	mux "github.com/gorilla/mux"
+	log "log"
+	http "net/http"
 )
 
 func LoadRoutes(s *Server) *mux.Router {
@@ -16,11 +17,19 @@ func LoadRoutes(s *Server) *mux.Router {
 	web.Router = r
 
 	// Shorthand for controllers
+
 	home := controllers.NewHomeController()
 	login := controllers.NewLoginController()
 	torrent := controllers.NewTorrentController()
 
 	eventChain := filters.EventChain(s.AppBridge)
+
+	// Handle admin routes
+	adminPanel := r.PathPrefix("/admin").Subrouter()
+	adminPanel, err := admin.LoadRoutes(adminPanel)
+	if err != nil {
+		log.Fatalf("Error loading sub-application: /admin, because: %s \n", err.Error())
+	}
 
 	// Shows public homepage, redirects to private site if valid session can be found.
 	r.HandleFunc("/",
@@ -109,17 +118,4 @@ func LoadRoutes(s *Server) *mux.Router {
 		web.DisableDirectoryListing(http.FileServer(http.Dir("assets/")))))
 
 	return r
-}
-
-//TODO: should move some of this to a library package.
-func handleRedirect(redirect *web.RedirectPath, response http.ResponseWriter, request *http.Request) {
-	if redirect.NamedRoute != "" {
-		url, err := web.Router.Get(redirect.NamedRoute).URL()
-		if err != nil {
-			http.Error(response, string("While trying to redirect you to another page the server encountered an error. Please reload the homepage"),
-				500)
-		}
-
-		http.Redirect(response, request, url.Path, 302)
-	}
 }
