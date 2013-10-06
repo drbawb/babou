@@ -93,6 +93,8 @@ func (sc *SessionContext) SetRequestPair(w http.ResponseWriter, r *http.Request)
 
 // Sets the session store to the specified store; or fetches one from the
 // default database-backed session store.
+//
+// TODO: Should be configurable; must be shared among cooperative frontends.
 func (sc *SessionContext) SetStore(store sessions.Store) {
 	if store == nil {
 		sc.store = dbStore.NewDatabaseStore([]byte("3d1fd34f389d799a2539ff554d922683"))

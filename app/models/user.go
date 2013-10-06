@@ -64,6 +64,20 @@ func (u *User) SelectId(id int) error {
 	return nil //safe to use pointer.
 }
 
+func (u *User) Delete() error {
+	deleteUserById := `DELETE FROM "users" WHERE user_id = $1`
+	dba := func(dbConn *sql.DB) error {
+		_, err := dbConn.Exec(deleteUserById, u.UserId)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return db.ExecuteFn(dba)
+}
+
 // Select user by username and populate the current `user` struct with the record data.
 // Returns an error if there was a problem. fetching the user information from the database.
 func (u *User) SelectUsername(username string) error {
