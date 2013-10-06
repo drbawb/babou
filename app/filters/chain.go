@@ -89,17 +89,24 @@ func (cc *contextChain) Resolve(route web.Controller, action string) http.Handle
 			}
 
 			// AFTER-ATTACH resolution phase
+			//
+			// TODO: Could avoid reflection penalty here during resolution phase.
+			// ---
+			// Sort chains into "buckets" typed by their phase and do a linear
+			// scan through those typed buckets here.
 			for i := 0; i < len(currentChain); i++ {
 				if v, ok := currentChain[i].(web.AfterPhaseContext); ok {
 					err := v.AfterAttach(response, request)
 					if err != nil {
-						response.Write([]byte(err.Error())) // allow after-attach to stop request/response
+						// allow after-attach to stop request/response
+						response.Write([]byte(err.Error()))
 						return
 					}
 				}
 			}
 
-			// Dispatch action
+			// Dispatch will resolve to the controller's `Dispatch()` method.
+			// NOTE: this might dispatch to an embedded controller.
 			result := dispatchedAction() // call when ready
 
 			// Have chains clean up.
