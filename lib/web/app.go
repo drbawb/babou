@@ -42,6 +42,13 @@ type ChainableContext interface {
 	CloseContext()
 }
 
+// Contexts which provide a callback for the
+// "AFTER-ATTACH" phase of route resolution.
+type AfterPhaseContext interface {
+	ChainableContext
+	AfterAttach(http.ResponseWriter, *http.Request) error
+}
+
 // Contexts which have view helpers associated with them
 // If they are passed to a RenderWith method their view helpers will be added.
 type ViewableContext interface {
