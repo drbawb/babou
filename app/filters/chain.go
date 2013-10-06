@@ -88,6 +88,17 @@ func (cc *contextChain) Resolve(route web.Controller, action string) http.Handle
 				currentChain[i].ApplyContext(responder, response, request, currentChain)
 			}
 
+			// AFTER-ATTACH resolution phase
+			for i := 0; i < len(currentChain); i++ {
+				if v, ok := currentChain[i].(web.AfterPhaseContext); ok {
+					err := v.AfterAttach(response, request)
+					if err != nil {
+						response.Write([]byte(err.Error())) // allow after-attach to stop request/response
+						return
+					}
+				}
+			}
+
 			// Dispatch action
 			result := dispatchedAction() // call when ready
 
