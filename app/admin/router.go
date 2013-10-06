@@ -12,14 +12,19 @@ import (
 // Attaches routes to the parentRouter and returns it.
 func LoadRoutes(parentRouter *mux.Router) (*mux.Router, error) {
 	// Shorthand for controllers
-	admin := &controllers.AdminTestController{}
+	admin := &controllers.UsersController{}
+	defaultChain := filters.BuildDefaultChain().
+		Chain(filters.AuthChain(true))
 
-	// TODO: SUBROUTER
-	parentRouter.HandleFunc("/",
-		filters.BuildDefaultChain().
-			Resolve(admin, "index")).
+	parentRouter.HandleFunc("/users",
+		defaultChain.
+			Resolve(admin, "index"))
+
+	parentRouter.HandleFunc("/users/judge/{id}",
+		defaultChain.
+			Resolve(admin, "delete")).
 		Methods("GET").
-		Name("admin")
+		Name("judgeUser")
 
 	return parentRouter, nil
 }

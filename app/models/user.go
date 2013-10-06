@@ -39,6 +39,45 @@ const (
 	FAIL_GEN_SECRET                      = 1 << iota
 )
 
+func AllUsers() ([]*User, error) {
+	usersList := make([]*User, 0)
+	selectUsers := `SELECT user_id, username, passwordhash, passwordsalt, secret, secret_hash
+	FROM "users"`
+
+	dba := func(dbConn *sql.DB) error {
+		rows, err := dbConn.Query(selectUsers)
+		if err != nil {
+			return err
+		}
+
+		for rows.Next() {
+			u := &User{}
+			err := rows.Scan(
+				&u.UserId,
+				&u.Username,
+				&u.passwordHash,
+				&u.passwordSalt,
+				&u.Secret,
+				&u.SecretHash)
+
+			if err != nil {
+				return err
+			}
+
+			usersList = append(usersList, u)
+		}
+
+		return nil
+	}
+
+	err := db.ExecuteFn(dba)
+	if err != nil {
+		return usersList, err
+	}
+
+	return usersList, err //safe to use pointer.
+}
+
 // Select user by ID number and populate the current `user` struct with the record data.
 // Returns an error if there was a problem. fetching the user information from the database.
 func (u *User) SelectId(id int) error {
