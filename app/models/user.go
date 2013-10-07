@@ -21,6 +21,9 @@ type User struct {
 	UserId   int
 	Username string
 
+	Email    string
+	emailSql sql.NullString
+
 	passwordHash string
 	passwordSalt string
 
@@ -41,7 +44,7 @@ const (
 
 func AllUsers() ([]*User, error) {
 	usersList := make([]*User, 0)
-	selectUsers := `SELECT user_id, username, passwordhash, passwordsalt, secret, secret_hash
+	selectUsers := `SELECT user_id, username, email, passwordhash, passwordsalt, secret, secret_hash
 	FROM "users"`
 
 	dba := func(dbConn *sql.DB) error {
@@ -55,6 +58,7 @@ func AllUsers() ([]*User, error) {
 			err := rows.Scan(
 				&u.UserId,
 				&u.Username,
+				&u.emailSql,
 				&u.passwordHash,
 				&u.passwordSalt,
 				&u.Secret,
@@ -63,6 +67,8 @@ func AllUsers() ([]*User, error) {
 			if err != nil {
 				return err
 			}
+
+			u.Email = u.emailSql.String
 
 			usersList = append(usersList, u)
 		}
