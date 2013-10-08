@@ -45,11 +45,12 @@ func init() {
 
 }
 
-// Handles an announce from a client
+// Handles announce from a client.
 // Some TODOs:
 //  * Bail out early if secret/hash or request is obviously malformed. (Not from a well-behaved torrent client.)
 //  * Cache users and their secrets. (Presumably if they have started one torrent they will start many more.)
 //  * Intelligent peer-list generation.
+//  * Set `Content-Length` ?
 func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 	w.Header().Set("Content-Type", "text/plain")
 
@@ -111,7 +112,7 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 
 		// Send stats over event bridge.
 		stats := libBridge.TorrentStatMessage{}
-		stats.InfoHash = torrent.Info.EncodeInfoToString()
+		stats.InfoHash = torrent.InfoHash
 		stats.Seeding, stats.Leeching = torrent.EnumeratePeers()
 
 		message := &libBridge.Message{}
@@ -126,7 +127,7 @@ func announceHandle(w http.ResponseWriter, r *http.Request, s *Server) {
 	}()
 }
 
-// Bencodes a dictionary as a tracker response.
+// Bencodes an arbitrary dictionary as a tracker response.
 func encodeResponseMap(responseMap map[string]interface{}) io.Reader {
 	responseBuf := bytes.NewBuffer(make([]byte, 0))
 	encoder := bencode.NewEncoder(responseBuf)
@@ -135,34 +136,41 @@ func encodeResponseMap(responseMap map[string]interface{}) io.Reader {
 	return responseBuf
 }
 
-// Checks if the torrent exists in cache.
-// Otherwise looks it up from database.
-// TODO: this cache will need to be protected by sync primitives in the future.
-// (that can probably wait until the distributed tracker cache / site<->tracker pipeline is finished.)
+// Checks if the torrent exists in cache. Otherwise attempts to fill
+// cache from the database.
+//
+// TODO:
+// * Cache-filler should probably have some sort of timeout per torrent.
+// * Cache-filler should check that `info_hash` is not obviously malformed.
+// * Distributed/coordinated cache fills? [ref: groupcache]
 func (s *Server) torrentExists(infoHash string) (*libTorrent.Torrent, bool) {
 	torrent := s.torrentCache[infoHash]
 
 	if torrent == nil {
-		//cache miss
+		// Cache miss
+
 		dbTorrent := &models.Torrent{}
 		if err := dbTorrent.SelectHash(infoHash); err != nil {
+			// Check DB for torrent
 			return nil, false
 		} else {
-
+			// Attempt to lib.Torrent{} from database model failed.
 			prepareTorrent, err := dbTorrent.LoadTorrent()
 			if err != nil {
 				return nil, false
 			}
 
 			trackerTorrent := libTorrent.NewTorrent(prepareTorrent)
+			trackerTorrent.InfoHash = dbTorrent.InfoHash
 			s.torrentCache[infoHash] = trackerTorrent
 
 			return s.torrentCache[infoHash], true
 		}
 
+		// All torrent cache-filling strategies have failed.
 		return nil, false
 	} else {
-		//cache hit.
+		// Cache hit
 
 		return torrent, true
 	}

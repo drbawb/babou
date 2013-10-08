@@ -26,8 +26,9 @@ const (
 // A torrent includes a [decoded] copy of the metainfo file
 // as well as a list of active peers that is periodically culled.
 type Torrent struct {
-	Info  *TorrentFile
-	peers *PeerMap
+	InfoHash string
+	Info     *TorrentFile
+	peers    *PeerMap
 }
 
 // Represents a `babou` torrent.
