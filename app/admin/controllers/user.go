@@ -34,7 +34,7 @@ func (au *UsersController) Index() *web.Result {
 	usersList, err := models.AllUsers()
 	if err != nil {
 		//todo flash error
-		//res.Body = []byte(au.Out.RenderWith("bootstrap", "user", "index"))
+		res.Body = []byte(err.Error())
 		return res
 	}
 

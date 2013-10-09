@@ -5,14 +5,24 @@
 <div class="row">
 	<table class="table table-striped">
 		<thead>
+			<th> ID </th>
 			<th> Username </th>
+			<th> Email Address </th>
 			<th> JUDGEMENT! </th>
 		</thead>
 		<tbody>
 			{{#Users}}
 			<tr>
+				<td> {{UserId}} </td>
 				<td> {{Username}} </td>
+				<td> {{Email}} </td>
 				<td> <a href="/admin/users/judge/{{UserId}}">DELETE</a> </td>
+			</tr>
+			{{/Users}}
+
+			{{^Users}}
+			<tr>
+				<td colspan="3">No users found.</td>
 			</tr>
 			{{/Users}}
 		</tbody>
