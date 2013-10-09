@@ -20,7 +20,7 @@
 
 			    <hr />
 
-			    <h4> Which torrent clients are allowed. </h4>
+			    <h4> Which torrent clients are allowed? </h4>
 			    <br />
 
 			    <p> 
@@ -45,8 +45,6 @@
 
 	<!-- sidebar -->
 	<div class="col-md-4">
-		
-
 		<div class="panel panel-default">
 		  <div class="panel-body">
 		    {{> app/views/home/welcome_message}}

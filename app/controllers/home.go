@@ -96,7 +96,20 @@ func (hc *HomeController) Faq() *web.Result {
 	output := &web.Result{Status: 200}
 
 	// TODO: dump markdown formatted blurb.
-	output.Body = []byte(web.RenderWith("bootstrap", "home", "faq"))
+	user, err := hc.auth.CurrentUser()
+	if err != nil {
+		fmt.Printf("error printing user: %s \n", err.Error())
+		output.Status = 500
+		return output
+	}
+
+	outData := &struct {
+		Username string
+	}{
+		Username: user.Username,
+	}
+
+	output.Body = []byte(web.RenderWith("bootstrap", "home", "faq", outData))
 
 	return output
 }
