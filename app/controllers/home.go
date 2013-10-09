@@ -31,6 +31,7 @@ func (hc *HomeController) Dispatch(action string) (web.Controller, web.Action) {
 
 	//add your actions here.
 	newHc.actionMap["index"] = newHc.Index
+	newHc.actionMap["faq"] = newHc.Faq
 
 	return newHc, newHc.actionMap[action]
 }
@@ -50,9 +51,7 @@ func (hc *HomeController) Index() *web.Result {
 // Public route - rendered as a public index if the user
 // is not logged in or is not authenticated.
 func (hc *HomeController) homePage() *web.Result {
-	output := &web.Result{}
-
-	output.Status = 200
+	output := &web.Result{Status: 200}
 	outData := &struct{}{}
 
 	output.Body = []byte(web.RenderWith(
@@ -66,9 +65,7 @@ func (hc *HomeController) homePage() *web.Result {
 // Private route - rendered instead of public index if the user
 // is properly authenticated.
 func (hc *HomeController) blog() *web.Result {
-	output := &web.Result{}
-
-	output.Status = 200
+	output := &web.Result{Status: 200}
 
 	testArticles := make([]*struct{ Text string }, 0)
 	testArticles = append(testArticles, &struct{ Text string }{Text: "what up bro?"})
@@ -90,6 +87,16 @@ func (hc *HomeController) blog() *web.Result {
 	}
 
 	output.Body = []byte(web.RenderWith("bootstrap", "home", "news", outData))
+
+	return output
+}
+
+// Displays the "about us" page & contact info.
+func (hc *HomeController) Faq() *web.Result {
+	output := &web.Result{Status: 200}
+
+	// TODO: dump markdown formatted blurb.
+	output.Body = []byte(web.RenderWith("bootstrap", "home", "faq"))
 
 	return output
 }

@@ -1,0 +1,64 @@
+{{> app/views/home/navbar}}
+
+<div class="row">
+	<!-- main content -->
+	<div class="col-md-8">
+		<div class="col-md-12">
+			<div class="panel panel-default">
+			  <div class="panel-body">
+			    <h4> How do I upload a torrent? </h4>
+			    <br />
+
+			    <ol>
+			    	<li> Go to the <code>Torrents</code> page </li>
+			    	<li> Click on <code>Upload New Torrent</code> at the bottom of the page. </li>
+			    	<li> Create a .torrent using your favorite client</li>
+			    	<li> Set the <code>announce URL</code> to the one listed on the torrent upload page. </li>
+			    	<li> Upload the .torrent file to <code>babou</code> </li>
+			    	<li> Begin seeding your torrent, or wait for the tracker to refresh. </li>
+			    </ol>
+
+			    <hr />
+
+			    <h4> Which torrent clients are allowed. </h4>
+			    <br />
+
+			    <p> 
+					This <code>babou instance</code> does not blacklist or
+					whitelist any clients.
+				</p>
+				<p>
+					You are free to use any torrent clients you like.
+					Please note that the site may use counter-measures to detect
+					tampering with the statistics the tracker collects.
+				</p>
+				<p>
+					Please read the rules to ensure your client does not violate
+					any of this tracker's policies.
+			    </p>
+
+
+			  </div>
+			</div>	
+		</div>
+	</div>
+
+	<!-- sidebar -->
+	<div class="col-md-4">
+		
+
+		<div class="panel panel-default">
+		  <div class="panel-body">
+		    {{> app/views/home/welcome_message}}
+		  </div>
+		</div>	
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-md-12 well well-sm">
+		&copy; Copyright Robert Straw, 2013. All rights reserved.
+	</div>
+</div>
+
+
