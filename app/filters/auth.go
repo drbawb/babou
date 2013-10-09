@@ -153,7 +153,9 @@ func (ac *AuthContext) AfterAttach(w http.ResponseWriter, r *http.Request) error
 
 	user, err := ac.CurrentUser()
 	if err != nil || user == nil {
-		return errors.New("TODO: UNAUTHORIZED ACCESS FOR CHAIN.")
+		return errors.New("YOU MUST BE LOGGED IN TO VIEW THIS PAGE.")
+	} else if !user.IsAdmin {
+		return errors.New("YOU ARE NOT AUTHORIZED TO VIEW THIS PAGE.")
 	} else {
 		return nil
 	}
