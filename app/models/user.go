@@ -20,6 +20,7 @@ import (
 type User struct {
 	UserId   int
 	Username string
+	IsAdmin  bool
 
 	passwordHash string
 	passwordSalt string
@@ -81,12 +82,12 @@ func AllUsers() ([]*User, error) {
 // Select user by ID number and populate the current `user` struct with the record data.
 // Returns an error if there was a problem. fetching the user information from the database.
 func (u *User) SelectId(id int) error {
-	selectUserById := `SELECT user_id, username, passwordhash, passwordsalt, secret, secret_hash
+	selectUserById := `SELECT user_id, username, is_admin, passwordhash, passwordsalt, secret, secret_hash
 	FROM "users" WHERE user_id = $1`
 
 	dba := func(dbConn *sql.DB) error {
 		row := dbConn.QueryRow(selectUserById, id)
-		err := row.Scan(&u.UserId, &u.Username, &u.passwordHash, &u.passwordSalt, &u.Secret, &u.SecretHash)
+		err := row.Scan(&u.UserId, &u.Username, &u.IsAdmin, &u.passwordHash, &u.passwordSalt, &u.Secret, &u.SecretHash)
 		if err != nil {
 			return err
 		}
