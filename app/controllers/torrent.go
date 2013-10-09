@@ -209,7 +209,7 @@ func (tc *TorrentController) Download() *web.Result {
 	}
 
 	output.IsFile = true
-	output.Filename = "test.torrent"
+	output.Filename = record.Name + ".torrent"
 	output.Body = outFile
 
 	//TODO: Test attributes.
