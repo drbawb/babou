@@ -117,12 +117,6 @@ func (tc *TorrentController) Create() *web.Result {
 		return redirect
 	}
 
-	outData := &struct {
-		Username string
-	}{
-		Username: user.Username,
-	}
-
 	formFiles := tc.Dev.Params.Files
 	if formFiles["metainfo"] == nil {
 		tc.Flash.AddFlash("File upload appears to be missing.")
@@ -167,11 +161,14 @@ func (tc *TorrentController) Create() *web.Result {
 			please save this because babou cannot find things right now.`, torrentRecord.ID))
 	}
 
+	// Issue redirect to index page.
 	output := &web.Result{
-		Status: 200,
+		Redirect: &web.RedirectPath{
+			NamedRoute: "torrentIndex",
+		},
+		Status: 302,
 	}
 
-	output.Body = []byte(web.RenderWith("bootstrap", "torrent", "index", outData, tc.Flash))
 	return output
 }
 
