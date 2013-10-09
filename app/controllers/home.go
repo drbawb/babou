@@ -51,9 +51,7 @@ func (hc *HomeController) Index() *web.Result {
 // Public route - rendered as a public index if the user
 // is not logged in or is not authenticated.
 func (hc *HomeController) homePage() *web.Result {
-	output := &web.Result{}
-
-	output.Status = 200
+	output := &web.Result{Status: 200}
 	outData := &struct{}{}
 
 	output.Body = []byte(web.RenderWith(
@@ -67,9 +65,7 @@ func (hc *HomeController) homePage() *web.Result {
 // Private route - rendered instead of public index if the user
 // is properly authenticated.
 func (hc *HomeController) blog() *web.Result {
-	output := &web.Result{}
-
-	output.Status = 200
+	output := &web.Result{Status: 200}
 
 	testArticles := make([]*struct{ Text string }, 0)
 	testArticles = append(testArticles, &struct{ Text string }{Text: "what up bro?"})
