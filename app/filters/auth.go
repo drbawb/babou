@@ -26,7 +26,7 @@ type AuthorizableController interface {
 // An implementation of SessionContext that uses it to provide helper methods for authorizing a user.
 type AuthContext struct {
 	isInit   bool
-	required bool
+	Required bool
 
 	request  *http.Request
 	response http.ResponseWriter
@@ -40,7 +40,7 @@ type AuthContext struct {
 // otherwise this chain will stop the response during the AFTER-ATTACH resolution
 /// phase
 func AuthChain(required bool) *AuthContext {
-	context := &AuthContext{isInit: false, required: required}
+	context := &AuthContext{isInit: false, Required: required}
 
 	return context
 }
@@ -135,8 +135,6 @@ func (ac *AuthContext) Can(permission string) bool {
 	} else {
 		return false
 	}
-
-	// hah, i dont care riiight now.
 }
 
 // Requires authentication based on request/response
@@ -147,7 +145,7 @@ func (ac *AuthContext) Can(permission string) bool {
 // The AuthContext will only call this if it is initialized with
 // `AuthContext.required = true`
 func (ac *AuthContext) AfterAttach(w http.ResponseWriter, r *http.Request) error {
-	if !ac.required {
+	if !ac.Required {
 		return nil
 	}
 
@@ -192,7 +190,7 @@ func (ac *AuthContext) TestContext(route web.Controller, chain []web.ChainableCo
 
 // Returns a clean instance of AuthContext that can be used safely for a single request.
 func (ac *AuthContext) NewInstance() web.ChainableContext {
-	newAc := &AuthContext{isInit: false, required: ac.required}
+	newAc := &AuthContext{isInit: false, Required: ac.Required}
 
 	return newAc
 }
@@ -220,7 +218,6 @@ getSession:
 			ac.session = v
 
 			// access session safely in here for user_id perm checks.
-
 			break getSession
 		}
 	}
