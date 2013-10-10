@@ -1,8 +1,10 @@
-package admin
+package controllers
 
 import (
+	"github.com/drbawb/babou/app/filters"
 	"github.com/drbawb/babou/app/models"
 
+	"errors"
 	"fmt"
 	"github.com/drbawb/babou/lib/web"
 	"strconv"
@@ -12,6 +14,7 @@ var renderer web.Renderer = web.NewMustacheRenderer("app/admin/views")
 
 type UsersController struct {
 	*App
+	Auth *filters.AuthContext
 }
 
 func (au *UsersController) Dispatch(action string) (web.Controller, web.Action) {
@@ -77,4 +80,15 @@ func (au *UsersController) Delete() *web.Result {
 		userToDestroy.Username))
 
 	return res
+}
+
+func (uc *UsersController) SetAuthContext(context *filters.AuthContext) error {
+	if context == nil {
+		return errors.New("No AuthContext was supplied to this controller!")
+	}
+
+	uc.Auth = context
+	uc.Auth.Required = false
+
+	return nil
 }
