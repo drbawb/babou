@@ -91,6 +91,14 @@ func LoadRoutes(s *Server) *mux.Router {
 		Methods("GET").
 		Name("torrentIndex")
 
+	r.HandleFunc("/torrents/episodes",
+		filters.BuildDefaultChain().
+			Chain(filters.AuthChain(false)).
+			Chain(eventChain).
+			Resolve(torrent, "latestEpisodes")).
+		Methods("GET").
+		Name("torrentEpisodes")
+
 	r.HandleFunc("/torrents/new",
 		filters.BuildDefaultChain().
 			Chain(filters.AuthChain(false)).

@@ -10,7 +10,7 @@ import (
 	lib "github.com/drbawb/babou/lib"
 
 	"database/sql"
-	_ "github.com/lib/pq"
+	_ "github.com/pbnjay/pq"
 )
 
 var currentConn *babouDb = nil
