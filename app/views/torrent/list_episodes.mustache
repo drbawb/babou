@@ -1,0 +1,18 @@
+<table class="table table-striped">
+	<thead>
+		<tr>
+			<th>Num</th>
+			<th>Episode Name</th>
+			<th>Download</th>
+		</tr>
+	</thead>
+	<tbody>
+	{{#EpisodeList}}
+	<tr>
+		<td>{{Number}}</td>
+		<td>{{Name}}</td>
+		<td><a href="/torrents/download/{{TorrentID}}">.torrent</a></td>
+	</tr>
+	{{/EpisodeList}}
+	</tbody>
+</table>

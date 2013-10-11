@@ -37,7 +37,8 @@ func (tc *TorrentController) Dispatch(action string) (web.Controller, web.Action
 
 	//add your actions here.
 	newTc.actionMap["index"] = newTc.Index
-	newTc.actionMap["latestEpisodes"] = newTc.LatestEpisodes
+	newTc.actionMap["latestEpisodes"] = newTc.Episodes
+	newTc.actionMap["latestSeries"] = newTc.Series
 
 	newTc.actionMap["new"] = newTc.New
 	newTc.actionMap["create"] = newTc.Create
@@ -88,12 +89,14 @@ func (tc *TorrentController) Index() *web.Result {
 	return output
 }
 
-func (tc *TorrentController) LatestEpisodes() *web.Result {
+func (tc *TorrentController) Episodes() *web.Result {
 
 	outData := &struct {
-		SeriesList []*models.SeriesBundle
+		EpisodeList  []*models.EpisodeBundle
+		ShowEpisodes bool
 	}{
-		SeriesList: models.LatestSeries(),
+		EpisodeList:  models.LatestEpisodes(),
+		ShowEpisodes: true,
 	}
 
 	result := &web.Result{
@@ -101,7 +104,30 @@ func (tc *TorrentController) LatestEpisodes() *web.Result {
 		Body: []byte(web.RenderWith(
 			"bootstrap",
 			"torrent",
-			"series",
+			"tv",
+			outData,
+			tc.Flash)),
+	}
+
+	return result
+}
+
+func (tc *TorrentController) Series() *web.Result {
+
+	outData := &struct {
+		SeriesList []*models.SeriesBundle
+		ShowSeries bool
+	}{
+		SeriesList: models.LatestSeries(),
+		ShowSeries: true,
+	}
+
+	result := &web.Result{
+		Status: 200,
+		Body: []byte(web.RenderWith(
+			"bootstrap",
+			"torrent",
+			"tv",
 			outData,
 			tc.Flash)),
 	}
