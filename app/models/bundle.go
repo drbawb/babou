@@ -33,12 +33,74 @@ type AttributesBundle struct {
 	Modified time.Time
 }
 
+type SeriesBundle struct {
+	Name     string
+	Episodes []*EpisodeBundle
+}
+
 type EpisodeBundle struct {
 	Number int
 	Name   string
 
 	Format     string
 	Resolution string
+}
+
+func LatestSeries() []*SeriesBundle {
+	seriesByID := make(map[int]*SeriesBundle)
+	seriesList := make([]*SeriesBundle, 0)
+
+	loadSeriesBundles := `
+	SELECT
+		episode.parent_id, series.attributes_bundle_id, series.bundle, episode.bundle
+	FROM attributes_bundle AS series
+	INNER JOIN attributes_bundle AS episode
+		ON series.attributes_bundle_id = episode.parent_id
+	WHERE series.category = 'series'
+	ORDER BY series.modified DESC
+	LIMIT 100
+	`
+
+	dba := func(dbConn *sql.DB) error {
+		rows, err := dbConn.Query(loadSeriesBundles)
+		if err != nil {
+			return err
+		}
+
+		for rows.Next() {
+			var seriesId, episodeId int
+			var seriesBundle, episodeBundle hstore.Hstore
+
+			err := rows.Scan(&seriesId, &episodeId, &seriesBundle, &episodeBundle)
+			if err != nil {
+				return err
+			}
+
+			episode := &EpisodeBundle{}
+			episode.FromBundle(episodeBundle.Map)
+
+			if series, ok := seriesByID[seriesId]; ok {
+				series.Episodes = append(series.Episodes, episode)
+			} else {
+				series := &SeriesBundle{Episodes: make([]*EpisodeBundle, 0)}
+				series.FromBundle(seriesBundle.Map)
+				seriesByID[seriesId] = series
+
+				seriesList = append(seriesList, series)
+				series.Episodes = append(series.Episodes, episode)
+			}
+
+		}
+
+		return nil
+	}
+
+	err := db.ExecuteFn(dba)
+	if err != nil {
+		log.Printf("Fetching latest series error: %s \n", err.Error())
+	}
+
+	return seriesList
 }
 
 // TODO: Pagination
@@ -48,7 +110,7 @@ func LatestEpisodes() []*EpisodeBundle {
 
 	loadBundles := `
 	SELECT 
-		(bundle) 
+		bundle
 	FROM attributes_bundle
 	WHERE category = 'episode'
 	ORDER BY modified DESC
@@ -106,4 +168,32 @@ func (eb *EpisodeBundle) FromBundle(bundleStore map[string]sql.NullString) error
 	eb.Resolution = bundleStore["resolution"].String
 
 	return nil
+}
+
+// Implements Bundle interface and loads an SeriesBundle
+// object from a deserialized postgresql hstore field.
+func (sb *SeriesBundle) FromBundle(bundleStore map[string]sql.NullString) error {
+	sb.Name = bundleStore["name"].String
+
+	return nil
+}
+
+func (sb *SeriesBundle) Head() *EpisodeBundle {
+	if len(sb.Episodes) > 0 {
+		return sb.Episodes[0]
+	}
+
+	return nil
+}
+
+func (sb *SeriesBundle) Tail() []*EpisodeBundle {
+	if len(sb.Episodes) > 1 {
+		return sb.Episodes[1:]
+	}
+
+	return nil
+}
+
+func (sb *SeriesBundle) NumberOfEpisodes() int {
+	return len(sb.Episodes)
 }

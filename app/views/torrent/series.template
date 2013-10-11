@@ -1,0 +1,59 @@
+{{> app/views/home/navbar}}
+
+{{#Flash}}
+<div class="alert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Attention!</strong> {{Message}}
+</div>
+{{/Flash}}
+
+<div class="row">
+	{{> app/views/torrent/search}}
+</div>
+
+<div class="row">
+	<table class="table table-striped">
+		<thead>
+			<tr>
+				<th>Series Name</th>
+				<th>Num</th>
+				<th>Episode Name</th>
+			</tr>
+		</thead>
+		<tbody>
+		{{#SeriesList}}
+		<tr>
+			<td rowspan="{{NumberOfEpisodes}}">{{Name}}</td>
+			{{#Head}}
+			<td>{{Number}}</td>
+			<td>{{Name}}</td>
+			{{/Head}}
+		</tr>
+
+		{{#Tail}}
+			<td>{{Number}}</td>
+			<td>{{Name}}</td>
+		{{/Tail}}
+		{{/SeriesList}}
+		</tbody>
+	</table>
+</div>
+
+<!-- pager component -->
+<ul class="pagination">
+	<!-- for n pages -->
+	<li><a href="#" data-page="prev">Prev</a></li>
+	
+	<!-- pager template -->
+	<li><a href="#" data-page="1">1</a></li>
+	<li><a href="#" data-page="2">2</a></li>
+	<li><a href="#" data-page="3">3</a></li>
+	<li><a href="#" data-page="4">4</a></li>
+	<li><a href="#" data-page="5">5</a></li>
+	
+	<li><a href="#" data-page="next">Next</a></li>
+</ul>
+
+<br />
+
+{{#LinkTo torrentNew}}Upload a Torrent{{/LinkTo}}

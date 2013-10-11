@@ -91,9 +91,9 @@ func (tc *TorrentController) Index() *web.Result {
 func (tc *TorrentController) LatestEpisodes() *web.Result {
 
 	outData := &struct {
-		EpisodeList []*models.EpisodeBundle
+		SeriesList []*models.SeriesBundle
 	}{
-		EpisodeList: models.LatestEpisodes(),
+		SeriesList: models.LatestSeries(),
 	}
 
 	result := &web.Result{
@@ -101,7 +101,7 @@ func (tc *TorrentController) LatestEpisodes() *web.Result {
 		Body: []byte(web.RenderWith(
 			"bootstrap",
 			"torrent",
-			"episodes",
+			"series",
 			outData,
 			tc.Flash)),
 	}
