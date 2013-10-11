@@ -8,29 +8,31 @@
 {{/Flash}}
 
 <div class="row">
-	{{> app/views/torrent/search}}
+	{{> app/views/torrent/search_tv}}
 </div>
 
 
-{{#ShowSeries}}
-<div class="row">
-	<h3> Latest seasons of television </h3>
-</div>
+<div id="torrent-list">
+	{{#ShowSeries}}
+	<div class="row">
+		<h3> Latest seasons of television </h3>
+	</div>
 
-<div class="row">
-	{{> app/views/torrent/list_series}}
-</div>
-{{/ShowSeries}}
+	<div class="row">
+		{{> app/views/torrent/list_series}}
+	</div>
+	{{/ShowSeries}}
 
-{{#ShowEpisodes}}
-<div class="row">
-	<h3> Latest episodes of television </h3>
-</div>
+	{{#ShowEpisodes}}
+	<div class="row">
+		<h3> Latest episodes of television </h3>
+	</div>
 
-<div class="row">
-	{{> app/views/torrent/list_episodes}}
+	<div class="row">
+		{{> app/views/torrent/list_episodes}}
+	</div>
+	{{/ShowEpisodes}}
 </div>
-{{/ShowEpisodes}}
 
 <!-- pager component -->
 <ul class="pagination">

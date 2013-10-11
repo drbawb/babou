@@ -34,18 +34,18 @@ type AttributesBundle struct {
 }
 
 type SeriesBundle struct {
-	Name     string
-	Episodes []*EpisodeBundle
+	Name     string           `json:"name"`
+	Episodes []*EpisodeBundle `json:"episodes"`
 }
 
 type EpisodeBundle struct {
-	TorrentID int
+	TorrentID int `json:"torrentId"`
 
-	Number int
-	Name   string
+	Number int    `json:"number"`
+	Name   string `json:"name"`
 
-	Format     string
-	Resolution string
+	Format     string `json:"format"`
+	Resolution string `json:"resolution"`
 }
 
 func LatestSeries() []*SeriesBundle {

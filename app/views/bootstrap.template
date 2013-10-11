@@ -6,19 +6,93 @@
 	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     	<!-- Bootstrap -->
     	<!-- Latest compiled and minified CSS -->
-    	<script src="/assets/js/jquery.min.js"></script>
-
-		<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
-
-		<!-- Optional theme -->
+    	<link rel="stylesheet" href="/assets/css/bootstrap.min.css">
 		<link rel="stylesheet" href="/assets/css/bootstrap-theme.min.css">
 
 		<!-- Latest compiled and minified JavaScript -->
+		<script src="/assets/js/jquery.min.js"></script>
 		<script src="/assets/js/bootstrap.min.js"></script>
+		
+		<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js"></script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0/handlebars.min.js"></script>
+		
+		<script src="/assets/js/babou.js"></script>
 	</head>
 	<body>
 		<div class="container" style="margin-top: 40px">
 			{{#Yield}}{{/Yield}}
 		</div>
+
+		<script id="t-search-episodes" type="text/x-handlebars-template">
+			{{=<% %>=}}
+			<div id="torrent-list">
+				<table class="table table-striped">
+					<thead>
+						<tr>
+							<th>Num</th>
+							<th>Episode Name</th>
+							<th>Download</th>
+						</tr>
+					</thead>
+					<tbody>
+					{{#each episodes}}
+						<tr>
+							<td>{{number}}</td>
+							<td>{{name}}</td>
+							<td>
+								<a href="/torrents/download/{{torrentId}}">
+									.torrent
+								</a>
+							</td>
+						</tr>
+					{{/each}}
+					</tbody>
+				</table>
+			</div>
+			<%={{ }}=%>
+		</script>
+		
+		<script id="t-search-series" type="text/x-handlebars-template">
+			{{=<% %>=}}
+			<div id="torrent-list">
+				<table class="table table-striped">
+					<thead>
+						<tr>
+							<th>Series Name</th>
+							<th>Num</th>
+							<th>Episode Name</th>
+							<th>Download</th>
+						</tr>
+					</thead>
+					<tbody>
+					{{#each series}}
+						<tr>
+							<td rowspan="{{this/numEpisodes}}"> {{this/name}} </td>
+							<td>{{head/number}}</td>
+							<td>{{head/name}}</td>
+							<td>
+								<a href="/torrents/download/{{head/torrentId}}">
+									.torrent
+								</a>
+							</td>
+						</tr>
+
+						{{#each this/tail}}
+						<tr>
+							<td>{{this/number}}</td>
+							<td>{{this/name}}</td>
+							<td>
+								<a href="/torrents/download/{{head/torrentId}}">
+									.torrent
+								</a>
+							</td>
+						</tr>
+						{{/each}}
+					{{/each}}
+					</tbody>
+				</table>
+			</div>
+			<%={{ }}=%>
+		</script>
 	</body>
 </html>
