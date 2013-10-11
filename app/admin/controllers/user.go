@@ -17,7 +17,7 @@ type UsersController struct {
 	Auth *filters.AuthContext
 }
 
-func (au *UsersController) Dispatch(action string) (web.Controller, web.Action) {
+func (au *UsersController) Dispatch(action, accept string) (web.Controller, web.Action) {
 	newAu := &UsersController{}
 	newAu.App = &App{}
 

@@ -23,7 +23,7 @@ type HomeController struct {
 // This instance is ready to route requests.
 //
 // Actions for this controller must be defined here.
-func (hc *HomeController) Dispatch(action string) (web.Controller, web.Action) {
+func (hc *HomeController) Dispatch(action, accept string) (web.Controller, web.Action) {
 	newHc := &HomeController{
 		actionMap: make(map[string]web.Action),
 		App:       &App{},

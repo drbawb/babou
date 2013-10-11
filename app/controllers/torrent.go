@@ -9,6 +9,7 @@ import (
 
 	"github.com/drbawb/babou/bridge"
 
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -21,7 +22,8 @@ type TorrentController struct {
 	auth   *filters.AuthContext
 	events *filters.EventContext
 
-	actionMap map[string]web.Action
+	actionMap    map[string]web.Action
+	acceptHeader string
 }
 
 // Returns a routable instance of TorrentController
@@ -29,10 +31,11 @@ func NewTorrentController() *TorrentController {
 	return &TorrentController{}
 }
 
-func (tc *TorrentController) Dispatch(action string) (web.Controller, web.Action) {
+func (tc *TorrentController) Dispatch(action, accept string) (web.Controller, web.Action) {
 	newTc := &TorrentController{
-		actionMap: make(map[string]web.Action),
-		App:       &App{},
+		actionMap:    make(map[string]web.Action),
+		acceptHeader: accept,
+		App:          &App{},
 	}
 
 	//add your actions here.
@@ -99,21 +102,32 @@ func (tc *TorrentController) Episodes() *web.Result {
 		ShowEpisodes: true,
 	}
 
-	result := &web.Result{
-		Status: 200,
-		Body: []byte(web.RenderWith(
+	// Respond with?
+	result := &web.Result{Status: 200}
+
+	if strings.Contains(tc.acceptHeader, "application/json") {
+		// marshal
+		jsonResponse, err := json.Marshal(outData.EpisodeList)
+		if err != nil {
+			result.Status = 500
+			result.Body = []byte("error formatting json for resp.")
+			return result
+		}
+
+		result.Body = jsonResponse
+	} else {
+		result.Body = []byte(web.RenderWith(
 			"bootstrap",
 			"torrent",
 			"tv",
 			outData,
-			tc.Flash)),
+			tc.Flash))
 	}
 
 	return result
 }
 
 func (tc *TorrentController) Series() *web.Result {
-
 	outData := &struct {
 		SeriesList []*models.SeriesBundle
 		ShowSeries bool
@@ -122,14 +136,26 @@ func (tc *TorrentController) Series() *web.Result {
 		ShowSeries: true,
 	}
 
-	result := &web.Result{
-		Status: 200,
-		Body: []byte(web.RenderWith(
+	// Respond with?
+	result := &web.Result{Status: 200}
+
+	if strings.Contains(tc.acceptHeader, "application/json") {
+		// marshal
+		jsonResponse, err := json.Marshal(outData.SeriesList)
+		if err != nil {
+			result.Status = 500
+			result.Body = []byte("error formatting json for resp.")
+			return result
+		}
+
+		result.Body = jsonResponse
+	} else {
+		result.Body = []byte(web.RenderWith(
 			"bootstrap",
 			"torrent",
 			"tv",
 			outData,
-			tc.Flash)),
+			tc.Flash))
 	}
 
 	return result

@@ -77,7 +77,8 @@ func (cc *contextChain) Resolve(route web.Controller, action string) http.Handle
 
 	return func(response http.ResponseWriter, request *http.Request) {
 		if v, ok := route.(web.Controller); ok {
-			responder, dispatchedAction := v.Dispatch(action)
+			// TODO: MIME Handler
+			responder, dispatchedAction := v.Dispatch(action, request.Header.Get("Accept"))
 
 			// Create fresh chainlink.
 			currentChain := make([]web.ChainableContext, len(cc.list))
