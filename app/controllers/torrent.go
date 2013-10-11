@@ -37,6 +37,7 @@ func (tc *TorrentController) Dispatch(action string) (web.Controller, web.Action
 
 	//add your actions here.
 	newTc.actionMap["index"] = newTc.Index
+	newTc.actionMap["latestEpisodes"] = newTc.LatestEpisodes
 
 	newTc.actionMap["new"] = newTc.New
 	newTc.actionMap["create"] = newTc.Create
@@ -85,6 +86,27 @@ func (tc *TorrentController) Index() *web.Result {
 	output.Body = []byte(web.RenderWith("bootstrap", "torrent", "index", outData, tc.Flash))
 
 	return output
+}
+
+func (tc *TorrentController) LatestEpisodes() *web.Result {
+
+	outData := &struct {
+		SeriesList []*models.SeriesBundle
+	}{
+		SeriesList: models.LatestSeries(),
+	}
+
+	result := &web.Result{
+		Status: 200,
+		Body: []byte(web.RenderWith(
+			"bootstrap",
+			"torrent",
+			"series",
+			outData,
+			tc.Flash)),
+	}
+
+	return result
 }
 
 // Displays a form where a user can upload a new torrent.
