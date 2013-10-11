@@ -34,6 +34,8 @@ type AttributesBundle struct {
 }
 
 type SeriesBundle struct {
+	TorrentID int `json:"torrentId"`
+
 	Name     string           `json:"name"`
 	Episodes []*EpisodeBundle `json:"episodes"`
 }
@@ -52,14 +54,18 @@ func LatestSeries() []*SeriesBundle {
 	seriesByID := make(map[int]*SeriesBundle)
 	seriesList := make([]*SeriesBundle, 0)
 
+	// Selects all episodes from series
+	// If no episodes are avail., the series itself is selected.
+	// (This would happen if, for e.g, the series is related to a multi-file torrent.)
 	loadSeriesBundles := `
 	SELECT
 		episode.parent_id, series.attributes_bundle_id, tor.torrent_id, series.bundle, episode.bundle
 	FROM attributes_bundle AS series
-	INNER JOIN attributes_bundle AS episode
+	LEFT JOIN attributes_bundle AS episode
 		ON series.attributes_bundle_id = episode.parent_id
 	INNER JOIN torrents AS tor
 		ON tor.attributes_bundle_id = episode.attributes_bundle_id
+		OR tor.attributes_bundle_id = series.attributes_bundle_id
 	WHERE series.category = 'series'
 	ORDER BY series.modified DESC
 	LIMIT 100
@@ -72,27 +78,38 @@ func LatestSeries() []*SeriesBundle {
 		}
 
 		for rows.Next() {
+			var seriesIdN64 sql.NullInt64
 			var seriesId, episodeId, torrentId int
 			var seriesBundle, episodeBundle hstore.Hstore
 
-			err := rows.Scan(&seriesId, &episodeId, &torrentId, &seriesBundle, &episodeBundle)
+			err := rows.Scan(&seriesIdN64, &episodeId, &torrentId, &seriesBundle, &episodeBundle)
 			if err != nil {
 				return err
 			}
 
-			episode := &EpisodeBundle{}
-			episode.TorrentID = torrentId
-			episode.FromBundle(episodeBundle.Map)
+			seriesId = int(seriesIdN64.Int64) // TODO: loss of precision.
 
-			if series, ok := seriesByID[seriesId]; ok {
-				series.Episodes = append(series.Episodes, episode)
-			} else {
+			// Create a map-entry for the series if we haven't seen it yet.
+			if _, ok := seriesByID[seriesId]; !ok {
 				series := &SeriesBundle{Episodes: make([]*EpisodeBundle, 0)}
+				series.TorrentID = torrentId
 				series.FromBundle(seriesBundle.Map)
 				seriesByID[seriesId] = series
 
 				seriesList = append(seriesList, series)
-				series.Episodes = append(series.Episodes, episode)
+			}
+
+			if episodeBundle.Map != nil {
+				// Attach episode bundle if applicable.
+				episode := &EpisodeBundle{}
+
+				episode.TorrentID = torrentId
+				episode.FromBundle(episodeBundle.Map)
+
+				seriesByID[seriesId].Episodes = append(
+					seriesByID[seriesId].Episodes,
+					episode,
+				)
 			}
 
 		}

@@ -35,7 +35,7 @@
 						</tr>
 					</thead>
 					<tbody>
-					{{#each episodes}}
+					{{#episodes}}
 						<tr>
 							<td>{{number}}</td>
 							<td>{{name}}</td>
@@ -45,7 +45,7 @@
 								</a>
 							</td>
 						</tr>
-					{{/each}}
+					{{/episodes}}
 					</tbody>
 				</table>
 			</div>
@@ -65,30 +65,43 @@
 						</tr>
 					</thead>
 					<tbody>
-					{{#each series}}
+					{{#series}}
 						<tr>
-							<td rowspan="{{this/numEpisodes}}"> {{this/name}} </td>
-							<td>{{head/number}}</td>
-							<td>{{head/name}}</td>
+						{{#head}}
+							<td rowspan="{{../numEpisodes}}"> {{name}} </td>
+							<td>{{number}}</td>
+							<td>{{name}}</td>
 							<td>
-								<a href="/torrents/download/{{head/torrentId}}">
+								<a href="/torrents/download/{{torrentId}}">
 									.torrent
 								</a>
 							</td>
+						{{/head}}
+
+						{{^head}}
+							<td> {{name}} </td>
+							<td>N/A</td>
+							<td>{{name}}</td>
+							<td>
+								<a href="/torrents/download/{{torrentId}}">
+									.torrent
+								</a>
+							</td>
+						{{/head}}
 						</tr>
 
-						{{#each this/tail}}
+						{{#tail}}
 						<tr>
-							<td>{{this/number}}</td>
-							<td>{{this/name}}</td>
+							<td>{{number}}</td>
+							<td>{{name}}</td>
 							<td>
-								<a href="/torrents/download/{{head/torrentId}}">
+								<a href="/torrents/download/{{torrentId}}">
 									.torrent
 								</a>
 							</td>
 						</tr>
-						{{/each}}
-					{{/each}}
+						{{/tail}}
+					{{/series}}
 					</tbody>
 				</table>
 			</div>

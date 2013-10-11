@@ -12,6 +12,10 @@
 
 $(document).ready(function(){
 	// If episode-name is clicked load latest episodes.
+	var templateCache = {};
+	templateCache["search_episodes"] = Handlebars.compile($("#t-search-episodes").html());
+	templateCache["search_series"] = Handlebars.compile($("#t-search-series").html());
+
 	$('#search_episodes').change(function(evt) {
 		$.ajax({
 			headers: { 
@@ -26,11 +30,11 @@ $(document).ready(function(){
 			var context = {"episodes": parsedData};
 			
 			// compile template
-			var source = $("#t-search-episodes").html();
-			var template = Handlebars.compile(source);
-			var renderedHTML = template(context);
+			var renderedHTML = templateCache["search_episodes"](context);
 
-			$('#torrent-list').replaceWith(renderedHTML);
+			$('#torrent-list').fadeOut(200,function(){ 
+				$(this).html(renderedHTML).fadeIn(200);
+			});
 		});
 	});
 
@@ -52,16 +56,19 @@ $(document).ready(function(){
 				context.series[i].head = _.head(context.series[i].episodes);
 				context.series[i].tail = _.tail(context.series[i].episodes);
 				context.series[i].numEpisodes = function() {
-					return this.episodes.length;
-				};
+					if ("episodes" in context.series[i]) {
+						return context.series[i].episodes.length;	
+					} else {
+						return 0
+					}
+				}();
 			}
 
 			// compile template
-			var source = $("#t-search-series").html();
-			var template = Handlebars.compile(source);
-			var renderedHTML = template(context);
-
-			$('#torrent-list').replaceWith(renderedHTML);
+			var renderedHTML = templateCache["search_series"](context);
+			$('#torrent-list').fadeOut(200,function(){
+				$(this).html(renderedHTML).fadeIn(200);
+			});
 		});
 	});
 });
