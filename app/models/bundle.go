@@ -39,6 +39,8 @@ type SeriesBundle struct {
 }
 
 type EpisodeBundle struct {
+	TorrentID int
+
 	Number int
 	Name   string
 
@@ -52,10 +54,12 @@ func LatestSeries() []*SeriesBundle {
 
 	loadSeriesBundles := `
 	SELECT
-		episode.parent_id, series.attributes_bundle_id, series.bundle, episode.bundle
+		episode.parent_id, series.attributes_bundle_id, tor.torrent_id, series.bundle, episode.bundle
 	FROM attributes_bundle AS series
 	INNER JOIN attributes_bundle AS episode
 		ON series.attributes_bundle_id = episode.parent_id
+	INNER JOIN torrents AS tor
+		ON tor.attributes_bundle_id = episode.attributes_bundle_id
 	WHERE series.category = 'series'
 	ORDER BY series.modified DESC
 	LIMIT 100
@@ -68,15 +72,16 @@ func LatestSeries() []*SeriesBundle {
 		}
 
 		for rows.Next() {
-			var seriesId, episodeId int
+			var seriesId, episodeId, torrentId int
 			var seriesBundle, episodeBundle hstore.Hstore
 
-			err := rows.Scan(&seriesId, &episodeId, &seriesBundle, &episodeBundle)
+			err := rows.Scan(&seriesId, &episodeId, &torrentId, &seriesBundle, &episodeBundle)
 			if err != nil {
 				return err
 			}
 
 			episode := &EpisodeBundle{}
+			episode.TorrentID = torrentId
 			episode.FromBundle(episodeBundle.Map)
 
 			if series, ok := seriesByID[seriesId]; ok {

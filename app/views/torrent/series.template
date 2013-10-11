@@ -18,6 +18,7 @@
 				<th>Series Name</th>
 				<th>Num</th>
 				<th>Episode Name</th>
+				<th>Download</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -27,12 +28,14 @@
 			{{#Head}}
 			<td>{{Number}}</td>
 			<td>{{Name}}</td>
+			<td><a href="/torrents/download/{{TorrentID}}">.torrent</a></td>
 			{{/Head}}
 		</tr>
 
 		{{#Tail}}
 			<td>{{Number}}</td>
 			<td>{{Name}}</td>
+			<td><a href="/torrents/download/{{TorrentID}}">.torrent</a></td>
 		{{/Tail}}
 		{{/SeriesList}}
 		</tbody>
