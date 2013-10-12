@@ -19,6 +19,79 @@
 			    </ol>
 
 			    <hr />
+				
+				<h4> How do I categorize a torrent? </h4>
+
+				<h5> Rules </h5>
+				<ol>
+					<li> 
+						Duplicate uploads are only allowed if they are noticably
+						better quality, alternate editions, or their format offers
+						tangible benefits. 
+						<br>
+						(For e.g: uploading Ogg Vorbis when only proprietary
+						formats are available for download; regardless of bitrate.)
+					</li>
+
+					<li>
+						If you're uploading a collection, or a piece of one, you should
+						look to find an existing collection you can <em> add to.</em>
+						<br>
+						(For e.g: there should only be a single "series" of television
+						for each run of a show. This way all bitrates and limited edition
+						releases of episodes are grouped together in a single place.)
+					</li> 
+
+					<li>
+						If a complete collection does not exist [as a single torrent]:
+						it is always acceptable to upload one. Regardless of the bitrate
+						on previously available fragments of the collection.
+					</li>
+				</ol>
+
+
+			    <h5> Television </h5>
+			    <ol>
+			    	<li> 
+			    		If you are uploading an entire series:
+			    		<ul>
+				    		<li> Select the "Series" category </li>
+				    		<li> Give the series a name </li>
+				    		<li> 
+				    			Enter a series number.
+				    			(This might be a year & season, or a season number, etc.)
+				    		</li>
+			    		</ul>
+			    	</li>
+			    	<li>
+			    		If you are uploading a single episode:
+			    		<ul>
+			    			<li> Select the "Episode" category </li>
+			    			<li> 
+			    				Select the series and series number. 
+			    				(This is required: if one cannot be found, it will be created.)
+			    			</li>
+
+			    			<li> 
+			    				Give the episode a name and number 
+			    				(If you are uploading to an existing series, please
+			    				make sure you use the same numbering scheme.
+			    				If the numbering scheme on an existing series is <em>wrong</em>
+			    				please contact the moderation staff to have it changed.)
+			    			</li>
+			    		</ul>
+			    	</li>
+			    	<li> Fill in the rest of the details </li>
+			    	<li> Attach your <code>.torrent</code> file </li>
+			    	<li> Begin seeding your torrent or wait for the tracker to refresh. </li>
+			    </ol>
+
+			    <h5> Music, Other... </h5>
+			    <ol>
+			    	<li> Coming soon . . . </li>
+			    </ol>
+
+			    <hr />
 
 			    <h4> Which torrent clients are allowed? </h4>
 			    <br />
