@@ -130,6 +130,11 @@ func (sb *SeriesBundle) PersistWith(tx *sql.Tx) error {
 	return nil
 }
 
+// Selects the latest series' of television.
+//
+// This will select 100 series at a time which have a torrent or episode(s)
+// associated with them.
+//
 func LatestSeries() []*SeriesBundle {
 	seriesByID := make(map[int]*SeriesBundle)
 	seriesList := make([]*SeriesBundle, 0)
@@ -386,5 +391,9 @@ func (sb *SeriesBundle) Tail() []*EpisodeBundle {
 }
 
 func (sb *SeriesBundle) NumberOfEpisodes() int {
-	return len(sb.Episodes)
+	if len(sb.Episodes) <= 0 {
+		return 1
+	} else {
+		return len(sb.Episodes)
+	}
 }
