@@ -191,6 +191,8 @@ func LatestSeries() []*SeriesBundle {
 				seriesIdx = episodeId
 			}
 
+			// If we haven't seen this series before
+			// add it to our in-mem structure
 			if _, ok := seriesByID[seriesIdx]; !ok {
 				series := &SeriesBundle{Episodes: make([]*EpisodeBundle, 0)}
 				series.TorrentID = torrentId
@@ -200,6 +202,8 @@ func LatestSeries() []*SeriesBundle {
 				seriesList = append(seriesList, series)
 			}
 
+			// If this has an episodes' bundle associated with it
+			// load that bundle into its related series.
 			if episodeBundle.Map != nil {
 				// Attach episode bundle if applicable.
 				episode := &EpisodeBundle{}
