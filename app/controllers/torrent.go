@@ -218,17 +218,41 @@ func (tc *TorrentController) Create() *web.Result {
 			return tc.RedirectOnUploadFail()
 		}
 
-		attributes := &models.Attribute{}
-		attributes.AlbumName = tc.Dev.Params.All["albumName"]
-		attributes.ReleaseYear = time.Now()
-		attributes.ArtistName = strings.Split(tc.Dev.Params.All["artistName"], ",")
-		fmt.Printf("num artists: %d \n", len(attributes.ArtistName))
-
-		torrentRecord.SetAttributes(attributes)
-
 		if err := torrentRecord.Write(); err != nil {
 			tc.Flash.AddFlash(fmt.Sprintf("Error saving your torrent. Please contact a staff member: %s", err.Error()))
 			return tc.RedirectOnUploadFail()
+		}
+
+		// Write attributes bundle [TV]
+		switch tc.Dev.Params.All["category"] {
+		case "series":
+			fmt.Printf("Series attributes bundle")
+			sBundle := &models.SeriesBundle{}
+			sBundle.Name = tc.Dev.Params.All["seriesName"] //TODO: frontend: autocomplete, backend: verify (try to avoid dups, basically.)
+
+			if err := sBundle.Persist(); err != nil {
+				fmt.Printf("Error saving bundle: %s", err.Error())
+			}
+		case "episode":
+			fmt.Printf("Episode attributes bundle")
+			// lookup sBundle by name
+			sBundle := &models.SeriesBundle{}
+			sBundle.SelectByName(tc.Dev.Params.All["seriesName"])
+
+			eBundle := &models.EpisodeBundle{}
+			eBundle.Name = tc.Dev.Params.All["episodeName"]
+			eBundle.Format = tc.Dev.Params.All["format"]
+			if eBundle.Number, err = strconv.Atoi(tc.Dev.Params.All["episodeNumber"]); err != nil {
+				fmt.Printf("Error converting episode number to integer!")
+			}
+
+			if err := eBundle.PersistWithSeries(sBundle); err != nil {
+				fmt.Printf("Error saving episode bundle: %s", err.Error())
+			}
+
+		default:
+			fmt.Printf("No attributes bundle create")
+
 		}
 
 		tc.Flash.AddFlash(fmt.Sprintf(`Your torrents URL is: http://tracker.fatalsyntax.com/torrents/download/%d -- 

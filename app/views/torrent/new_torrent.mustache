@@ -9,18 +9,48 @@
 		</div>
 
 		<br /><br />
-
-		<div class="form-group">
-			{{#LabelFor albumName}}Album Name{{/LabelFor}}
-			<input type="text" class="form-control" id="albumName" name="albumName" placeholder="Album Name">
+		<!-- select whether this is series or episode -->
+		<div class="row">
+			<div class="form-group col-md-8">
+				{{#LabelFor category}}Category{{/LabelFor}}
+				<select name="category" class="form-control">
+					<option value="series"> TV Series </option>
+					<option value="episode"> TV Episode </option>
+					<option value="other"> Other </option>
+				</select>
+			</div>
+			<div class="form-group col-md-4">
+				{{#LabelFor category}}Format{{/LabelFor}}
+				<select name="format" class="form-control">
+					<option value="h264"> H264 </option>
+					<option value="other"> Other </option>
+				</select>
+			</div>
 		</div>
-
+		
 		<div class="form-group">
-			{{#LabelFor artistName}}Artist Name(s){{/LabelFor}}
-			<input type="text" class="form-control" id="artistName" name="artistName" placeholder="Artist Name(s)">
+			{{#LabelFor seriesName}}Series Name{{/LabelFor}}
+			<input type="text" class="form-control" id="seriesName" name="seriesName"
+			placeholder="Series Name">
 			<p class="help-block">For several artists: use commas between artist names.</p>
 		</div>
 
+		
+		<div class="row">
+			<div class="form-group col-md-9">
+				{{#LabelFor episodeName}}Episode Name{{/LabelFor}}
+				<input type="text" class="form-control" id="episodeName" name="episodeName"
+				placeholder="Episode Name">
+			</div>
+
+			<div class="form-group col-md-3">
+				{{#LabelFor episodeNumber}}Episode #{{/LabelFor}}
+				<input type="text" class="form-control" id="episodeNumber" name="episodeNumber"
+				placeholder="Episode #">
+			</div>
+		</div>
+		
+		
 		<div class="form-group">
 			{{#LabelFor releaseYear}}Release Year{{/LabelFor}}
 			<input type="text" class="form-control" id="releaseYear" name="releaseYear" placeholder="Release Year" chars="4">

@@ -1,7 +1,7 @@
 /**
 	babou.js
 	
-	Provides increased interactivity for the `babou` tracker frontend.
+	Provides increased interactivity for the `babou` frontend.
 	This code is distributed under the BSD license which governs
 	the entire `babou` project.
 

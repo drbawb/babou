@@ -68,7 +68,7 @@
 					{{#series}}
 						<tr>
 						{{#head}}
-							<td rowspan="{{../numEpisodes}}"> {{name}} </td>
+							<td rowspan="{{../numEpisodes}}"> {{../name}} </td>
 							<td>{{number}}</td>
 							<td>{{name}}</td>
 							<td>

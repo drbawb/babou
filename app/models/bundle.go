@@ -18,6 +18,7 @@ const (
 )
 
 type Bundle interface {
+	ToBundle() map[string]string
 	FromBundle(map[string]string) error
 }
 
@@ -34,6 +35,7 @@ type AttributesBundle struct {
 }
 
 type SeriesBundle struct {
+	ID        int `json:"bundleId"`
 	TorrentID int `json:"torrentId"`
 
 	Name     string           `json:"name"`
@@ -41,6 +43,7 @@ type SeriesBundle struct {
 }
 
 type EpisodeBundle struct {
+	ID        int `json:"episodeId"`
 	TorrentID int `json:"torrentId"`
 
 	Number int    `json:"number"`
@@ -48,6 +51,83 @@ type EpisodeBundle struct {
 
 	Format     string `json:"format"`
 	Resolution string `json:"resolution"`
+}
+
+// Attempts to populate series bundle by name.
+// Otherwise this series bundle will be inserted.
+func (sb *SeriesBundle) SelectByName(seriesName string) error {
+	sbByName := `
+	SELECT 
+		bundle
+	FROM 
+		attributes_bundle
+	WHERE category = ?
+	AND bundle->'name' = ?
+	`
+
+	dba := func(dbConn *sql.DB) error {
+		row := dbConn.QueryRow(sbByName, BUNDLE_SERIES, seriesName)
+
+		var bundleStore hstore.Hstore
+		if err := row.Scan(&bundleStore); err != nil {
+			return err
+		}
+
+		if err := sb.FromBundle(bundleStore.Map); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err := db.ExecuteFn(dba); err != nil {
+		// Reinit; they can do whatever I don't care.
+		sb = &SeriesBundle{}
+		return err
+	} else {
+		return nil
+	}
+}
+
+func (sb *SeriesBundle) Persist() error {
+	sbInsert := `
+	INSERT INTO 
+		attributes_bundle(category, bundle, modified) 
+	VALUES 
+		($1, $2, $3) 
+	RETURNING attributes_bundle_id`
+
+	dba := func(dbConn *sql.DB) error {
+		hBundle := &hstore.Hstore{Map: sb.ToBundle()}
+
+		row := dbConn.QueryRow(sbInsert, string(BUNDLE_SERIES), hBundle, time.Now())
+		if err := row.Scan(&sb.ID); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return db.ExecuteFn(dba)
+}
+
+// TODO: Try update first.
+func (sb *SeriesBundle) PersistWith(tx *sql.Tx) error {
+	sbInsert := `
+	INSERT INTO "attributes_bundle"
+		(category, bundle, modified)
+	VALUES
+		('series', ?, ?)
+	RETURNING
+		attributes_bundle_id
+	`
+
+	row := tx.QueryRow(sbInsert, sb.ToBundle(), time.Now())
+	if err := row.Scan(&sb.ID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func LatestSeries() []*SeriesBundle {
@@ -78,19 +158,40 @@ func LatestSeries() []*SeriesBundle {
 		}
 
 		for rows.Next() {
-			var seriesIdN64 sql.NullInt64
+			var epIdN, serIdN sql.NullInt64
 			var seriesId, episodeId, torrentId int
 			var seriesBundle, episodeBundle hstore.Hstore
 
-			err := rows.Scan(&seriesIdN64, &episodeId, &torrentId, &seriesBundle, &episodeBundle)
+			err := rows.Scan(
+				&epIdN,
+				&serIdN,
+				&torrentId,
+				&seriesBundle,
+				&episodeBundle)
+
 			if err != nil {
 				return err
 			}
 
-			seriesId = int(seriesIdN64.Int64) // TODO: loss of precision.
+			seriesId = int(serIdN.Int64) // TODO: loss of precision.
+			episodeId = int(epIdN.Int64)
 
 			// Create a map-entry for the series if we haven't seen it yet.
-			if _, ok := seriesByID[seriesId]; !ok {
+			// Add series if not exist
+
+			var seriesIdx int
+			if !epIdN.Valid {
+				// This is a series, set the series index
+				// to the series' attribute_bundle identifier
+				seriesIdx = seriesId
+			} else {
+				// This is an episode, set the series index
+				// to the episodes' parent ID.
+				// (The series' attribute_bundle identifier.)
+				seriesIdx = episodeId
+			}
+
+			if _, ok := seriesByID[seriesIdx]; !ok {
 				series := &SeriesBundle{Episodes: make([]*EpisodeBundle, 0)}
 				series.TorrentID = torrentId
 				series.FromBundle(seriesBundle.Map)
@@ -123,6 +224,51 @@ func LatestSeries() []*SeriesBundle {
 	}
 
 	return seriesList
+}
+
+func (eb *EpisodeBundle) PersistWithSeries(series *SeriesBundle) error {
+
+	insertEb := `
+	INSERT INTO attributes_bundle
+		(parent_id, category, bundle, modified)
+	VALUES 
+		(?, ?, ?, ?)
+	RETURNING
+		attributes_bundle_id
+	`
+	dba := func(dbConn *sql.DB) error {
+		txn, err := dbConn.Begin()
+		if err != nil {
+			return err
+		}
+
+		// Persist series and retrieve ID
+		if err = series.PersistWith(txn); err != nil {
+			_ = txn.Rollback()
+			return err
+		}
+
+		row := txn.QueryRow(
+			insertEb,
+			series.ID,
+			BUNDLE_EPISODE,
+			eb.ToBundle(),
+			time.Now())
+		err = row.Scan(&eb.ID)
+		if err != nil {
+			_ = txn.Rollback()
+			return err
+		}
+
+		if err = txn.Commit(); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return db.ExecuteFn(dba)
+
 }
 
 // TODO: Pagination
@@ -175,6 +321,17 @@ func LatestEpisodes() []*EpisodeBundle {
 	return episodes
 }
 
+func (eb *EpisodeBundle) ToBundle() map[string]sql.NullString {
+	bundleMap := make(map[string]sql.NullString)
+
+	bundleMap["name"] = sql.NullString{String: eb.Name}
+	bundleMap["number"] = sql.NullString{String: strconv.Itoa(eb.Number)}
+	bundleMap["format"] = sql.NullString{String: eb.Format}
+	bundleMap["resolution"] = sql.NullString{String: eb.Resolution}
+
+	return bundleMap
+}
+
 // Implements Bundle interface and loads an EpisodeBundle
 // object from a deserialized postgresql hstore field.
 func (eb *EpisodeBundle) FromBundle(bundleStore map[string]sql.NullString) error {
@@ -190,6 +347,14 @@ func (eb *EpisodeBundle) FromBundle(bundleStore map[string]sql.NullString) error
 	eb.Resolution = bundleStore["resolution"].String
 
 	return nil
+}
+
+func (sb *SeriesBundle) ToBundle() map[string]sql.NullString {
+	bundleMap := make(map[string]sql.NullString)
+
+	bundleMap["name"] = sql.NullString{sb.Name, true}
+
+	return bundleMap
 }
 
 // Implements Bundle interface and loads an SeriesBundle
