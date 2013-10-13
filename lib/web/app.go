@@ -22,7 +22,7 @@ import (
 // action which is considered safe to infoke ONLY IF the context
 // satisfies the dispatcher with no errors.
 type Controller interface {
-	Dispatch(string) (Controller, Action)
+	Dispatch(string, string) (Controller, Action)
 	TestContext([]ChainableContext) error
 }
 

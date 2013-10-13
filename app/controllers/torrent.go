@@ -9,11 +9,11 @@ import (
 
 	"github.com/drbawb/babou/bridge"
 
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type TorrentController struct {
@@ -21,7 +21,8 @@ type TorrentController struct {
 	auth   *filters.AuthContext
 	events *filters.EventContext
 
-	actionMap map[string]web.Action
+	actionMap    map[string]web.Action
+	acceptHeader string
 }
 
 // Returns a routable instance of TorrentController
@@ -29,15 +30,17 @@ func NewTorrentController() *TorrentController {
 	return &TorrentController{}
 }
 
-func (tc *TorrentController) Dispatch(action string) (web.Controller, web.Action) {
+func (tc *TorrentController) Dispatch(action, accept string) (web.Controller, web.Action) {
 	newTc := &TorrentController{
-		actionMap: make(map[string]web.Action),
-		App:       &App{},
+		actionMap:    make(map[string]web.Action),
+		acceptHeader: accept,
+		App:          &App{},
 	}
 
 	//add your actions here.
 	newTc.actionMap["index"] = newTc.Index
-	newTc.actionMap["latestEpisodes"] = newTc.LatestEpisodes
+	newTc.actionMap["latestEpisodes"] = newTc.Episodes
+	newTc.actionMap["latestSeries"] = newTc.Series
 
 	newTc.actionMap["new"] = newTc.New
 	newTc.actionMap["create"] = newTc.Create
@@ -88,22 +91,70 @@ func (tc *TorrentController) Index() *web.Result {
 	return output
 }
 
-func (tc *TorrentController) LatestEpisodes() *web.Result {
+func (tc *TorrentController) Episodes() *web.Result {
 
 	outData := &struct {
-		SeriesList []*models.SeriesBundle
+		EpisodeList  []*models.EpisodeBundle
+		ShowEpisodes bool
 	}{
-		SeriesList: models.LatestSeries(),
+		EpisodeList:  models.LatestEpisodes(),
+		ShowEpisodes: true,
 	}
 
-	result := &web.Result{
-		Status: 200,
-		Body: []byte(web.RenderWith(
+	// Respond with?
+	result := &web.Result{Status: 200}
+
+	if strings.Contains(tc.acceptHeader, "application/json") {
+		// marshal
+		jsonResponse, err := json.Marshal(outData.EpisodeList)
+		if err != nil {
+			result.Status = 500
+			result.Body = []byte("error formatting json for resp.")
+			return result
+		}
+
+		result.Body = jsonResponse
+	} else {
+		result.Body = []byte(web.RenderWith(
 			"bootstrap",
 			"torrent",
-			"series",
+			"tv",
 			outData,
-			tc.Flash)),
+			tc.Flash))
+	}
+
+	return result
+}
+
+func (tc *TorrentController) Series() *web.Result {
+	outData := &struct {
+		SeriesList []*models.SeriesBundle
+		ShowSeries bool
+	}{
+		SeriesList: models.LatestSeries(),
+		ShowSeries: true,
+	}
+
+	// Respond with?
+	result := &web.Result{Status: 200}
+
+	if strings.Contains(tc.acceptHeader, "application/json") {
+		// marshal
+		jsonResponse, err := json.Marshal(outData.SeriesList)
+		if err != nil {
+			result.Status = 500
+			result.Body = []byte("error formatting json for resp.")
+			return result
+		}
+
+		result.Body = jsonResponse
+	} else {
+		result.Body = []byte(web.RenderWith(
+			"bootstrap",
+			"torrent",
+			"tv",
+			outData,
+			tc.Flash))
 	}
 
 	return result
@@ -166,17 +217,41 @@ func (tc *TorrentController) Create() *web.Result {
 			return tc.RedirectOnUploadFail()
 		}
 
-		attributes := &models.Attribute{}
-		attributes.AlbumName = tc.Dev.Params.All["albumName"]
-		attributes.ReleaseYear = time.Now()
-		attributes.ArtistName = strings.Split(tc.Dev.Params.All["artistName"], ",")
-		fmt.Printf("num artists: %d \n", len(attributes.ArtistName))
-
-		torrentRecord.SetAttributes(attributes)
-
 		if err := torrentRecord.Write(); err != nil {
 			tc.Flash.AddFlash(fmt.Sprintf("Error saving your torrent. Please contact a staff member: %s", err.Error()))
 			return tc.RedirectOnUploadFail()
+		}
+
+		// Write attributes bundle [TV]
+		switch tc.Dev.Params.All["category"] {
+		case "series":
+			fmt.Printf("Series attributes bundle")
+			sBundle := &models.SeriesBundle{}
+			sBundle.Name = tc.Dev.Params.All["seriesName"] //TODO: frontend: autocomplete, backend: verify (try to avoid dups, basically.)
+
+			if err := sBundle.Persist(); err != nil {
+				fmt.Printf("Error saving bundle: %s", err.Error())
+			}
+		case "episode":
+			fmt.Printf("Episode attributes bundle")
+			// lookup sBundle by name
+			sBundle := &models.SeriesBundle{}
+			sBundle.SelectByName(tc.Dev.Params.All["seriesName"])
+
+			eBundle := &models.EpisodeBundle{}
+			eBundle.Name = tc.Dev.Params.All["episodeName"]
+			eBundle.Format = tc.Dev.Params.All["format"]
+			if eBundle.Number, err = strconv.Atoi(tc.Dev.Params.All["episodeNumber"]); err != nil {
+				fmt.Printf("Error converting episode number to integer!")
+			}
+
+			if err := eBundle.PersistWithSeries(sBundle); err != nil {
+				fmt.Printf("Error saving episode bundle: %s", err.Error())
+			}
+
+		default:
+			fmt.Printf("No attributes bundle create")
+
 		}
 
 		tc.Flash.AddFlash(fmt.Sprintf(`Your torrents URL is: http://tracker.fatalsyntax.com/torrents/download/%d -- 

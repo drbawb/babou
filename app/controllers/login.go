@@ -30,7 +30,7 @@ type LoginController struct {
 //
 // The dispatcher instantiates a request-facing instance of this
 // controller and returns its action or nil if the action is not found.
-func (lc *LoginController) Dispatch(action string) (web.Controller, web.Action) {
+func (lc *LoginController) Dispatch(action, accept string) (web.Controller, web.Action) {
 	newLc := &LoginController{
 		safeInstance: true,
 		actionMap:    make(map[string]web.Action),

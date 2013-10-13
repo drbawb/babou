@@ -25,7 +25,7 @@ type App struct {
 //
 // Other controllers have no obligation to call or delegate
 // this dispatcher; it simply provides a default route.
-func (ac *App) Dispatch(action string) (web.Controller, web.Action) {
+func (ac *App) Dispatch(action, accept string) (web.Controller, web.Action) {
 	newApp := &App{}
 
 	return newApp, func() *web.Result {
