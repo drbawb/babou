@@ -117,12 +117,12 @@ func (sb *SeriesBundle) PersistWith(tx *sql.Tx) error {
 	INSERT INTO "attributes_bundle"
 		(category, bundle, modified)
 	VALUES
-		('series', ?, ?)
+		($1,$2,$3)
 	RETURNING
 		attributes_bundle_id
 	`
 
-	row := tx.QueryRow(sbInsert, sb.ToBundle(), time.Now())
+	row := tx.QueryRow(sbInsert, string(BUNDLE_SERIES), sb.ToBundle(), time.Now())
 	if err := row.Scan(&sb.ID); err != nil {
 		return err
 	}
