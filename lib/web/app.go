@@ -18,6 +18,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// A global router or middleware implementation that will service requests
+// from the HTTP server and direct them to an appropriate controller
+var Router *mux.Router = nil
+
 // A dispatcher returns a request-facing version of itself and
 // action which is considered safe to infoke ONLY IF the context
 // satisfies the dispatcher with no errors.

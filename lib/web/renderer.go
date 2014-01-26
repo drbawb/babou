@@ -4,14 +4,9 @@ import (
 	fmt "fmt"
 
 	mustache "github.com/drbawb/mustache"
-	mux "github.com/gorilla/mux"
 )
 
 const DEBUG_RELOAD = false
-
-// A global router or middleware implementation that will service requests
-// from the HTTP server and direct them to an appropriate controller
-var Router *mux.Router = nil
 
 // A renderer maps actions to executable views.
 type Renderer interface {
@@ -34,7 +29,6 @@ func NewMustacheRenderer(viewsPath string) *MustacheRenderer {
 // argument.
 type ViewData struct {
 	Yield func(params []string, data string) string
-	//Flash   func() string
 	Context interface{}
 }
 
