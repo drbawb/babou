@@ -32,22 +32,6 @@ type ViewData struct {
 	Context interface{}
 }
 
-// Helper functions which are available to views that are rendered using
-// the built-in methods.
-type viewHelpers struct {
-	LinkTo  func(params []string, data string) string
-	UrlFor  func(params []string, data string) string
-	FormFor func(params []string, data string) string
-}
-
-// Helper functions which are available to views that are rendered inside
-// the context of a {{#FormFor}} section.
-type postHelpers struct {
-	FileFor      func(params []string, data string) string
-	LabelFor     func(params []string, data string) string
-	TextFieldFor func(params []string, data string) string
-}
-
 var templateCache map[string]*mustache.Template = make(map[string]*mustache.Template)
 
 // Returns a set of viewHelpers to be passed to the rendering context.
