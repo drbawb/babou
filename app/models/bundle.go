@@ -152,7 +152,7 @@ func LatestSeries() []*SeriesBundle {
 		ON tor.attributes_bundle_id = episode.attributes_bundle_id
 		OR tor.attributes_bundle_id = series.attributes_bundle_id
 	WHERE series.category = 'series'
-	ORDER BY series.modified DESC
+	ORDER BY series.modified DESC, (episode.bundle->'number')::numeric ASC
 	LIMIT 100
 	`
 
@@ -287,9 +287,12 @@ func LatestEpisodes() []*EpisodeBundle {
 
 	loadBundles := `
 	SELECT 
-		bundle
-	FROM attributes_bundle
-	WHERE category = 'episode'
+		episodes.bundle,
+		torrents.torrent_id
+	FROM attributes_bundle AS episodes
+	INNER JOIN torrents
+		ON torrents.attributes_bundle_id = episodes.attributes_bundle_id
+	WHERE episodes.category = 'episode'
 	ORDER BY modified DESC
 	LIMIT 100
 	`
@@ -305,7 +308,7 @@ func LatestEpisodes() []*EpisodeBundle {
 			var mappedBundle hstore.Hstore
 			eb := &EpisodeBundle{}
 
-			if err := rows.Scan(&mappedBundle); err != nil {
+			if err := rows.Scan(&mappedBundle, &eb.TorrentID); err != nil {
 				return err
 			}
 
