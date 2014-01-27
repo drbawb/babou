@@ -1,62 +1,83 @@
 {{#FormFor torrentCreate post multipart/form-data torrent-upload}}
 <div class="row">
 	<div class="col-md-6">
-		<div class="form-group">
-			{{#LabelFor metainfo}}Torrent File{{/LabelFor}}	
-			{{#FileFor metainfo}}{{/FileFor}}	
+
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title">
+					<code>.torrent</code> File
+				</h3>
+			</div>
 			
-			<p class="help-block">Create a torrent file with your favorite client and select it here.</p>
+			<div class="panel-body">
+				<div class="form-group">
+					{{#LabelFor metainfo}}Torrent File{{/LabelFor}}	
+					{{#FileFor metainfo}}{{/FileFor}}	
+					
+					<p class="help-block">Create a torrent file with your favorite client and select it here.</p>
+				</div>
+			</div>
 		</div>
 
-		<br /><br />
-		<!-- select whether this is series or episode -->
-		<div class="row">
-			<div class="form-group col-md-8">
-				{{#LabelFor category}}Category{{/LabelFor}}
-				<select name="category" class="form-control">
-					<option value="series"> TV Series </option>
-					<option value="episode"> TV Episode </option>
-					<option value="other"> Other </option>
-				</select>
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h3 class="panel-title">
+					Details
+				</h3>
 			</div>
-			<div class="form-group col-md-4">
-				{{#LabelFor category}}Format{{/LabelFor}}
-				<select name="format" class="form-control">
-					<option value="h264"> H264 </option>
-					<option value="other"> Other </option>
-				</select>
+			
+			<div class="panel-body">
+				<!-- select whether this is series or episode -->
+				<div class="row">
+					<div class="form-group col-md-8">
+						{{#LabelFor category}}Category{{/LabelFor}}
+						<select name="category" class="form-control">
+							<option value="series"> TV Series </option>
+							<option value="episode"> TV Episode </option>
+							<option value="other"> Other </option>
+						</select>
+					</div>
+					<div class="form-group col-md-4">
+						{{#LabelFor category}}Format{{/LabelFor}}
+						<select name="format" class="form-control">
+							<option value="h264"> H264 </option>
+							<option value="other"> Other </option>
+						</select>
+					</div>
+				</div>
+				
+				<div class="form-group">
+					{{#LabelFor seriesName}}Series Name{{/LabelFor}}
+					<input type="text" class="form-control" id="seriesName" name="seriesName"
+					placeholder="Series Name">
+					<p class="help-block">For several artists: use commas between artist names.</p>
+				</div>
+
+				
+				<div class="row">
+					<div class="form-group col-md-9">
+						{{#LabelFor episodeName}}Episode Name{{/LabelFor}}
+						<input type="text" class="form-control" id="episodeName" name="episodeName"
+						placeholder="Episode Name">
+					</div>
+
+					<div class="form-group col-md-3">
+						{{#LabelFor episodeNumber}}Episode #{{/LabelFor}}
+						<input type="text" class="form-control" id="episodeNumber" name="episodeNumber"
+						placeholder="Episode #">
+					</div>
+				</div>
+				
+				
+				<div class="form-group">
+					{{#LabelFor releaseYear}}Release Year{{/LabelFor}}
+					<input type="text" class="form-control" id="releaseYear" name="releaseYear" placeholder="Release Year" chars="4">
+				</div>
+
+				<button type="submit" class="btn btn-default">Upload</button>
 			</div>
 		</div>
 		
-		<div class="form-group">
-			{{#LabelFor seriesName}}Series Name{{/LabelFor}}
-			<input type="text" class="form-control" id="seriesName" name="seriesName"
-			placeholder="Series Name">
-			<p class="help-block">For several artists: use commas between artist names.</p>
-		</div>
-
-		
-		<div class="row">
-			<div class="form-group col-md-9">
-				{{#LabelFor episodeName}}Episode Name{{/LabelFor}}
-				<input type="text" class="form-control" id="episodeName" name="episodeName"
-				placeholder="Episode Name">
-			</div>
-
-			<div class="form-group col-md-3">
-				{{#LabelFor episodeNumber}}Episode #{{/LabelFor}}
-				<input type="text" class="form-control" id="episodeNumber" name="episodeNumber"
-				placeholder="Episode #">
-			</div>
-		</div>
-		
-		
-		<div class="form-group">
-			{{#LabelFor releaseYear}}Release Year{{/LabelFor}}
-			<input type="text" class="form-control" id="releaseYear" name="releaseYear" placeholder="Release Year" chars="4">
-		</div>
-
-		<button type="submit" class="btn btn-default">Upload</button>
 	</div>
 
 	<div class="col-md-4 well">
