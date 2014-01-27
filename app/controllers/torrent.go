@@ -217,11 +217,6 @@ func (tc *TorrentController) Create() *web.Result {
 			return tc.RedirectOnUploadFail()
 		}
 
-		if err := torrentRecord.Write(); err != nil {
-			tc.Flash.AddFlash(fmt.Sprintf("Error saving your torrent. Please contact a staff member: %s", err.Error()))
-			return tc.RedirectOnUploadFail()
-		}
-
 		// Write attributes bundle [TV]
 		switch tc.Dev.Params.All["category"] {
 		case "series":
@@ -232,6 +227,8 @@ func (tc *TorrentController) Create() *web.Result {
 			if err := sBundle.Persist(); err != nil {
 				fmt.Printf("Error saving bundle: %s", err.Error())
 			}
+
+			torrentRecord.AttributesBundleID.Valid, torrentRecord.AttributesBundleID.Int64 = true, int64(sBundle.ID)
 		case "episode":
 			fmt.Printf("Episode attributes bundle")
 			// lookup sBundle by name
@@ -249,9 +246,15 @@ func (tc *TorrentController) Create() *web.Result {
 				fmt.Printf("Error saving episode bundle: %s", err.Error())
 			}
 
+			torrentRecord.AttributesBundleID.Valid, torrentRecord.AttributesBundleID.Int64 = true, int64(eBundle.ID)
 		default:
 			fmt.Printf("No attributes bundle create")
 
+		}
+
+		if err := torrentRecord.Write(); err != nil {
+			tc.Flash.AddFlash(fmt.Sprintf("Error saving your torrent. Please contact a staff member: %s", err.Error()))
+			return tc.RedirectOnUploadFail()
 		}
 
 		tc.Flash.AddFlash(fmt.Sprintf(`Your torrents URL is: http://tracker.fatalsyntax.com/torrents/download/%d -- 

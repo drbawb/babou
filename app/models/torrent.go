@@ -29,6 +29,8 @@ type Torrent struct {
 	Encoding    string `field:"encoding"`
 	EncodedInfo []byte `field:"info_bencoded"`
 
+	AttributesBundleID sql.NullInt64
+
 	lazyAttributes *Attribute `	table:"attributes" 
 								has-one:"torrents" 
 								through:"torrent_id"`
@@ -175,6 +177,7 @@ func (t *Torrent) Write() error {
 		t.CreationDate,
 		t.Encoding,
 		encodeBytesForPG(t.EncodedInfo),
+		t.AttributesBundleID,
 	).Into(
 		"name",
 		"info_hash",
@@ -182,6 +185,7 @@ func (t *Torrent) Write() error {
 		"creation_date",
 		"encoding",
 		"info_bencoded",
+		"attributes_bundle_id",
 	).Returning("torrent_id").ToSql()
 
 	if err != nil {
