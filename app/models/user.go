@@ -18,20 +18,21 @@ import (
 
 // `User` model for `users`
 type User struct {
-	UserId   int
-	Username string
-	IsAdmin  bool
+	UserId   int    `db:"user_id"`
+	Username string `db:"username"`
+	IsAdmin  bool   `db:"is_admin"`
 
-	Email    string
-	emailSql sql.NullString
+	Email    string         `db:"-"`
+	NewEmail sql.NullString `db:"email"`
+	emailSql sql.NullString `db:"-"`
 
-	passwordHash string
-	passwordSalt string
+	passwordHash string `db:"-"`
+	passwordSalt string `db:"-"`
 
-	Secret     []byte
-	SecretHash []byte
+	Secret     []byte `db:"secret"`
+	SecretHash []byte `db:"secret_hash"`
 
-	isInit bool
+	isInit bool `db:"-"`
 }
 
 // Error-codes returned from some methods that could be presented to the UI.
@@ -44,70 +45,42 @@ const (
 )
 
 func AllUsers() ([]*User, error) {
-	usersList := make([]*User, 0)
-	selectUsers := `SELECT user_id, username, email, passwordhash, passwordsalt, secret, secret_hash
-	FROM "users"`
+	var users []*User
+	_, err := dbMap.Select(
+		&users,
+		`SELECT 
+			user_id, 
+			username,
+			email,
+			secret,
+			secret_hash,
+			is_admin
+		FROM "users"`,
+	)
 
-	dba := func(dbConn *sql.DB) error {
-		rows, err := dbConn.Query(selectUsers)
-		if err != nil {
-			return err
-		}
-
-		for rows.Next() {
-			u := &User{}
-			err := rows.Scan(
-				&u.UserId,
-				&u.Username,
-				&u.emailSql,
-				&u.passwordHash,
-				&u.passwordSalt,
-				&u.Secret,
-				&u.SecretHash)
-
-			if err != nil {
-				return err
-			}
-
-			u.Email = u.emailSql.String
-
-			usersList = append(usersList, u)
-		}
-
-		return nil
-	}
-
-	err := db.ExecuteFn(dba)
-	if err != nil {
-		return usersList, err
-	}
-
-	return usersList, err //safe to use pointer.
+	return users, err
 }
 
 // Select user by ID number and populate the current `user` struct with the record data.
 // Returns an error if there was a problem. fetching the user information from the database.
 func (u *User) SelectId(id int) error {
-	selectUserById := `SELECT user_id, username, is_admin, passwordhash, passwordsalt, secret, secret_hash
-	FROM "users" WHERE user_id = $1`
+	err := dbMap.SelectOne(
+		u,
+		`SELECT 
+			user_id, 
+			username,
+			email,
+			secret,
+			secret_hash,
+			is_admin
+		FROM "users"
+		WHERE "users"."user_id" = :id`,
+		map[string]interface{}{
+			"id": id,
+		},
+	)
 
-	dba := func(dbConn *sql.DB) error {
-		row := dbConn.QueryRow(selectUserById, id)
-		err := row.Scan(&u.UserId, &u.Username, &u.IsAdmin, &u.passwordHash, &u.passwordSalt, &u.Secret, &u.SecretHash)
-		if err != nil {
-			return err
-		}
-
-		u.isInit = true
-		return nil
-	}
-
-	err := db.ExecuteFn(dba)
-	if err != nil {
-		return err
-	}
-
-	return nil //safe to use pointer.
+	return err
 }
 
 func (u *User) Delete() error {
