@@ -88,7 +88,7 @@ func (uc *UsersController) SetAuthContext(context *filters.AuthContext) error {
 	}
 
 	uc.Auth = context
-	uc.Auth.Required = false
+	uc.Auth.Required = true
 
 	return nil
 }
