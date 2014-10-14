@@ -146,7 +146,7 @@ which is located at: `db/dbconf.yml`
 To setup your database, you will need to `go get` another tool. This tool will [eventually] be shipped
 with the binary distribution of `babou`.
 
-Run: `go get bitbucket.org/liamstask/goose`
+Run: `go get bitbucket.org/liamstask/goose/cmd/goose`
 This will install `goose` into your `$GOPATH/bin` directory. You can add this to your $PATH variable
 or simply execute it directly from that folder.
 
